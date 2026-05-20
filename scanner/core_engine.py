@@ -2,7 +2,8 @@
 from scanner.rules import (
     SQLInjectionRule, XSSRule, CommandInjectionRule,
     HardcodedSecretRule, EvalInjectionRule, AngularBypassRule,
-    ExpressHandlerTainter
+    ExpressHandlerTainter, PrototypePollutionRule, PathTraversalRule,
+    OpenRedirectRule, RegexDosRule, InsecureRandomRule
 )
 from scanner.cwe_mapper import CWEMapper
 from scanner.vulnerability import Vulnerability
@@ -12,9 +13,14 @@ from scanner.code_extractor import CodeExtractor
 SEVERITY_MAP = {
     'CWE-78': 'Critical',   # Command Injection
     'CWE-89': 'Critical',   # SQL Injection
+    'CWE-22': 'Critical',   # Path Traversal
     'CWE-95': 'High',       # eval injection
     'CWE-79': 'High',       # XSS
+    'CWE-1321': 'High',     # Prototype Pollution
     'CWE-798': 'Medium',    # Hardcoded secrets
+    'CWE-601': 'Medium',    # Open Redirect
+    'CWE-1333': 'Medium',   # ReDoS
+    'CWE-330': 'Medium',    # Insecure Randomness
 }
 
 # Known library patterns that cause false positives
@@ -36,7 +42,12 @@ class CoreAnalysisEngine:
             CommandInjectionRule(),
             HardcodedSecretRule(),
             EvalInjectionRule(),
-            AngularBypassRule()
+            AngularBypassRule(),
+            PrototypePollutionRule(),
+            PathTraversalRule(),
+            OpenRedirectRule(),
+            RegexDosRule(),
+            InsecureRandomRule(),
         ]
         self.cwe_mapper = CWEMapper()
 

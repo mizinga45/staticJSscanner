@@ -63,7 +63,7 @@ class SQLInjectionRule(VulnerabilityRule):
                 else:
                     tainted.discard(var_name)
 
-        # SQL concatenation detection
+        # SQL concatenation detection (+ operator)
         if node_type == 'BinaryExpression' and node.get('operator') == '+':
             left = node.get('left')
             right = node.get('right')
@@ -85,6 +85,30 @@ class SQLInjectionRule(VulnerabilityRule):
                         remediation="Use parameterized queries or prepared statements instead of string concatenation.",
                         confidence_score=score
                     ))
+
+        # SQL template literal injection: `SELECT ... ${tainted}`
+        if node_type == 'TemplateLiteral':
+            quasis = node.get('quasis', [])
+            expressions = node.get('expressions', [])
+            # Check if template contains SQL keywords
+            full_text = ' '.join(q.get('value', {}).get('raw', '') for q in quasis)
+            if re.search(r'\b(SELECT|INSERT|UPDATE|DELETE|DROP)\b', full_text, re.IGNORECASE):
+                for expr in expressions:
+                    if self._references_tainted(expr, tainted):
+                        loc = node.get('loc', {}).get('start', {})
+                        line = loc.get('line', 0)
+                        snippet = code_lines[line - 1].strip() if 0 < line <= len(code_lines) else ''
+                        vulns.append(Vulnerability(
+                            vuln_type=self.vuln_type,
+                            cwe_id=self.cwe_id,
+                            file_path=file_path,
+                            line_number=line,
+                            code_snippet=snippet,
+                            description="User input interpolated into SQL query via template literal.",
+                            remediation="Use parameterized queries. Replace template literals with prepared statement placeholders (?).",
+                            confidence_score=90
+                        ))
+                        break
 
         # Recurse into children - accumulate taint across list items
         for key, value in node.items():

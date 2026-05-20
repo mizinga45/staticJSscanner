@@ -1,4 +1,3 @@
- # scanner/rules/__init__.py
 from .sql_injection import SQLInjectionRule
 from .xss import XSSRule
 from .command_injection import CommandInjectionRule
@@ -6,6 +5,11 @@ from .hardcoded_secrets import HardcodedSecretRule
 from .eval_injection import EvalInjectionRule
 from .angular_bypass import AngularBypassRule
 from .express_handler import ExpressHandlerTainter
+from .prototype_pollution import PrototypePollutionRule
+from .path_traversal import PathTraversalRule
+from .open_redirect import OpenRedirectRule
+from .regex_dos import RegexDosRule
+from .insecure_random import InsecureRandomRule
 
 __all__ = [
     'SQLInjectionRule',
@@ -14,5 +18,10 @@ __all__ = [
     'HardcodedSecretRule',
     'EvalInjectionRule',
     'AngularBypassRule',
-    'ExpressHandlerTainter'
+    'ExpressHandlerTainter',
+    'PrototypePollutionRule',
+    'PathTraversalRule',
+    'OpenRedirectRule',
+    'RegexDosRule',
+    'InsecureRandomRule',
 ]

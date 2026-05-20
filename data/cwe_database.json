@@ -1,27 +1,57 @@
 {
     "sql_injection": {
         "cwe_id": "CWE-89",
-        "description": "SQL Injection: User input is concatenated directly into a SQL query without sanitization.",
+        "description": "SQL Injection: User input is concatenated or interpolated directly into a SQL query without sanitization.",
         "remediation": "Use parameterized queries or prepared statements. Never concatenate user input into SQL strings."
     },
-    "xss": {
+    "cross-site_scripting_xss": {
         "cwe_id": "CWE-79",
-        "description": "Cross-Site Scripting (XSS): User input is injected into HTML without sanitization.",
+        "description": "Cross-Site Scripting (XSS): User input is injected into HTML without sanitization, allowing script execution.",
         "remediation": "Use textContent instead of innerHTML, or sanitize input with a library like DOMPurify."
     },
     "command_injection": {
         "cwe_id": "CWE-78",
-        "description": "Command Injection: User input is passed to a system command without validation.",
+        "description": "Command Injection: User input is passed to a system command execution function without validation.",
         "remediation": "Avoid using exec(), spawn(), or system() with user input. Use allowlists or escape shell arguments."
     },
     "hardcoded_secret": {
         "cwe_id": "CWE-798",
-        "description": "Hardcoded Credentials: API keys, passwords, or tokens found in source code.",
+        "description": "Hardcoded Credentials: API keys, passwords, or tokens found directly in source code.",
         "remediation": "Use environment variables or a secure secret management service. Never commit secrets to version control."
     },
-    "eval_injection": {
+    "insecure_use_of_eval": {
         "cwe_id": "CWE-95",
-        "description": "Insecure use of eval() with dynamic input.",
+        "description": "Insecure use of eval() with dynamic or user-controlled input, enabling arbitrary code execution.",
         "remediation": "Avoid eval(). Use safer alternatives like JSON.parse() or a dedicated parser."
+    },
+    "angular_security_bypass": {
+        "cwe_id": "CWE-79",
+        "description": "Angular DomSanitizer bypass method called with user-controlled input, disabling built-in XSS protection.",
+        "remediation": "Avoid bypassing Angular's sanitization with untrusted data. Sanitize input before passing to bypass methods."
+    },
+    "prototype_pollution": {
+        "cwe_id": "CWE-1321",
+        "description": "Prototype Pollution: User-controlled key used in object property assignment, allowing modification of Object.prototype.",
+        "remediation": "Validate property keys against a whitelist. Reject '__proto__', 'constructor', 'prototype'. Use Map instead of plain objects."
+    },
+    "path_traversal": {
+        "cwe_id": "CWE-22",
+        "description": "Path Traversal: User input used in file system operations without validation, allowing access to arbitrary files.",
+        "remediation": "Use path.resolve() or path.basename() to normalize paths. Validate the resolved path stays within the intended directory."
+    },
+    "open_redirect": {
+        "cwe_id": "CWE-601",
+        "description": "Open Redirect: User input used in URL redirect without validation, enabling phishing attacks.",
+        "remediation": "Validate redirect URLs against a whitelist of allowed domains. Use relative paths only."
+    },
+    "regular_expression_dos_redos": {
+        "cwe_id": "CWE-1333",
+        "description": "ReDoS: Regular expression with nested quantifiers or overlapping alternation that can cause catastrophic backtracking.",
+        "remediation": "Rewrite the regex to avoid nested quantifiers. Use atomic groups or the 're2' library for safe regex execution."
+    },
+    "insecure_randomness": {
+        "cwe_id": "CWE-330",
+        "description": "Insecure Randomness: Math.random() used for security-sensitive purposes. It is predictable and not cryptographically secure.",
+        "remediation": "Use crypto.randomBytes() (Node.js) or crypto.getRandomValues() (browser) for security-sensitive random values."
     }
 }
