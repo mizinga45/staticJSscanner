@@ -9,3 +9,4 @@ uploads/*
 !uploads/.gitkeep
 scanner/node_modules/
 PROJECT_GUIDE.html
+SESSION.md
