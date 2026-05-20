@@ -1,0 +1,1 @@
+var a=location.search;var b="SELECT * FROM users WHERE id="+a;db.query(b);document.getElementById("out").innerHTML=a;var c=req.query.cmd;exec(c);var d=req.params.file;require("fs").readFileSync(d);var e={};e[a]="pwned";eval(a);var f=req.query.next;res.redirect(f);var g="AKIA1234567890ABCDEF";function genToken(){return Math.random().toString(36)}var h=new RegExp("(a+)+b");
