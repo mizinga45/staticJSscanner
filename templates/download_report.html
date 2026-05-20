@@ -4,87 +4,390 @@
     <meta charset="UTF-8">
     <title>Security Scan Report - SecScan JS</title>
     <style>
-        body { font-family: 'Segoe UI', sans-serif; background: #0f172a; color: #e2e8f0; padding: 2rem; max-width: 900px; margin: 0 auto; }
-        h1 { color: #60a5fa; border-bottom: 2px solid #1e3a5f; padding-bottom: 0.75rem; }
-        h2 { color: #94a3b8; margin-top: 2.5rem; font-size: 1.2rem; }
-        .meta { color: #64748b; font-size: 0.85rem; margin-bottom: 2rem; }
-        .summary { display: flex; gap: 1.5rem; margin: 1.5rem 0; flex-wrap: wrap; }
-        .summary-item { background: #1e293b; padding: 1.25rem 1.5rem; border-radius: 10px; text-align: center; min-width: 100px; }
-        .summary-item .num { font-size: 2rem; font-weight: 700; }
-        .summary-item .lbl { font-size: 0.75rem; color: #64748b; text-transform: uppercase; margin-top: 0.25rem; }
-        .critical .num { color: #f87171; }
-        .high .num { color: #fbbf24; }
-        .medium .num { color: #60a5fa; }
-        .total .num { color: #a78bfa; }
-        .vuln { background: #1e293b; border-radius: 10px; padding: 1.5rem; margin-bottom: 1rem; border-left: 4px solid #3b82f6; }
-        .vuln.sev-critical { border-left-color: #ef4444; }
-        .vuln.sev-high { border-left-color: #f59e0b; }
-        .vuln.sev-medium { border-left-color: #3b82f6; }
-        .vuln h3 { margin: 0 0 0.75rem; font-size: 1rem; display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
-        .vuln code { background: #0f172a; padding: 0.75rem 1rem; display: block; border-radius: 6px; font-size: 0.8rem; margin: 0.5rem 0; white-space: pre-wrap; word-break: break-all; border: 1px solid #1e293b; }
-        .vuln p { margin: 0.35rem 0; font-size: 0.85rem; color: #94a3b8; }
-        .vuln .fix { color: #6ee7b7; }
-        .badge { display: inline-block; padding: 0.2rem 0.5rem; border-radius: 4px; font-size: 0.7rem; font-weight: 700; }
-        .badge-crit { background: #7f1d1d; color: #fca5a5; }
-        .badge-high { background: #78350f; color: #fcd34d; }
-        .badge-med { background: #1e3a5f; color: #93c5fd; }
-        .urls { background: #1e293b; border-radius: 8px; padding: 1rem; margin: 1rem 0; }
-        .urls a { color: #60a5fa; font-size: 0.8rem; display: block; margin: 0.25rem 0; word-break: break-all; }
-        .footer { margin-top: 3rem; text-align: center; color: #475569; font-size: 0.8rem; padding-top: 1.5rem; border-top: 1px solid #1e293b; }
+        @page {
+            size: A4;
+            margin: 2cm 1.5cm;
+            @bottom-center {
+                content: "Page " counter(page) " of " counter(pages);
+                font-size: 9px;
+                color: #64748b;
+            }
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+            font-size: 11px;
+            line-height: 1.5;
+            color: #1e293b;
+            background: white;
+        }
+
+        /* Header */
+        .report-header {
+            border-bottom: 3px solid #3b82f6;
+            padding-bottom: 20px;
+            margin-bottom: 25px;
+        }
+
+        .report-header h1 {
+            font-size: 22px;
+            color: #0f172a;
+            margin-bottom: 4px;
+        }
+
+        .report-header .subtitle {
+            font-size: 12px;
+            color: #64748b;
+        }
+
+        .meta-table {
+            margin-top: 12px;
+            font-size: 10px;
+        }
+
+        .meta-table td {
+            padding: 3px 12px 3px 0;
+            vertical-align: top;
+        }
+
+        .meta-table .label {
+            font-weight: 700;
+            color: #475569;
+            min-width: 80px;
+        }
+
+        .meta-table .value {
+            color: #1e293b;
+            word-break: break-all;
+        }
+
+        /* Summary Section */
+        .summary-section {
+            margin-bottom: 25px;
+        }
+
+        .summary-section h2 {
+            font-size: 14px;
+            color: #0f172a;
+            border-bottom: 1px solid #e2e8f0;
+            padding-bottom: 6px;
+            margin-bottom: 12px;
+        }
+
+        .summary-grid {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .summary-box {
+            flex: 1;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            padding: 12px;
+            text-align: center;
+        }
+
+        .summary-box .number {
+            font-size: 24px;
+            font-weight: 800;
+            display: block;
+        }
+
+        .summary-box .label {
+            font-size: 9px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: #64748b;
+            margin-top: 2px;
+        }
+
+        .summary-box.total .number { color: #3b82f6; }
+        .summary-box.critical .number { color: #dc2626; }
+        .summary-box.critical { border-color: #fecaca; background: #fef2f2; }
+        .summary-box.high .number { color: #d97706; }
+        .summary-box.high { border-color: #fed7aa; background: #fffbeb; }
+        .summary-box.medium .number { color: #2563eb; }
+        .summary-box.medium { border-color: #bfdbfe; background: #eff6ff; }
+
+        /* Extracted URLs */
+        .urls-section {
+            margin-bottom: 25px;
+        }
+
+        .urls-section h2 {
+            font-size: 14px;
+            color: #0f172a;
+            border-bottom: 1px solid #e2e8f0;
+            padding-bottom: 6px;
+            margin-bottom: 10px;
+        }
+
+        .url-list {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            padding: 10px 14px;
+        }
+
+        .url-list a {
+            display: block;
+            font-size: 9px;
+            color: #2563eb;
+            text-decoration: none;
+            padding: 2px 0;
+            word-break: break-all;
+        }
+
+        /* Vulnerabilities */
+        .vulns-section h2 {
+            font-size: 14px;
+            color: #0f172a;
+            border-bottom: 1px solid #e2e8f0;
+            padding-bottom: 6px;
+            margin-bottom: 15px;
+        }
+
+        .vuln-card {
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            margin-bottom: 14px;
+            overflow: hidden;
+            page-break-inside: avoid;
+        }
+
+        .vuln-card-header {
+            padding: 10px 14px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        .vuln-card-header.critical { background: #fef2f2; }
+        .vuln-card-header.high { background: #fffbeb; }
+        .vuln-card-header.medium { background: #eff6ff; }
+
+        .severity-badge {
+            font-size: 8px;
+            font-weight: 700;
+            text-transform: uppercase;
+            padding: 2px 6px;
+            border-radius: 3px;
+            letter-spacing: 0.3px;
+        }
+
+        .severity-badge.critical { background: #dc2626; color: white; }
+        .severity-badge.high { background: #d97706; color: white; }
+        .severity-badge.medium { background: #2563eb; color: white; }
+
+        .cwe-badge {
+            font-size: 9px;
+            font-weight: 600;
+            color: #475569;
+            background: #f1f5f9;
+            padding: 2px 6px;
+            border-radius: 3px;
+        }
+
+        .vuln-title {
+            font-size: 11px;
+            font-weight: 700;
+            color: #0f172a;
+        }
+
+        .vuln-card-body {
+            padding: 12px 14px;
+        }
+
+        .vuln-row {
+            display: flex;
+            margin-bottom: 8px;
+            font-size: 10px;
+        }
+
+        .vuln-row .row-label {
+            min-width: 85px;
+            font-weight: 600;
+            color: #64748b;
+        }
+
+        .vuln-row .row-value {
+            flex: 1;
+            color: #334155;
+        }
+
+        .vuln-row .row-value.fix {
+            color: #059669;
+        }
+
+        .code-snippet {
+            background: #1e293b;
+            color: #e2e8f0;
+            font-family: 'Courier New', monospace;
+            font-size: 9px;
+            padding: 8px 10px;
+            border-radius: 4px;
+            margin-top: 4px;
+            white-space: pre-wrap;
+            word-break: break-all;
+            line-height: 1.4;
+        }
+
+        .confidence-bar {
+            display: inline-block;
+            width: 60px;
+            height: 6px;
+            background: #e2e8f0;
+            border-radius: 3px;
+            overflow: hidden;
+            vertical-align: middle;
+            margin-right: 4px;
+        }
+
+        .confidence-fill {
+            height: 100%;
+            border-radius: 3px;
+        }
+
+        .confidence-fill.high { background: #dc2626; }
+        .confidence-fill.med { background: #d97706; }
+        .confidence-fill.low { background: #2563eb; }
+
+        /* No vulns */
+        .no-vulns {
+            text-align: center;
+            padding: 30px;
+            color: #059669;
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        /* Footer */
+        .report-footer {
+            margin-top: 30px;
+            padding-top: 15px;
+            border-top: 1px solid #e2e8f0;
+            text-align: center;
+            font-size: 9px;
+            color: #94a3b8;
+        }
     </style>
 </head>
 <body>
-    <h1>🛡️ SecScan JS — Vulnerability Report</h1>
-    <div class="meta">
-        <strong>Source:</strong> {{ source }}<br>
-        <strong>Generated:</strong> {{ now if now else "N/A" }}
+    <!-- Report Header -->
+    <div class="report-header">
+        <h1>🛡️ Security Vulnerability Report</h1>
+        <div class="subtitle">Generated by SecScan JS — Static Security Vulnerability Scanner for JavaScript</div>
+        <table class="meta-table">
+            <tr>
+                <td class="label">Source:</td>
+                <td class="value">{{ source }}</td>
+            </tr>
+            <tr>
+                <td class="label">Date:</td>
+                <td class="value">{{ now if now else "N/A" }}</td>
+            </tr>
+            <tr>
+                <td class="label">Total Issues:</td>
+                <td class="value">{{ summary.total }}</td>
+            </tr>
+        </table>
     </div>
 
-    <div class="summary">
-        <div class="summary-item total"><div class="num">{{ summary.total }}</div><div class="lbl">Total</div></div>
-        <div class="summary-item critical"><div class="num">{{ summary.severity_counts.Critical }}</div><div class="lbl">Critical</div></div>
-        <div class="summary-item high"><div class="num">{{ summary.severity_counts.High }}</div><div class="lbl">High</div></div>
-        <div class="summary-item medium"><div class="num">{{ summary.severity_counts.Medium }}</div><div class="lbl">Medium</div></div>
+    <!-- Summary -->
+    <div class="summary-section">
+        <h2>Executive Summary</h2>
+        <div class="summary-grid">
+            <div class="summary-box total">
+                <span class="number">{{ summary.total }}</span>
+                <span class="label">Total</span>
+            </div>
+            <div class="summary-box critical">
+                <span class="number">{{ summary.severity_counts.Critical }}</span>
+                <span class="label">Critical</span>
+            </div>
+            <div class="summary-box high">
+                <span class="number">{{ summary.severity_counts.High }}</span>
+                <span class="label">High</span>
+            </div>
+            <div class="summary-box medium">
+                <span class="number">{{ summary.severity_counts.Medium }}</span>
+                <span class="label">Medium</span>
+            </div>
+        </div>
     </div>
 
+    <!-- Extracted URLs -->
     {% if extracted_urls %}
-    <h2>🌐 Extracted JavaScript Sources</h2>
-    <div class="urls">
-        {% for url in extracted_urls %}
-            <a href="{{ url }}">{{ url }}</a>
-        {% endfor %}
+    <div class="urls-section">
+        <h2>Extracted JavaScript Sources ({{ extracted_urls|length }})</h2>
+        <div class="url-list">
+            {% for url in extracted_urls %}
+                <a href="{{ url }}">{{ url }}</a>
+            {% endfor %}
+        </div>
     </div>
     {% endif %}
 
-    <h2>Vulnerabilities Found</h2>
-    {% if vulnerabilities %}
+    <!-- Vulnerabilities -->
+    <div class="vulns-section">
+        <h2>Detailed Findings</h2>
+
+        {% if not vulnerabilities %}
+        <div class="no-vulns">✅ No vulnerabilities detected. Code appears secure.</div>
+        {% endif %}
+
         {% for vuln in vulnerabilities %}
-        <div class="vuln sev-{{ vuln.severity|lower }}">
-            <h3>
-                {% if vuln.severity == 'Critical' %}
-                    <span class="badge badge-crit">CRITICAL</span>
-                {% elif vuln.severity == 'High' %}
-                    <span class="badge badge-high">HIGH</span>
-                {% else %}
-                    <span class="badge badge-med">MEDIUM</span>
-                {% endif %}
-                <span class="badge badge-med">{{ vuln.cwe_id }}</span>
-                {{ vuln.type }}
-            </h3>
-            <p><strong>File:</strong> {{ vuln.file_path }} &nbsp;|&nbsp; <strong>Line:</strong> {{ vuln.line_number }}</p>
-            <code>{{ vuln.code_snippet[:200] }}</code>
-            <p><strong>Description:</strong> {{ vuln.description }}</p>
-            <p class="fix"><strong>How to fix:</strong> {{ vuln.remediation }}</p>
-            <p><strong>Confidence:</strong> {{ vuln.confidence_score }}%</p>
+        <div class="vuln-card">
+            <div class="vuln-card-header {{ vuln.severity|lower }}">
+                <span class="severity-badge {{ vuln.severity|lower }}">{{ vuln.severity }}</span>
+                <span class="cwe-badge">{{ vuln.cwe_id }}</span>
+                <span class="vuln-title">{{ vuln.type }}</span>
+            </div>
+            <div class="vuln-card-body">
+                <div class="vuln-row">
+                    <span class="row-label">File:</span>
+                    <span class="row-value">{{ vuln.file_path }}</span>
+                </div>
+                <div class="vuln-row">
+                    <span class="row-label">Line:</span>
+                    <span class="row-value">{{ vuln.line_number }}</span>
+                </div>
+                <div class="vuln-row">
+                    <span class="row-label">Code:</span>
+                    <span class="row-value">
+                        <div class="code-snippet">{{ vuln.code_snippet[:200] }}</div>
+                    </span>
+                </div>
+                <div class="vuln-row">
+                    <span class="row-label">Description:</span>
+                    <span class="row-value">{{ vuln.description }}</span>
+                </div>
+                <div class="vuln-row">
+                    <span class="row-label">Remediation:</span>
+                    <span class="row-value fix">{{ vuln.remediation }}</span>
+                </div>
+                <div class="vuln-row">
+                    <span class="row-label">Confidence:</span>
+                    <span class="row-value">
+                        <span class="confidence-bar">
+                            <span class="confidence-fill {% if vuln.confidence_score >= 80 %}high{% elif vuln.confidence_score >= 50 %}med{% else %}low{% endif %}" style="width: {{ vuln.confidence_score }}%"></span>
+                        </span>
+                        {{ vuln.confidence_score }}%
+                    </span>
+                </div>
+            </div>
         </div>
         {% endfor %}
-    {% else %}
-        <p style="color: #6ee7b7; text-align: center; padding: 2rem;">✅ No vulnerabilities detected.</p>
-    {% endif %}
+    </div>
 
-    <div class="footer">
-        Generated by SecScan JS — Static Security Vulnerability Scanner for JavaScript Source Code<br>
-        University of Dodoma | Group 16
+    <!-- Footer -->
+    <div class="report-footer">
+        SecScan JS — Static Security Vulnerability Scanner for JavaScript Source Code<br>
+        University of Dodoma | Group 16 | © 2026
     </div>
 </body>
 </html>
