@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% block title %}Scanner{% endblock %}
 {% block content %}
-<div style="display: grid; grid-template-columns: 1fr 300px; gap: 2rem; max-width: 1100px; width: 100%; align-items: start;">
+<div class="dashboard-layout">
     <!-- Main Scanner Card -->
     <div class="card" style="max-width: none;">
         <div class="scanner-header">
@@ -11,7 +11,7 @@
             <p>Upload a file, enter a URL, or provide a folder path to scan for security vulnerabilities.</p>
         </div>
 
-        <form method="POST" enctype="multipart/form-data">
+        <form method="POST" enctype="multipart/form-data" id="scanForm">
             {{ form.hidden_tag() }}
             
             <div class="mb-4">
@@ -42,44 +42,84 @@
             </div>
             
             <div style="margin-top: 2rem;">
-                {{ form.submit(class="btn btn-primary btn-lg w-100") }}
+                {{ form.submit(class="btn btn-primary btn-lg w-100", id="scanBtn") }}
             </div>
         </form>
     </div>
 
-    <!-- Recent Scans Sidebar -->
-    <div class="card" style="max-width: none; padding: 1.5rem;">
-        <h3 style="font-size: 0.95rem; margin-bottom: 1rem;">📋 Recent Scans</h3>
-        {% if recent_scans %}
-            {% for scan in recent_scans %}
-            <a href="{{ url_for('main.view_scan', scan_id=scan.id) }}" class="recent-scan-item">
-                <div class="recent-scan-source">{{ scan.source|truncate(40) }}</div>
-                <div class="recent-scan-meta">
-                    {% if scan.critical_count > 0 %}
-                        <span class="badge badge-critical" style="font-size: 0.6rem;">{{ scan.critical_count }}C</span>
-                    {% endif %}
-                    {% if scan.high_count > 0 %}
-                        <span class="badge badge-high" style="font-size: 0.6rem;">{{ scan.high_count }}H</span>
-                    {% endif %}
-                    <span style="color: var(--text-muted); font-size: 0.7rem;">{{ scan.scanned_at.strftime('%m/%d %H:%M') }}</span>
+    <!-- Sidebar -->
+    <div class="dashboard-sidebar">
+        <!-- Quick Stats -->
+        <div class="card sidebar-card">
+            <h3 class="sidebar-title">📊 Your Stats</h3>
+            <div class="quick-stats">
+                <div class="quick-stat">
+                    <span class="quick-stat-num">{{ recent_scans|length }}</span>
+                    <span class="quick-stat-label">Scans</span>
                 </div>
-            </a>
-            {% endfor %}
-            <a href="{{ url_for('main.history') }}" style="display: block; text-align: center; margin-top: 1rem; font-size: 0.8rem;">View all →</a>
-        {% else %}
-            <p style="color: var(--text-muted); font-size: 0.8rem; text-align: center;">No scans yet</p>
-        {% endif %}
+                <div class="quick-stat">
+                    <span class="quick-stat-num text-danger">{{ recent_scans|sum(attribute='critical_count') }}</span>
+                    <span class="quick-stat-label">Critical</span>
+                </div>
+                <div class="quick-stat">
+                    <span class="quick-stat-num text-warning">{{ recent_scans|sum(attribute='high_count') }}</span>
+                    <span class="quick-stat-label">High</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Scans -->
+        <div class="card sidebar-card">
+            <h3 class="sidebar-title">📋 Recent Scans</h3>
+            {% if recent_scans %}
+                {% for scan in recent_scans %}
+                <a href="{{ url_for('main.view_scan', scan_id=scan.id) }}" class="recent-scan-item">
+                    <div class="recent-scan-source">{{ scan.source|truncate(35) }}</div>
+                    <div class="recent-scan-meta">
+                        {% if scan.critical_count > 0 %}
+                            <span class="badge badge-critical" style="font-size: 0.6rem;">{{ scan.critical_count }}C</span>
+                        {% endif %}
+                        {% if scan.high_count > 0 %}
+                            <span class="badge badge-high" style="font-size: 0.6rem;">{{ scan.high_count }}H</span>
+                        {% endif %}
+                        {% if scan.total_vulns == 0 %}
+                            <span style="color: var(--accent-green); font-size: 0.7rem;">✓ Clean</span>
+                        {% endif %}
+                        <span style="color: var(--text-muted); font-size: 0.65rem;">{{ scan.scanned_at.strftime('%m/%d %H:%M') }}</span>
+                    </div>
+                </a>
+                {% endfor %}
+                <a href="{{ url_for('main.history') }}" class="view-all-link">View all →</a>
+            {% else %}
+                <p class="empty-state">No scans yet. Run your first scan!</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Scan Progress Overlay -->
+<div id="scanProgress" class="scan-progress-overlay">
+    <div class="scan-progress-card">
+        <div class="scan-progress-icon">🔍</div>
+        <h3>Analyzing Your Code</h3>
+        <div class="progress-bar-container">
+            <div class="progress-bar" id="progressBar"></div>
+        </div>
+        <p class="progress-status" id="progressStatus">Initializing scanner...</p>
+        <p class="progress-tip" id="progressTip">You can continue working — we'll notify you when done.</p>
     </div>
 </div>
 {% endblock %}
 
 {% block scripts %}
 <script>
+    // Typing animation
     const phrases = [
         "Scan JavaScript for Security Vulnerabilities",
         "Detect SQL Injection & XSS Attacks",
         "Find Hardcoded Secrets & API Keys",
-        "Identify Command Injection Risks"
+        "Identify Command Injection Risks",
+        "Protect Your Code Before Deployment"
     ];
     let phraseIndex = 0, charIndex = 0, isDeleting = false;
     function typeEffect() {
@@ -99,6 +139,7 @@
     }
     typeEffect();
 
+    // File upload
     const fileInput = document.getElementById('fileInput');
     const fileName = document.getElementById('fileName');
     const dropZone = document.getElementById('dropZone');
@@ -118,5 +159,53 @@
             }
         });
     }
+
+    // Progress bar animation on scan
+    const scanForm = document.getElementById('scanForm');
+    const scanProgress = document.getElementById('scanProgress');
+    const progressBar = document.getElementById('progressBar');
+    const progressStatus = document.getElementById('progressStatus');
+
+    const statusMessages = [
+        'Initializing scanner...',
+        'Reading source code...',
+        'Extracting JavaScript...',
+        'Parsing into AST...',
+        'Running taint analysis...',
+        'Checking SQL Injection patterns...',
+        'Checking XSS vulnerabilities...',
+        'Checking Command Injection...',
+        'Detecting hardcoded secrets...',
+        'Analyzing prototype pollution...',
+        'Mapping CWE identifiers...',
+        'Generating report...'
+    ];
+
+    if (scanForm) {
+        scanForm.addEventListener('submit', function() {
+            scanProgress.style.display = 'flex';
+            let progress = 0;
+            let msgIndex = 0;
+
+            const interval = setInterval(() => {
+                progress += Math.random() * 8 + 2;
+                if (progress > 95) progress = 95;
+                progressBar.style.width = progress + '%';
+                
+                if (msgIndex < statusMessages.length - 1) {
+                    msgIndex++;
+                    progressStatus.textContent = statusMessages[msgIndex];
+                }
+            }, 400);
+
+            // Clean up on page unload
+            window.addEventListener('beforeunload', () => clearInterval(interval));
+        });
+    }
+
+    // Hide progress on page show (back/forward navigation)
+    window.addEventListener('pageshow', function() {
+        if (scanProgress) scanProgress.style.display = 'none';
+    });
 </script>
 {% endblock %}

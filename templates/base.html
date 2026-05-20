@@ -53,14 +53,21 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', function() {
+            // Request notification permission
+            if ('Notification' in window && Notification.permission === 'default') {
+                Notification.requestPermission();
+            }
+
+            // Scan form progress overlay
             const form = document.querySelector('form[method="POST"]');
-            if (form) {
+            const overlay = document.getElementById('scanningOverlay');
+            if (form && overlay && !document.getElementById('scanProgress')) {
                 form.addEventListener('submit', function() {
-                    document.getElementById('scanningOverlay').style.display = 'flex';
+                    overlay.style.display = 'flex';
                 });
             }
             window.addEventListener('pageshow', function() {
-                document.getElementById('scanningOverlay').style.display = 'none';
+                if (overlay) overlay.style.display = 'none';
             });
         });
     </script>
