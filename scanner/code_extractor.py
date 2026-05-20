@@ -33,22 +33,25 @@ class CodeExtractor:
         script_start_line = 0
         script_content = []
         for i, line in enumerate(lines, start=1):
-            if re.search(r'<script\b(?![^>]*\bsrc\s*=)[^>]*>', line, re.IGNORECASE):
-                in_script = True
-                script_start_line = i
-                after_tag = re.sub(r'<script\b[^>]*>', '', line, count=1, flags=re.IGNORECASE)
-                if after_tag.strip():
-                    script_content.append(after_tag)
-                if '</script>' in after_tag:
-                    end_content = after_tag[:after_tag.find('</script>')]
-                    script_content = [end_content]
-                    scripts.append((script_start_line, '\n'.join(script_content)))
-                    in_script = False
-                    script_content = []
-            elif in_script:
+            if not in_script:
+                match = re.search(r'<script\b(?![^>]*\bsrc\s*=)[^>]*>', line, re.IGNORECASE)
+                if match:
+                    in_script = True
+                    script_start_line = i
+                    # Get only content AFTER the <script> tag
+                    after_tag = line[match.end():]
+                    if '</script>' in after_tag:
+                        end_content = after_tag[:after_tag.find('</script>')]
+                        if end_content.strip():
+                            scripts.append((script_start_line, end_content))
+                        in_script = False
+                    elif after_tag.strip():
+                        script_content.append(after_tag)
+            else:
                 if '</script>' in line:
                     end_content = line[:line.find('</script>')]
-                    script_content.append(end_content)
+                    if end_content.strip():
+                        script_content.append(end_content)
                     scripts.append((script_start_line, '\n'.join(script_content)))
                     in_script = False
                     script_content = []

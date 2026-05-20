@@ -36,6 +36,10 @@
             <div class="count">{{ summary.severity_counts.Medium }}</div>
             <div class="label">Medium</div>
         </div>
+        <div class="summary-card low">
+            <div class="count">{{ summary.severity_counts.get('Low', 0) }}</div>
+            <div class="label">Low / Info</div>
+        </div>
     </div>
 
     <!-- Download Report Section -->
