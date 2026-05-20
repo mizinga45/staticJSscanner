@@ -101,26 +101,81 @@ A web-based static analysis tool that detects security vulnerabilities in JavaSc
 
 ## Setup & Installation
 
+### Prerequisites
+
+Make sure you have these installed on your system:
+
+| Software | Version | Check Command |
+|---|---|---|
+| Python | 3.10 or higher | `python3 --version` |
+| Node.js | 16 or higher | `node --version` |
+| npm | 8 or higher | `npm --version` |
+| Git | any | `git --version` |
+
+#### On Ubuntu/Debian:
 ```bash
-# Clone the repository
+sudo apt update
+sudo apt install python3 python3-venv python3-pip nodejs npm git
+```
+
+#### On macOS:
+```bash
+brew install python node git
+```
+
+#### On Windows:
+- Download Python from https://python.org (check "Add to PATH")
+- Download Node.js from https://nodejs.org
+- Download Git from https://git-scm.com
+
+### Step-by-Step Installation
+
+```bash
+# 1. Clone the repository
 git clone https://github.com/mizinga45/staticJSscanner.git
 cd staticJSscanner
 
-# Create virtual environment
+# 2. Create a Python virtual environment
 python3 -m venv venv
-source venv/bin/activate
 
-# Install Python dependencies
+# 3. Activate the virtual environment
+# On Linux/macOS:
+source venv/bin/activate
+# On Windows:
+# venv\Scripts\activate
+
+# 4. Install Python dependencies
 pip install -r requirements.txt
 
-# Install Node.js dependency (for AST parsing)
-cd scanner && npm install && cd ..
+# 5. Install Node.js dependency (Acorn JS parser)
+cd scanner
+npm install
+cd ..
 
-# Run the application
+# 6. Run the application
 python app.py
 ```
 
-The application will be available at `http://localhost:5000`
+### Access the Application
+
+Once running, open your browser and go to:
+```
+http://localhost:5000
+```
+
+- Register a new account
+- Login
+- Start scanning JavaScript files for vulnerabilities
+
+### Troubleshooting
+
+| Issue | Solution |
+|---|---|
+| `ModuleNotFoundError` | Make sure venv is activated: `source venv/bin/activate` |
+| `node: command not found` | Install Node.js: `sudo apt install nodejs npm` |
+| Parser errors | Run `cd scanner && npm install` to install Acorn |
+| WeasyPrint fails (PDF) | Install system deps: `sudo apt install libpango-1.0-0 libpangocairo-1.0-0` |
+| Port 5000 in use | Change port: `python app.py` then edit to use port 8000 |
 
 ## Usage
 
