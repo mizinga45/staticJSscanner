@@ -1042,13 +1042,21 @@ a:hover {
 .url-item:last-child { border-bottom: none; }
 
 .url-badge {
-  background: rgba(245, 158, 11, 0.15);
-  color: var(--accent-orange);
   padding: 0.15rem 0.4rem;
   border-radius: 4px;
   font-size: 0.65rem;
   font-weight: 700;
   flex-shrink: 0;
+}
+
+.url-badge-danger {
+  background: rgba(239, 68, 68, 0.15);
+  color: var(--accent-red);
+}
+
+.url-badge-safe {
+  background: rgba(16, 185, 129, 0.15);
+  color: var(--accent-green);
 }
 
 .url-item a {

@@ -59,8 +59,19 @@
         <div class="urls-list">
             {% for url in extracted_urls %}
             <div class="url-item">
-                <span class="url-badge">JS</span>
+                {% set has_vuln = [] %}
+                {% for v in vulnerabilities if url in v.file_path %}
+                    {% if has_vuln.append(1) %}{% endif %}
+                {% endfor %}
+                {% if has_vuln %}
+                    <span class="url-badge url-badge-danger">⚠️</span>
+                {% else %}
+                    <span class="url-badge url-badge-safe">✓</span>
+                {% endif %}
                 <a href="{{ url }}" target="_blank" rel="noopener">{{ url }}</a>
+                {% if has_vuln %}
+                    <span class="badge badge-critical" style="font-size: 0.6rem; margin-left: auto;">{{ has_vuln|length }} issue{{ 's' if has_vuln|length > 1 }}</span>
+                {% endif %}
             </div>
             {% endfor %}
         </div>
