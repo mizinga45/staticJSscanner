@@ -1,0 +1,127 @@
+{% extends "base.html" %}
+{% block title %}Scan Results{% endblock %}
+{% block content %}
+<div class="card card-full">
+    <div class="results-header">
+        <div>
+            <h1 style="font-size: 1.5rem;">Scan Results</h1>
+            <p style="color: var(--text-secondary); font-size: 0.85rem; margin-top: 0.25rem; word-break: break-all;">{{ source }}</p>
+        </div>
+        <a href="{{ url_for('main.dashboard') }}" class="btn btn-outline btn-sm">← New Scan</a>
+    </div>
+
+    <!-- Summary Cards -->
+    <div class="results-summary">
+        <div class="summary-card total">
+            <div class="count">{{ summary.total }}</div>
+            <div class="label">Total Issues</div>
+        </div>
+        <div class="summary-card critical">
+            <div class="count">{{ summary.severity_counts.Critical }}</div>
+            <div class="label">Critical</div>
+        </div>
+        <div class="summary-card high">
+            <div class="count">{{ summary.severity_counts.High }}</div>
+            <div class="label">High</div>
+        </div>
+        <div class="summary-card medium">
+            <div class="count">{{ summary.severity_counts.Medium }}</div>
+            <div class="label">Medium</div>
+        </div>
+    </div>
+
+    {% if skipped_files %}
+    <div class="alert alert-warning">
+        <strong>⚠️ Skipped files</strong> (no JavaScript found):
+        {% for f in skipped_files %}
+            <code style="display: block; margin-top: 0.25rem; font-size: 0.8rem;">{{ f }}</code>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    {% if summary.total == 0 %}
+        <div class="alert alert-success" style="text-align: center; padding: 2rem;">
+            <div style="font-size: 2.5rem; margin-bottom: 0.75rem;">✅</div>
+            <strong>No vulnerabilities detected!</strong><br>
+            <span style="font-size: 0.85rem;">Your JavaScript source code appears secure.</span>
+        </div>
+    {% endif %}
+
+    {% if vulnerabilities %}
+        {% set ns = namespace(grouped={}) %}
+        {% for vuln in vulnerabilities %}
+            {% if vuln.file_path not in ns.grouped %}
+                {% set _ = ns.grouped.update({vuln.file_path: []}) %}
+            {% endif %}
+            {% set _ = ns.grouped[vuln.file_path].append(vuln) %}
+        {% endfor %}
+
+        {% for file_path, vulns_list in ns.grouped.items() %}
+        <div class="vuln-group">
+            <div class="vuln-group-header">
+                <span class="file-icon">📄</span>
+                <span class="file-name">{{ file_path }}</span>
+                <span class="badge badge-count">{{ vulns_list|length }} issue{{ 's' if vulns_list|length > 1 }}</span>
+            </div>
+            <div class="vuln-group-body">
+                {% for vuln in vulns_list %}
+                <div class="vuln-item">
+                    <div class="vuln-item-header">
+                        {% if vuln.type == 'Obfuscation Warning' %}
+                            <span class="badge badge-warning">⚠️ Warning</span>
+                        {% elif vuln.confidence_score >= 80 %}
+                            <span class="badge badge-critical">{{ vuln.cwe_id }}</span>
+                        {% elif vuln.confidence_score >= 50 %}
+                            <span class="badge badge-high">{{ vuln.cwe_id }}</span>
+                        {% else %}
+                            <span class="badge badge-medium">{{ vuln.cwe_id }}</span>
+                        {% endif %}
+                        <h4>{{ vuln.type }}</h4>
+                    </div>
+                    <div class="vuln-details">
+                        <div class="vuln-detail-row">
+                            <span class="label">Line</span>
+                            <span class="value">{{ vuln.line_number }}</span>
+                        </div>
+                        <div class="vuln-detail-row">
+                            <span class="label">Code</span>
+                            <span class="value"><div class="code-block">{{ vuln.code_snippet[:200] }}{% if vuln.code_snippet|length > 200 %}...{% endif %}</div></span>
+                        </div>
+                        <div class="vuln-detail-row">
+                            <span class="label">Description</span>
+                            <span class="value">{{ vuln.description }}</span>
+                        </div>
+                        <div class="vuln-detail-row">
+                            <span class="label">Remediation</span>
+                            <span class="value">{{ vuln.remediation }}</span>
+                        </div>
+                        <div class="vuln-detail-row">
+                            <span class="label">Confidence</span>
+                            <span class="value">
+                                {% if vuln.confidence_score >= 80 %}
+                                    <span class="badge badge-critical">{{ vuln.confidence_score }}%</span>
+                                {% elif vuln.confidence_score >= 50 %}
+                                    <span class="badge badge-high">{{ vuln.confidence_score }}%</span>
+                                {% else %}
+                                    <span class="badge badge-medium">{{ vuln.confidence_score }}%</span>
+                                {% endif %}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endfor %}
+        
+        <!-- Download Buttons -->
+        <div style="margin-top: 2rem;">
+            <div class="btn-group">
+                <a href="{{ url_for('main.download_report', format='json') }}" class="btn btn-outline">📥 JSON Report</a>
+                <a href="{{ url_for('main.download_report', format='html') }}" class="btn btn-outline">📥 HTML Report</a>
+                <a href="{{ url_for('main.download_report', format='pdf') }}" class="btn btn-outline">📥 PDF Report</a>
+            </div>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

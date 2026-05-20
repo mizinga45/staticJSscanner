@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% block title %}Profile{% endblock %}
+{% block content %}
+<div class="card card-wide">
+    <div class="profile-header">
+        <div class="profile-avatar">{{ user.full_name[0] }}</div>
+        <div class="profile-info">
+            <h2>{{ user.full_name }}</h2>
+            <p>@{{ user.username }} &middot; {{ user.email }}</p>
+        </div>
+    </div>
+
+    <div style="display: flex; gap: 1rem; margin-bottom: 2rem;">
+        <a href="{{ url_for('main.dashboard') }}" class="btn btn-primary btn-sm">🔍 New Scan</a>
+        <a href="{{ url_for('auth.logout') }}" class="btn btn-outline btn-sm">Logout</a>
+    </div>
+
+    <h3 style="margin-bottom: 1rem;">Scan History</h3>
+    {% if scans %}
+    <div style="overflow-x: auto;">
+        <table class="history-table">
+            <thead>
+                <tr>
+                    <th>Source</th>
+                    <th>Vulnerabilities</th>
+                    <th>Date</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for scan in scans %}
+                <tr>
+                    <td style="max-width: 400px; word-break: break-all;">{{ scan.source }}</td>
+                    <td>
+                        {% if scan.total_vulns > 0 %}
+                            <span class="badge badge-critical">{{ scan.total_vulns }}</span>
+                        {% else %}
+                            <span class="badge badge-medium">0</span>
+                        {% endif %}
+                    </td>
+                    <td>{{ scan.scanned_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+        <p style="color: var(--text-muted); text-align: center; padding: 2rem;">No scans yet. Start by scanning some JavaScript code!</p>
+    {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,114 @@
+{% extends "base.html" %}
+{% block title %}Scanner{% endblock %}
+{% block content %}
+<div class="card card-wide">
+    <div class="scanner-header">
+        <div class="typing-container">
+            <span class="typing-text" id="typingText"></span>
+        </div>
+        <p>Upload a file, enter a URL, or provide a folder path to scan for security vulnerabilities.</p>
+    </div>
+
+    <form method="POST" enctype="multipart/form-data">
+        {{ form.hidden_tag() }}
+        
+        <!-- File Upload -->
+        <div class="mb-4">
+            <label class="form-label">📁 Upload JavaScript / HTML File</label>
+            <div class="file-upload-area" id="dropZone">
+                {{ form.file_upload(id="fileInput") }}
+                <div class="upload-icon">📄</div>
+                <p class="upload-text"><strong>Click to browse</strong> or drag & drop</p>
+                <p class="form-text">Supports .js, .html, .php, .txt files</p>
+                <p id="fileName" style="color: var(--accent-green); margin-top: 0.5rem; font-size: 0.85rem;"></p>
+            </div>
+        </div>
+        
+        <div class="input-divider">or</div>
+        
+        <!-- URL Input -->
+        <div class="mb-4">
+            <label class="form-label">🌐 Enter URL</label>
+            {{ form.url_input(class="form-control", placeholder="https://example.com/app.js") }}
+            <p class="form-text">Fetches HTML and all linked JavaScript files for analysis</p>
+        </div>
+        
+        <div class="input-divider">or</div>
+        
+        <!-- Folder Path -->
+        <div class="mb-4">
+            <label class="form-label">📂 Local Folder Path</label>
+            {{ form.folder_path(class="form-control", placeholder="/home/user/project/src") }}
+            <p class="form-text">Recursively scans all .js, .html, .php, .txt files in the directory</p>
+        </div>
+        
+        <div style="margin-top: 2rem;">
+            {{ form.submit(class="btn btn-primary btn-lg w-100") }}
+        </div>
+    </form>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Typing animation
+    const phrases = [
+        "Scan JavaScript for Security Vulnerabilities",
+        "Detect SQL Injection & XSS Attacks",
+        "Find Hardcoded Secrets & API Keys",
+        "Identify Command Injection Risks",
+        "Protect Your Code Before Deployment"
+    ];
+    let phraseIndex = 0, charIndex = 0, isDeleting = false;
+
+    function typeEffect() {
+        const el = document.getElementById('typingText');
+        if (!el) return;
+        const full = phrases[phraseIndex % phrases.length];
+        const text = isDeleting 
+            ? full.substring(0, --charIndex) 
+            : full.substring(0, ++charIndex);
+        el.textContent = text;
+
+        if (!isDeleting && charIndex === full.length) {
+            setTimeout(() => { isDeleting = true; typeEffect(); }, 2000);
+        } else if (isDeleting && charIndex === 0) {
+            isDeleting = false;
+            phraseIndex++;
+            setTimeout(typeEffect, 400);
+        } else {
+            setTimeout(typeEffect, isDeleting ? 40 : 80);
+        }
+    }
+    typeEffect();
+
+    // File upload display
+    const fileInput = document.getElementById('fileInput');
+    const fileName = document.getElementById('fileName');
+    const dropZone = document.getElementById('dropZone');
+
+    if (fileInput) {
+        fileInput.addEventListener('change', function() {
+            fileName.textContent = this.files[0] ? '✓ ' + this.files[0].name : '';
+        });
+    }
+
+    if (dropZone) {
+        dropZone.addEventListener('dragover', function(e) {
+            e.preventDefault();
+            this.classList.add('dragover');
+        });
+        dropZone.addEventListener('dragleave', function() {
+            this.classList.remove('dragover');
+        });
+        dropZone.addEventListener('drop', function(e) {
+            e.preventDefault();
+            this.classList.remove('dragover');
+            if (e.dataTransfer.files.length) {
+                fileInput.files = e.dataTransfer.files;
+                fileName.textContent = '✓ ' + e.dataTransfer.files[0].name;
+            }
+        });
+    }
+</script>
+{% endblock %}

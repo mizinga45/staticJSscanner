@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% block title %}Register{% endblock %}
+{% block content %}
+<div class="card" style="max-width: 480px;">
+    <div class="text-center" style="margin-bottom: 2rem;">
+        <div style="font-size: 2.5rem; margin-bottom: 0.75rem;">🚀</div>
+        <h1 style="font-size: 1.5rem; margin-bottom: 0.5rem;">Create Account</h1>
+        <p style="color: var(--text-secondary); font-size: 0.9rem;">Join to start scanning your JavaScript for vulnerabilities</p>
+    </div>
+
+    <form method="POST">
+        {{ form.hidden_tag() }}
+
+        <div class="mb-3">
+            <label class="form-label">Full Name</label>
+            {{ form.full_name(class="form-control", placeholder="John Doe") }}
+            {% if form.full_name.errors %}
+                <div class="text-danger">{{ form.full_name.errors[0] }}</div>
+            {% endif %}
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Username</label>
+            {{ form.username(class="form-control", placeholder="johndoe") }}
+            {% if form.username.errors %}
+                <div class="text-danger">{{ form.username.errors[0] }}</div>
+            {% endif %}
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Email</label>
+            {{ form.email(class="form-control", placeholder="john@example.com") }}
+            {% if form.email.errors %}
+                <div class="text-danger">{{ form.email.errors[0] }}</div>
+            {% endif %}
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Password</label>
+            {{ form.password(class="form-control", placeholder="At least 6 characters") }}
+            {% if form.password.errors %}
+                <div class="text-danger">{{ form.password.errors[0] }}</div>
+            {% endif %}
+        </div>
+
+        <div class="mb-4">
+            <label class="form-label">Confirm Password</label>
+            {{ form.confirm_password(class="form-control", placeholder="Re-enter password") }}
+            {% if form.confirm_password.errors %}
+                <div class="text-danger">{{ form.confirm_password.errors[0] }}</div>
+            {% endif %}
+        </div>
+
+        {{ form.submit(class="btn btn-primary w-100 btn-lg") }}
+    </form>
+    
+    <p style="text-align: center; margin-top: 1.5rem; color: var(--text-secondary); font-size: 0.9rem;">
+        Already have an account? <a href="{{ url_for('auth.login') }}">Sign in</a>
+    </p>
+</div>
+{% endblock %}

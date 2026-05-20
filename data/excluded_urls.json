@@ -1,0 +1,8 @@
+[
+    "*jquery*",
+    "*bootstrap*",
+    "*popper*",
+    "*sweetalert2*",
+    "*lodash*",
+    "*moment*"
+]

@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}SecScan JS{% endblock %} | Static Security Scanner</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <nav class="navbar">
+        <a href="/" class="navbar-brand">
+            <div class="logo-icon"></div>
+            SecScan JS
+        </a>
+        <div class="navbar-links">
+            {% if current_user.is_authenticated %}
+                <a href="{{ url_for('main.dashboard') }}" class="nav-link">Scanner</a>
+                <a href="{{ url_for('auth.profile') }}" class="nav-link">{{ current_user.username }}</a>
+                <a href="{{ url_for('auth.logout') }}" class="nav-link">Logout</a>
+            {% else %}
+                <a href="{{ url_for('auth.login') }}" class="nav-link">Login</a>
+                <a href="{{ url_for('auth.register') }}" class="nav-link">Register</a>
+            {% endif %}
+        </div>
+    </nav>
+
+    <!-- Scanning overlay -->
+    <div id="scanningOverlay" class="scanning-overlay">
+        <div class="scanner-loader"></div>
+        <p class="scanning-text">Analyzing code for vulnerabilities...</p>
+    </div>
+
+    <div class="main-container">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }}" style="max-width: 600px; width: 100%;">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+        
+        {% block content %}{% endblock %}
+    </div>
+
+    <footer class="footer">
+        &copy; 2025 SecScan JS &mdash; Static Security Vulnerability Scanner for JavaScript Source Code<br>
+        University of Dodoma | Group 16
+    </footer>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const form = document.querySelector('form[method="POST"]');
+            if (form) {
+                form.addEventListener('submit', function() {
+                    document.getElementById('scanningOverlay').style.display = 'flex';
+                });
+            }
+            window.addEventListener('pageshow', function() {
+                document.getElementById('scanningOverlay').style.display = 'none';
+            });
+        });
+    </script>
+    {% block scripts %}{% endblock %}
+</body>
+</html>
