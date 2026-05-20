@@ -1,80 +1,97 @@
 {% extends "base.html" %}
 {% block title %}Scanner{% endblock %}
 {% block content %}
-<div class="card card-wide">
-    <div class="scanner-header">
-        <div class="typing-container">
-            <span class="typing-text" id="typingText"></span>
+<div style="display: grid; grid-template-columns: 1fr 300px; gap: 2rem; max-width: 1100px; width: 100%; align-items: start;">
+    <!-- Main Scanner Card -->
+    <div class="card" style="max-width: none;">
+        <div class="scanner-header">
+            <div class="typing-container">
+                <span class="typing-text" id="typingText"></span>
+            </div>
+            <p>Upload a file, enter a URL, or provide a folder path to scan for security vulnerabilities.</p>
         </div>
-        <p>Upload a file, enter a URL, or provide a folder path to scan for security vulnerabilities.</p>
+
+        <form method="POST" enctype="multipart/form-data">
+            {{ form.hidden_tag() }}
+            
+            <div class="mb-4">
+                <label class="form-label">📁 Upload JavaScript / HTML File</label>
+                <div class="file-upload-area" id="dropZone">
+                    {{ form.file_upload(id="fileInput") }}
+                    <div class="upload-icon">📄</div>
+                    <p class="upload-text"><strong>Click to browse</strong> or drag & drop</p>
+                    <p class="form-text">Supports .js, .html, .php, .txt files</p>
+                    <p id="fileName" style="color: var(--accent-green); margin-top: 0.5rem; font-size: 0.85rem;"></p>
+                </div>
+            </div>
+            
+            <div class="input-divider">or</div>
+            
+            <div class="mb-4">
+                <label class="form-label">🌐 Enter URL</label>
+                {{ form.url_input(class="form-control", placeholder="https://example.com/app.js") }}
+                <p class="form-text">Fetches HTML and all linked JavaScript files for analysis</p>
+            </div>
+            
+            <div class="input-divider">or</div>
+            
+            <div class="mb-4">
+                <label class="form-label">📂 Local Folder Path</label>
+                {{ form.folder_path(class="form-control", placeholder="/home/user/project/src") }}
+                <p class="form-text">Recursively scans all supported files in the directory</p>
+            </div>
+            
+            <div style="margin-top: 2rem;">
+                {{ form.submit(class="btn btn-primary btn-lg w-100") }}
+            </div>
+        </form>
     </div>
 
-    <form method="POST" enctype="multipart/form-data">
-        {{ form.hidden_tag() }}
-        
-        <!-- File Upload -->
-        <div class="mb-4">
-            <label class="form-label">📁 Upload JavaScript / HTML File</label>
-            <div class="file-upload-area" id="dropZone">
-                {{ form.file_upload(id="fileInput") }}
-                <div class="upload-icon">📄</div>
-                <p class="upload-text"><strong>Click to browse</strong> or drag & drop</p>
-                <p class="form-text">Supports .js, .html, .php, .txt files</p>
-                <p id="fileName" style="color: var(--accent-green); margin-top: 0.5rem; font-size: 0.85rem;"></p>
-            </div>
-        </div>
-        
-        <div class="input-divider">or</div>
-        
-        <!-- URL Input -->
-        <div class="mb-4">
-            <label class="form-label">🌐 Enter URL</label>
-            {{ form.url_input(class="form-control", placeholder="https://example.com/app.js") }}
-            <p class="form-text">Fetches HTML and all linked JavaScript files for analysis</p>
-        </div>
-        
-        <div class="input-divider">or</div>
-        
-        <!-- Folder Path -->
-        <div class="mb-4">
-            <label class="form-label">📂 Local Folder Path</label>
-            {{ form.folder_path(class="form-control", placeholder="/home/user/project/src") }}
-            <p class="form-text">Recursively scans all .js, .html, .php, .txt files in the directory</p>
-        </div>
-        
-        <div style="margin-top: 2rem;">
-            {{ form.submit(class="btn btn-primary btn-lg w-100") }}
-        </div>
-    </form>
+    <!-- Recent Scans Sidebar -->
+    <div class="card" style="max-width: none; padding: 1.5rem;">
+        <h3 style="font-size: 0.95rem; margin-bottom: 1rem;">📋 Recent Scans</h3>
+        {% if recent_scans %}
+            {% for scan in recent_scans %}
+            <a href="{{ url_for('main.view_scan', scan_id=scan.id) }}" class="recent-scan-item">
+                <div class="recent-scan-source">{{ scan.source|truncate(40) }}</div>
+                <div class="recent-scan-meta">
+                    {% if scan.critical_count > 0 %}
+                        <span class="badge badge-critical" style="font-size: 0.6rem;">{{ scan.critical_count }}C</span>
+                    {% endif %}
+                    {% if scan.high_count > 0 %}
+                        <span class="badge badge-high" style="font-size: 0.6rem;">{{ scan.high_count }}H</span>
+                    {% endif %}
+                    <span style="color: var(--text-muted); font-size: 0.7rem;">{{ scan.scanned_at.strftime('%m/%d %H:%M') }}</span>
+                </div>
+            </a>
+            {% endfor %}
+            <a href="{{ url_for('main.history') }}" style="display: block; text-align: center; margin-top: 1rem; font-size: 0.8rem;">View all →</a>
+        {% else %}
+            <p style="color: var(--text-muted); font-size: 0.8rem; text-align: center;">No scans yet</p>
+        {% endif %}
+    </div>
 </div>
 {% endblock %}
 
 {% block scripts %}
 <script>
-    // Typing animation
     const phrases = [
         "Scan JavaScript for Security Vulnerabilities",
         "Detect SQL Injection & XSS Attacks",
         "Find Hardcoded Secrets & API Keys",
-        "Identify Command Injection Risks",
-        "Protect Your Code Before Deployment"
+        "Identify Command Injection Risks"
     ];
     let phraseIndex = 0, charIndex = 0, isDeleting = false;
-
     function typeEffect() {
         const el = document.getElementById('typingText');
         if (!el) return;
         const full = phrases[phraseIndex % phrases.length];
-        const text = isDeleting 
-            ? full.substring(0, --charIndex) 
-            : full.substring(0, ++charIndex);
+        const text = isDeleting ? full.substring(0, --charIndex) : full.substring(0, ++charIndex);
         el.textContent = text;
-
         if (!isDeleting && charIndex === full.length) {
             setTimeout(() => { isDeleting = true; typeEffect(); }, 2000);
         } else if (isDeleting && charIndex === 0) {
-            isDeleting = false;
-            phraseIndex++;
+            isDeleting = false; phraseIndex++;
             setTimeout(typeEffect, 400);
         } else {
             setTimeout(typeEffect, isDeleting ? 40 : 80);
@@ -82,28 +99,19 @@
     }
     typeEffect();
 
-    // File upload display
     const fileInput = document.getElementById('fileInput');
     const fileName = document.getElementById('fileName');
     const dropZone = document.getElementById('dropZone');
-
     if (fileInput) {
         fileInput.addEventListener('change', function() {
             fileName.textContent = this.files[0] ? '✓ ' + this.files[0].name : '';
         });
     }
-
     if (dropZone) {
-        dropZone.addEventListener('dragover', function(e) {
-            e.preventDefault();
-            this.classList.add('dragover');
-        });
-        dropZone.addEventListener('dragleave', function() {
-            this.classList.remove('dragover');
-        });
+        dropZone.addEventListener('dragover', function(e) { e.preventDefault(); this.classList.add('dragover'); });
+        dropZone.addEventListener('dragleave', function() { this.classList.remove('dragover'); });
         dropZone.addEventListener('drop', function(e) {
-            e.preventDefault();
-            this.classList.remove('dragover');
+            e.preventDefault(); this.classList.remove('dragover');
             if (e.dataTransfer.files.length) {
                 fileInput.files = e.dataTransfer.files;
                 fileName.textContent = '✓ ' + e.dataTransfer.files[0].name;

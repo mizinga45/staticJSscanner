@@ -2,63 +2,89 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Vulnerability Report - SecScan JS</title>
+    <title>Security Scan Report - SecScan JS</title>
     <style>
-        body { font-family: 'Segoe UI', sans-serif; background: #0f172a; color: #e2e8f0; padding: 2rem; }
-        h1 { color: #60a5fa; border-bottom: 2px solid #1e3a5f; padding-bottom: 0.5rem; }
-        h2 { color: #94a3b8; margin-top: 2rem; }
-        .summary { display: flex; gap: 2rem; margin: 1.5rem 0; }
-        .summary-item { background: #1e293b; padding: 1rem 1.5rem; border-radius: 8px; text-align: center; }
+        body { font-family: 'Segoe UI', sans-serif; background: #0f172a; color: #e2e8f0; padding: 2rem; max-width: 900px; margin: 0 auto; }
+        h1 { color: #60a5fa; border-bottom: 2px solid #1e3a5f; padding-bottom: 0.75rem; }
+        h2 { color: #94a3b8; margin-top: 2.5rem; font-size: 1.2rem; }
+        .meta { color: #64748b; font-size: 0.85rem; margin-bottom: 2rem; }
+        .summary { display: flex; gap: 1.5rem; margin: 1.5rem 0; flex-wrap: wrap; }
+        .summary-item { background: #1e293b; padding: 1.25rem 1.5rem; border-radius: 10px; text-align: center; min-width: 100px; }
         .summary-item .num { font-size: 2rem; font-weight: 700; }
-        .summary-item .lbl { font-size: 0.8rem; color: #64748b; text-transform: uppercase; }
+        .summary-item .lbl { font-size: 0.75rem; color: #64748b; text-transform: uppercase; margin-top: 0.25rem; }
         .critical .num { color: #f87171; }
         .high .num { color: #fbbf24; }
         .medium .num { color: #60a5fa; }
-        .vuln { background: #1e293b; border-radius: 8px; padding: 1.25rem; margin-bottom: 1rem; border-left: 4px solid #3b82f6; }
-        .vuln h3 { margin: 0 0 0.5rem; font-size: 1rem; }
-        .vuln code { background: #0f172a; padding: 0.5rem; display: block; border-radius: 4px; font-size: 0.8rem; margin: 0.5rem 0; white-space: pre-wrap; word-break: break-all; }
-        .vuln p { margin: 0.25rem 0; font-size: 0.85rem; color: #94a3b8; }
-        .badge { display: inline-block; padding: 0.15rem 0.5rem; border-radius: 4px; font-size: 0.7rem; font-weight: 700; }
+        .total .num { color: #a78bfa; }
+        .vuln { background: #1e293b; border-radius: 10px; padding: 1.5rem; margin-bottom: 1rem; border-left: 4px solid #3b82f6; }
+        .vuln.sev-critical { border-left-color: #ef4444; }
+        .vuln.sev-high { border-left-color: #f59e0b; }
+        .vuln.sev-medium { border-left-color: #3b82f6; }
+        .vuln h3 { margin: 0 0 0.75rem; font-size: 1rem; display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
+        .vuln code { background: #0f172a; padding: 0.75rem 1rem; display: block; border-radius: 6px; font-size: 0.8rem; margin: 0.5rem 0; white-space: pre-wrap; word-break: break-all; border: 1px solid #1e293b; }
+        .vuln p { margin: 0.35rem 0; font-size: 0.85rem; color: #94a3b8; }
+        .vuln .fix { color: #6ee7b7; }
+        .badge { display: inline-block; padding: 0.2rem 0.5rem; border-radius: 4px; font-size: 0.7rem; font-weight: 700; }
         .badge-crit { background: #7f1d1d; color: #fca5a5; }
         .badge-high { background: #78350f; color: #fcd34d; }
         .badge-med { background: #1e3a5f; color: #93c5fd; }
-        .footer { margin-top: 3rem; text-align: center; color: #475569; font-size: 0.8rem; }
+        .urls { background: #1e293b; border-radius: 8px; padding: 1rem; margin: 1rem 0; }
+        .urls a { color: #60a5fa; font-size: 0.8rem; display: block; margin: 0.25rem 0; word-break: break-all; }
+        .footer { margin-top: 3rem; text-align: center; color: #475569; font-size: 0.8rem; padding-top: 1.5rem; border-top: 1px solid #1e293b; }
     </style>
 </head>
 <body>
-    <h1>🛡️ SecScan JS - Vulnerability Report</h1>
-    <p style="color: #64748b;">Source: {{ source }}</p>
+    <h1>🛡️ SecScan JS — Vulnerability Report</h1>
+    <div class="meta">
+        <strong>Source:</strong> {{ source }}<br>
+        <strong>Generated:</strong> {{ now if now else "N/A" }}
+    </div>
 
     <div class="summary">
-        <div class="summary-item"><div class="num" style="color: #60a5fa;">{{ summary.total }}</div><div class="lbl">Total</div></div>
+        <div class="summary-item total"><div class="num">{{ summary.total }}</div><div class="lbl">Total</div></div>
         <div class="summary-item critical"><div class="num">{{ summary.severity_counts.Critical }}</div><div class="lbl">Critical</div></div>
         <div class="summary-item high"><div class="num">{{ summary.severity_counts.High }}</div><div class="lbl">High</div></div>
         <div class="summary-item medium"><div class="num">{{ summary.severity_counts.Medium }}</div><div class="lbl">Medium</div></div>
     </div>
 
-    <h2>Vulnerabilities</h2>
-    {% for vuln in vulnerabilities %}
-    <div class="vuln">
-        <h3>
-            {% if vuln.confidence_score >= 80 %}
-                <span class="badge badge-crit">{{ vuln.cwe_id }}</span>
-            {% elif vuln.confidence_score >= 50 %}
-                <span class="badge badge-high">{{ vuln.cwe_id }}</span>
-            {% else %}
-                <span class="badge badge-med">{{ vuln.cwe_id }}</span>
-            {% endif %}
-            {{ vuln.type }}
-        </h3>
-        <p><strong>File:</strong> {{ vuln.file_path }} | <strong>Line:</strong> {{ vuln.line_number }}</p>
-        <code>{{ vuln.code_snippet[:200] }}</code>
-        <p><strong>Description:</strong> {{ vuln.description }}</p>
-        <p><strong>Remediation:</strong> {{ vuln.remediation }}</p>
-        <p><strong>Confidence:</strong> {{ vuln.confidence_score }}%</p>
+    {% if extracted_urls %}
+    <h2>🌐 Extracted JavaScript Sources</h2>
+    <div class="urls">
+        {% for url in extracted_urls %}
+            <a href="{{ url }}">{{ url }}</a>
+        {% endfor %}
     </div>
-    {% endfor %}
+    {% endif %}
+
+    <h2>Vulnerabilities Found</h2>
+    {% if vulnerabilities %}
+        {% for vuln in vulnerabilities %}
+        <div class="vuln sev-{{ vuln.severity|lower }}">
+            <h3>
+                {% if vuln.severity == 'Critical' %}
+                    <span class="badge badge-crit">CRITICAL</span>
+                {% elif vuln.severity == 'High' %}
+                    <span class="badge badge-high">HIGH</span>
+                {% else %}
+                    <span class="badge badge-med">MEDIUM</span>
+                {% endif %}
+                <span class="badge badge-med">{{ vuln.cwe_id }}</span>
+                {{ vuln.type }}
+            </h3>
+            <p><strong>File:</strong> {{ vuln.file_path }} &nbsp;|&nbsp; <strong>Line:</strong> {{ vuln.line_number }}</p>
+            <code>{{ vuln.code_snippet[:200] }}</code>
+            <p><strong>Description:</strong> {{ vuln.description }}</p>
+            <p class="fix"><strong>How to fix:</strong> {{ vuln.remediation }}</p>
+            <p><strong>Confidence:</strong> {{ vuln.confidence_score }}%</p>
+        </div>
+        {% endfor %}
+    {% else %}
+        <p style="color: #6ee7b7; text-align: center; padding: 2rem;">✅ No vulnerabilities detected.</p>
+    {% endif %}
 
     <div class="footer">
-        Generated by SecScan JS &mdash; Static Security Vulnerability Scanner for JavaScript Source Code
+        Generated by SecScan JS — Static Security Vulnerability Scanner for JavaScript Source Code<br>
+        University of Dodoma | Group 16
     </div>
 </body>
 </html>

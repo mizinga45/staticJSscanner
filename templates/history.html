@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+{% block title %}Scan History{% endblock %}
+{% block content %}
+<div class="card card-full">
+    <div class="results-header">
+        <div>
+            <h1 style="font-size: 1.5rem;">📋 Scan History</h1>
+            <p style="color: var(--text-secondary); font-size: 0.85rem;">All your previous vulnerability scans</p>
+        </div>
+        <a href="{{ url_for('main.dashboard') }}" class="btn btn-primary btn-sm">+ New Scan</a>
+    </div>
+
+    {% if scans %}
+    <div style="overflow-x: auto;">
+        <table class="history-table">
+            <thead>
+                <tr>
+                    <th>Source</th>
+                    <th>Critical</th>
+                    <th>High</th>
+                    <th>Medium</th>
+                    <th>Total</th>
+                    <th>Date</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for scan in scans %}
+                <tr>
+                    <td style="max-width: 300px; word-break: break-all;">
+                        <a href="{{ url_for('main.view_scan', scan_id=scan.id) }}">{{ scan.source }}</a>
+                    </td>
+                    <td>
+                        {% if scan.critical_count > 0 %}
+                            <span class="badge badge-critical">{{ scan.critical_count }}</span>
+                        {% else %}
+                            <span style="color: var(--text-muted);">0</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if scan.high_count > 0 %}
+                            <span class="badge badge-high">{{ scan.high_count }}</span>
+                        {% else %}
+                            <span style="color: var(--text-muted);">0</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if scan.medium_count > 0 %}
+                            <span class="badge badge-medium">{{ scan.medium_count }}</span>
+                        {% else %}
+                            <span style="color: var(--text-muted);">0</span>
+                        {% endif %}
+                    </td>
+                    <td><strong>{{ scan.total_vulns }}</strong></td>
+                    <td style="white-space: nowrap;">{{ scan.scanned_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                    <td>
+                        <div style="display: flex; gap: 0.5rem;">
+                            <a href="{{ url_for('main.view_scan', scan_id=scan.id) }}" class="btn btn-outline btn-sm">View</a>
+                            <form method="POST" action="{{ url_for('main.delete_scan', scan_id=scan.id) }}" style="margin:0;" onsubmit="return confirm('Delete this scan?')">
+                                <button type="submit" class="btn btn-danger btn-sm">×</button>
+                            </form>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+        <div style="text-align: center; padding: 3rem; color: var(--text-muted);">
+            <div style="font-size: 3rem; margin-bottom: 1rem;">📭</div>
+            <p>No scans yet. Start by scanning some JavaScript code!</p>
+            <a href="{{ url_for('main.dashboard') }}" class="btn btn-primary" style="margin-top: 1rem;">Start Scanning</a>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

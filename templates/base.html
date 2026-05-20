@@ -18,6 +18,7 @@
         <div class="navbar-links">
             {% if current_user.is_authenticated %}
                 <a href="{{ url_for('main.dashboard') }}" class="nav-link">Scanner</a>
+                <a href="{{ url_for('main.history') }}" class="nav-link">History</a>
                 <a href="{{ url_for('auth.profile') }}" class="nav-link">{{ current_user.username }}</a>
                 <a href="{{ url_for('auth.logout') }}" class="nav-link">Logout</a>
             {% else %}

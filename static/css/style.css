@@ -926,6 +926,111 @@ a:hover {
   }
 }
 
+/* --- Extracted URLs Section --- */
+.extracted-urls-section {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 1.25rem;
+  margin-bottom: 1.5rem;
+}
+
+.urls-list {
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.url-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid var(--border-color);
+  font-size: 0.8rem;
+}
+
+.url-item:last-child { border-bottom: none; }
+
+.url-badge {
+  background: rgba(245, 158, 11, 0.15);
+  color: var(--accent-orange);
+  padding: 0.15rem 0.4rem;
+  border-radius: 4px;
+  font-size: 0.65rem;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.url-item a {
+  word-break: break-all;
+  color: var(--text-secondary);
+}
+
+.url-item a:hover { color: var(--accent-cyan); }
+
+/* --- Report Download Section --- */
+.report-download-section {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 1.25rem;
+  margin-bottom: 1.5rem;
+}
+
+/* --- Recent Scans Sidebar --- */
+.recent-scan-item {
+  display: block;
+  padding: 0.6rem 0.75rem;
+  border-radius: var(--radius-sm);
+  margin-bottom: 0.35rem;
+  text-decoration: none;
+  transition: var(--transition);
+  border: 1px solid transparent;
+}
+
+.recent-scan-item:hover {
+  background: rgba(59, 130, 246, 0.05);
+  border-color: var(--border-color);
+}
+
+.recent-scan-source {
+  font-size: 0.8rem;
+  color: var(--text-primary);
+  font-weight: 500;
+  margin-bottom: 0.2rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.recent-scan-meta {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+/* --- Collapsible Vuln Groups --- */
+.vuln-group.collapsed .vuln-group-body {
+  display: none;
+}
+
+.vuln-group.collapsed .toggle-icon {
+  transform: rotate(-90deg);
+}
+
+.toggle-icon {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  transition: transform 0.2s;
+}
+
+/* --- Responsive Grid Override --- */
+@media (max-width: 900px) {
+  .main-container > div[style*="grid-template-columns"] {
+    grid-template-columns: 1fr !important;
+  }
+}
+
 /* --- Utility --- */
 .hidden { display: none; }
 .text-success { color: var(--accent-green); }

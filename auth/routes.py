@@ -1,12 +1,12 @@
-# auth/routes.py
 from flask import Blueprint, render_template, redirect, url_for, flash, request
 from flask_login import login_user, current_user, logout_user, login_required
-from models import db, User
+from models import db, User, ScanResult
 from auth.forms import RegistrationForm, LoginForm
 from flask_bcrypt import Bcrypt
 
 auth_bp = Blueprint('auth', __name__, template_folder='../templates')
 bcrypt = Bcrypt()
+
 
 @auth_bp.route('/register', methods=['GET', 'POST'])
 def register():
@@ -27,6 +27,7 @@ def register():
         return redirect(url_for('auth.login'))
     return render_template('register.html', form=form)
 
+
 @auth_bp.route('/login', methods=['GET', 'POST'])
 def login():
     if current_user.is_authenticated:
@@ -41,16 +42,20 @@ def login():
             next_page = request.args.get('next')
             return redirect(next_page) if next_page else redirect(url_for('main.dashboard'))
         else:
-            flash('Invalid credentials. Please check your username/email and password.', 'danger')
+            flash('Invalid credentials.', 'danger')
     return render_template('login.html', form=form)
+
 
 @auth_bp.route('/logout')
 def logout():
     logout_user()
     return redirect(url_for('landing'))
 
+
 @auth_bp.route('/profile')
 @login_required
 def profile():
-    scans = current_user.scans[-20:]   # last 20 scans
-    return render_template('profile.html', user=current_user, scans=scans)
+    scans = ScanResult.query.filter_by(user_id=current_user.id)\
+        .order_by(ScanResult.scanned_at.desc()).all()
+    total_vulns = sum(s.total_vulns for s in scans)
+    return render_template('profile.html', user=current_user, scans=scans, total_vulns=total_vulns)

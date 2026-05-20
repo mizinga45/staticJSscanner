@@ -7,29 +7,44 @@
         <div class="profile-info">
             <h2>{{ user.full_name }}</h2>
             <p>@{{ user.username }} &middot; {{ user.email }}</p>
+            <p style="font-size: 0.8rem; color: var(--text-muted);">Member since {{ user.created_at.strftime('%B %Y') }}</p>
         </div>
     </div>
 
-    <div style="display: flex; gap: 1rem; margin-bottom: 2rem;">
+    <div style="display: flex; gap: 1rem; margin-bottom: 2rem; flex-wrap: wrap;">
         <a href="{{ url_for('main.dashboard') }}" class="btn btn-primary btn-sm">🔍 New Scan</a>
+        <a href="{{ url_for('main.history') }}" class="btn btn-outline btn-sm">📋 Scan History</a>
         <a href="{{ url_for('auth.logout') }}" class="btn btn-outline btn-sm">Logout</a>
     </div>
 
-    <h3 style="margin-bottom: 1rem;">Scan History</h3>
+    <!-- Stats -->
+    <div class="stats-row" style="justify-content: flex-start; margin-bottom: 2rem;">
+        <div class="stat-item">
+            <div class="stat-number">{{ scans|length }}</div>
+            <div class="stat-label">Total Scans</div>
+        </div>
+        <div class="stat-item">
+            <div class="stat-number" style="color: var(--accent-red);">{{ total_vulns }}</div>
+            <div class="stat-label">Vulns Found</div>
+        </div>
+    </div>
+
+    <h3 style="margin-bottom: 1rem;">Recent Scans</h3>
     {% if scans %}
     <div style="overflow-x: auto;">
         <table class="history-table">
             <thead>
                 <tr>
                     <th>Source</th>
-                    <th>Vulnerabilities</th>
+                    <th>Issues</th>
                     <th>Date</th>
+                    <th></th>
                 </tr>
             </thead>
             <tbody>
-                {% for scan in scans %}
+                {% for scan in scans[:10] %}
                 <tr>
-                    <td style="max-width: 400px; word-break: break-all;">{{ scan.source }}</td>
+                    <td style="max-width: 350px; word-break: break-all;">{{ scan.source }}</td>
                     <td>
                         {% if scan.total_vulns > 0 %}
                             <span class="badge badge-critical">{{ scan.total_vulns }}</span>
@@ -38,13 +53,17 @@
                         {% endif %}
                     </td>
                     <td>{{ scan.scanned_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                    <td><a href="{{ url_for('main.view_scan', scan_id=scan.id) }}" class="btn btn-outline btn-sm">View</a></td>
                 </tr>
                 {% endfor %}
             </tbody>
         </table>
     </div>
+    {% if scans|length > 10 %}
+        <a href="{{ url_for('main.history') }}" style="display: block; text-align: center; margin-top: 1rem;">View all {{ scans|length }} scans →</a>
+    {% endif %}
     {% else %}
-        <p style="color: var(--text-muted); text-align: center; padding: 2rem;">No scans yet. Start by scanning some JavaScript code!</p>
+        <p style="color: var(--text-muted); text-align: center; padding: 2rem;">No scans yet.</p>
     {% endif %}
 </div>
 {% endblock %}

@@ -8,7 +8,7 @@ from scanner.input_handler import InputHandler
 from scanner.code_extractor import CodeExtractor
 from scanner.core_engine import CoreAnalysisEngine
 from scanner.report_generator import ReportGenerator
-from models import db, ScanHistory
+from models import db, ScanResult
 
 main_bp = Blueprint('main', __name__)
 
@@ -17,6 +17,10 @@ main_bp = Blueprint('main', __name__)
 @login_required
 def dashboard():
     form = ScanForm()
+    # Get recent scans for sidebar
+    recent_scans = ScanResult.query.filter_by(user_id=current_user.id)\
+        .order_by(ScanResult.scanned_at.desc()).limit(10).all()
+
     if form.validate_on_submit():
         source = None
         if form.file_upload.data:
@@ -35,7 +39,7 @@ def dashboard():
                 source = folder
             else:
                 flash('Invalid folder path.', 'danger')
-                return render_template('index.html', form=form)
+                return render_template('index.html', form=form, recent_scans=recent_scans)
 
         if source:
             session['scan_source'] = source
@@ -43,7 +47,7 @@ def dashboard():
         else:
             flash('Please provide a file, URL, or folder path.', 'warning')
 
-    return render_template('index.html', form=form)
+    return render_template('index.html', form=form, recent_scans=recent_scans)
 
 
 @main_bp.route('/scan')
@@ -59,6 +63,7 @@ def scan():
         extractor = CodeExtractor()
         engine = CoreAnalysisEngine()
         skipped_files = []
+        all_extracted_urls = []
 
         if os.path.isdir(source):
             file_paths = input_handler.get_files_from_folder(source)
@@ -89,7 +94,8 @@ def scan():
                 return render_template('error.html',
                     message="No JavaScript code found in any file of the folder.")
 
-            vulnerabilities = engine.scan(all_parts, source)
+            vulnerabilities, extracted_urls = engine.scan(all_parts, source)
+            all_extracted_urls = extracted_urls
         else:
             input_data = input_handler.accept_input(source)
             if input_data is None:
@@ -114,32 +120,38 @@ def scan():
                 return render_template('error.html',
                     message="No JavaScript code found in the provided source.")
 
-            vulnerabilities = engine.scan(parts, source)
+            vulnerabilities, extracted_urls = engine.scan(parts, source)
+            all_extracted_urls = extracted_urls
 
         summary = ReportGenerator.generate_summary(vulnerabilities)
         vuln_dicts = ReportGenerator.to_dict_list(vulnerabilities)
 
-        # Save scan history
-        history = ScanHistory(
+        # Save to database
+        scan_result = ScanResult(
             user_id=current_user.id,
             source=source,
-            total_vulns=len(vulnerabilities)
+            total_vulns=len(vulnerabilities),
+            critical_count=summary['severity_counts']['Critical'],
+            high_count=summary['severity_counts']['High'],
+            medium_count=summary['severity_counts']['Medium'],
+            low_count=summary['severity_counts']['Low'],
+            extracted_urls=json.dumps(all_extracted_urls),
+            results_json=json.dumps(vuln_dicts),
+            summary_json=json.dumps(summary)
         )
-        db.session.add(history)
+        db.session.add(scan_result)
         db.session.commit()
 
+        # Store in session for download
         session['report_data'] = {
             'source': source,
             'summary': summary,
             'vulnerabilities': vuln_dicts,
-            'skipped_files': skipped_files
+            'skipped_files': skipped_files,
+            'extracted_urls': all_extracted_urls
         }
 
-        return render_template('scan_result.html',
-                               vulnerabilities=vuln_dicts,
-                               summary=summary,
-                               source=source,
-                               skipped_files=skipped_files)
+        return redirect(url_for('main.view_scan', scan_id=scan_result.id))
 
     except SyntaxError as e:
         return render_template('error.html', message=f"JavaScript syntax error: {e}")
@@ -147,6 +159,37 @@ def scan():
         return render_template('error.html', message=f"Scan failed: {e}")
     finally:
         session.pop('scan_source', None)
+
+
+@main_bp.route('/scan/<int:scan_id>')
+@login_required
+def view_scan(scan_id):
+    scan_result = ScanResult.query.get_or_404(scan_id)
+    if scan_result.user_id != current_user.id:
+        flash('Access denied.', 'danger')
+        return redirect(url_for('main.dashboard'))
+
+    vulnerabilities = scan_result.get_vulnerabilities()
+    summary = scan_result.get_summary()
+    extracted_urls = scan_result.get_extracted_urls()
+
+    # Store in session for download
+    session['report_data'] = {
+        'source': scan_result.source,
+        'summary': summary,
+        'vulnerabilities': vulnerabilities,
+        'skipped_files': [],
+        'extracted_urls': extracted_urls
+    }
+
+    return render_template('scan_result.html',
+                           vulnerabilities=vulnerabilities,
+                           summary=summary,
+                           source=scan_result.source,
+                           extracted_urls=extracted_urls,
+                           skipped_files=[],
+                           scan_id=scan_id,
+                           scanned_at=scan_result.scanned_at)
 
 
 @main_bp.route('/download/<format>')
@@ -161,14 +204,14 @@ def download_report(format):
         return Response(
             json.dumps(report, indent=2),
             mimetype='application/json',
-            headers={'Content-Disposition': 'attachment;filename=scan_report.json'}
+            headers={'Content-Disposition': 'attachment;filename=secscan_report.json'}
         )
     elif format == 'html':
         html = render_template('download_report.html', **report)
         return Response(
             html,
             mimetype='text/html',
-            headers={'Content-Disposition': 'attachment;filename=scan_report.html'}
+            headers={'Content-Disposition': 'attachment;filename=secscan_report.html'}
         )
     elif format == 'pdf':
         try:
@@ -178,7 +221,7 @@ def download_report(format):
             return Response(
                 pdf,
                 mimetype='application/pdf',
-                headers={'Content-Disposition': 'attachment;filename=scan_report.pdf'}
+                headers={'Content-Disposition': 'attachment;filename=secscan_report.pdf'}
             )
         except ImportError:
             flash('PDF generation requires weasyprint.', 'danger')
@@ -187,5 +230,26 @@ def download_report(format):
             flash(f'PDF generation failed: {str(e)}', 'danger')
             return redirect(url_for('main.dashboard'))
     else:
-        flash('Invalid download format.', 'danger')
+        flash('Invalid format.', 'danger')
         return redirect(url_for('main.dashboard'))
+
+
+@main_bp.route('/history')
+@login_required
+def history():
+    scans = ScanResult.query.filter_by(user_id=current_user.id)\
+        .order_by(ScanResult.scanned_at.desc()).all()
+    return render_template('history.html', scans=scans)
+
+
+@main_bp.route('/scan/<int:scan_id>/delete', methods=['POST'])
+@login_required
+def delete_scan(scan_id):
+    scan_result = ScanResult.query.get_or_404(scan_id)
+    if scan_result.user_id != current_user.id:
+        flash('Access denied.', 'danger')
+        return redirect(url_for('main.dashboard'))
+    db.session.delete(scan_result)
+    db.session.commit()
+    flash('Scan deleted.', 'success')
+    return redirect(url_for('main.history'))

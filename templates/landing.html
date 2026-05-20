@@ -2,9 +2,12 @@
 {% block title %}Home{% endblock %}
 {% block content %}
 <div class="landing-hero">
+    <div style="margin-bottom: 2rem;">
+        <img src="{{ url_for('static', filename='images/hero-bg.svg') }}" alt="Security Shield" style="width: 120px; height: 120px; margin: 0 auto; display: block; opacity: 0.9;">
+    </div>
     <h1>Static Security Scanner<br>for JavaScript</h1>
     <p class="subtitle">
-        Detect SQL Injection, XSS, Command Injection, Hardcoded Secrets & Insecure eval() in your JavaScript source code — without executing it.
+        Detect SQL Injection, XSS, Command Injection, Hardcoded Secrets & Insecure eval() in your JavaScript source code — powered by AST-based taint analysis, no AI required.
     </p>
     <div class="landing-actions">
         <a href="{{ url_for('auth.login') }}" class="btn btn-primary btn-lg">Get Started</a>
@@ -25,8 +28,8 @@
             <div class="stat-label">Mapped Reports</div>
         </div>
         <div class="stat-item">
-            <div class="stat-number">PDF</div>
-            <div class="stat-label">Export Support</div>
+            <div class="stat-number">3</div>
+            <div class="stat-label">Export Formats</div>
         </div>
     </div>
 </div>
@@ -35,32 +38,32 @@
     <div class="feature-card">
         <div class="feature-icon blue">🔍</div>
         <h3>Taint Analysis</h3>
-        <p>Tracks user-controlled data flow from sources to dangerous sinks across your code.</p>
+        <p>Tracks user-controlled data from sources (req.query, location.search) to dangerous sinks with inter-procedural flow.</p>
     </div>
     <div class="feature-card">
         <div class="feature-icon purple">🧬</div>
         <h3>AST Parsing</h3>
-        <p>Parses JavaScript into Abstract Syntax Trees for deep structural analysis beyond regex.</p>
+        <p>Parses JavaScript into Abstract Syntax Trees using Acorn for deep structural analysis beyond simple regex matching.</p>
     </div>
     <div class="feature-card">
         <div class="feature-icon cyan">🌐</div>
-        <h3>URL Scanning</h3>
-        <p>Fetch and analyze JavaScript from any URL, including linked external scripts.</p>
+        <h3>URL & Remote Scanning</h3>
+        <p>Fetch and analyze JavaScript from any URL. Automatically extracts and scans all linked external .js files.</p>
     </div>
     <div class="feature-card">
         <div class="feature-icon green">📋</div>
         <h3>CWE Mapping</h3>
-        <p>Every vulnerability is mapped to its CWE ID with description and remediation advice.</p>
+        <p>Every vulnerability is mapped to its CWE ID with severity classification, description, and remediation guidance.</p>
     </div>
     <div class="feature-card">
         <div class="feature-icon orange">📂</div>
         <h3>Folder Scanning</h3>
-        <p>Recursively scan entire project directories for vulnerabilities in all JS files.</p>
+        <p>Recursively scan entire project directories. Extracts JS from HTML and PHP files automatically.</p>
     </div>
     <div class="feature-card">
         <div class="feature-icon red">📥</div>
         <h3>Export Reports</h3>
-        <p>Download detailed vulnerability reports in JSON, HTML, or PDF format.</p>
+        <p>Download detailed vulnerability reports in JSON, HTML, or PDF format for your team and documentation.</p>
     </div>
 </div>
 {% endblock %}
