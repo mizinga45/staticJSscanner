@@ -28,10 +28,19 @@
         </div>
     </nav>
 
-    <!-- Scanning overlay -->
+    <!-- Scanning overlay (for non-dashboard forms) -->
     <div id="scanningOverlay" class="scanning-overlay">
         <div class="scanner-loader"></div>
-        <p class="scanning-text">Analyzing code for vulnerabilities...</p>
+        <p class="scanning-text">Processing...</p>
+    </div>
+
+    <!-- Persistent scan notification banner (shows on all pages) -->
+    <div id="scanBanner" class="scan-banner" style="display:none;">
+        <div class="scan-banner-content">
+            <span class="scan-banner-spinner"></span>
+            <span id="scanBannerText">Scan in progress...</span>
+            <a id="scanBannerLink" href="#" class="btn btn-sm btn-primary" style="display:none;">View Results</a>
+        </div>
     </div>
 
     <div class="main-container">
@@ -58,7 +67,7 @@
                 Notification.requestPermission();
             }
 
-            // Scan form progress overlay
+            // Scan form progress overlay (for login/register forms only)
             const form = document.querySelector('form[method="POST"]');
             const overlay = document.getElementById('scanningOverlay');
             if (form && overlay && !document.getElementById('scanProgress')) {
@@ -69,6 +78,66 @@
             window.addEventListener('pageshow', function() {
                 if (overlay) overlay.style.display = 'none';
             });
+
+            // Global scan status polling (works on any page after login)
+            {% if current_user.is_authenticated %}
+            const banner = document.getElementById('scanBanner');
+            const bannerText = document.getElementById('scanBannerText');
+            const bannerLink = document.getElementById('scanBannerLink');
+
+            function checkScanStatus() {
+                fetch('/scan/status')
+                    .then(r => r.json())
+                    .then(data => {
+                        if (data.status === 'running') {
+                            banner.style.display = 'flex';
+                            bannerText.textContent = 'Scan in progress...';
+                            bannerLink.style.display = 'none';
+                            setTimeout(checkScanStatus, 1500);
+                        } else if (data.status === 'done') {
+                            banner.style.display = 'flex';
+                            banner.classList.add('done');
+                            bannerText.textContent = '✓ Scan complete! ' + data.total + ' vulnerabilities found.';
+                            bannerLink.href = '/scan/' + data.scan_id;
+                            bannerLink.style.display = 'inline-flex';
+
+                            // Sound
+                            try {
+                                const ctx = new (window.AudioContext || window.webkitAudioContext)();
+                                const osc = ctx.createOscillator();
+                                const gain = ctx.createGain();
+                                osc.connect(gain); gain.connect(ctx.destination);
+                                osc.frequency.value = 800; gain.gain.value = 0.1;
+                                osc.start(); osc.stop(ctx.currentTime + 0.15);
+                                setTimeout(() => {
+                                    const o2 = ctx.createOscillator();
+                                    const g2 = ctx.createGain();
+                                    o2.connect(g2); g2.connect(ctx.destination);
+                                    o2.frequency.value = 1200; g2.gain.value = 0.1;
+                                    o2.start(); o2.stop(ctx.currentTime + 0.2);
+                                }, 180);
+                            } catch(e) {}
+
+                            // Browser notification
+                            if ('Notification' in window && Notification.permission === 'granted') {
+                                new Notification('SecScan JS', {
+                                    body: 'Scan complete! ' + data.total + ' vulnerabilities found.',
+                                    icon: '/static/images/hero-bg.svg'
+                                });
+                            }
+                        } else if (data.status === 'error') {
+                            banner.style.display = 'flex';
+                            banner.classList.add('error');
+                            bannerText.textContent = '✗ Scan failed: ' + (data.message || 'Unknown error');
+                            setTimeout(() => { banner.style.display = 'none'; }, 5000);
+                        } else {
+                            banner.style.display = 'none';
+                        }
+                    })
+                    .catch(() => {});
+            }
+            checkScanStatus();
+            {% endif %}
         });
     </script>
     {% block scripts %}{% endblock %}

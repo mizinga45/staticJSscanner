@@ -1331,3 +1331,57 @@ a:hover {
     min-width: 250px;
   }
 }
+
+/* --- Scan Banner (persistent notification on all pages) --- */
+.scan-banner {
+  position: fixed;
+  bottom: 2rem;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 9998;
+  display: flex;
+  align-items: center;
+  animation: slideUp 0.4s ease;
+}
+
+.scan-banner-content {
+  background: var(--bg-card);
+  border: 1px solid var(--accent-blue);
+  border-radius: var(--radius-xl);
+  padding: 0.75rem 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-size: 0.85rem;
+  color: var(--text-primary);
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+}
+
+.scan-banner.done .scan-banner-content {
+  border-color: var(--accent-green);
+  color: #6ee7b7;
+}
+
+.scan-banner.error .scan-banner-content {
+  border-color: var(--accent-red);
+  color: #fca5a5;
+}
+
+.scan-banner-spinner {
+  width: 14px;
+  height: 14px;
+  border: 2px solid var(--border-color);
+  border-top-color: var(--accent-blue);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+.scan-banner.done .scan-banner-spinner,
+.scan-banner.error .scan-banner-spinner {
+  display: none;
+}
+
+@keyframes slideUp {
+  from { transform: translateX(-50%) translateY(100px); opacity: 0; }
+  to { transform: translateX(-50%) translateY(0); opacity: 1; }
+}

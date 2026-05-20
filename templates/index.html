@@ -160,7 +160,7 @@
         });
     }
 
-    // Progress bar animation on scan
+    // Progress bar + polling for background scan
     const scanForm = document.getElementById('scanForm');
     const scanProgress = document.getElementById('scanProgress');
     const progressBar = document.getElementById('progressBar');
@@ -172,40 +172,104 @@
         'Extracting JavaScript...',
         'Parsing into AST...',
         'Running taint analysis...',
-        'Checking SQL Injection patterns...',
+        'Checking SQL Injection...',
         'Checking XSS vulnerabilities...',
         'Checking Command Injection...',
         'Detecting hardcoded secrets...',
         'Analyzing prototype pollution...',
+        'Checking path traversal...',
         'Mapping CWE identifiers...',
         'Generating report...'
     ];
 
+    let scanPolling = false;
+
+    function startPolling() {
+        scanPolling = true;
+        let progress = 0;
+        let msgIndex = 0;
+
+        const progressInterval = setInterval(() => {
+            progress += Math.random() * 6 + 1;
+            if (progress > 92) progress = 92;
+            progressBar.style.width = progress + '%';
+            if (msgIndex < statusMessages.length - 1) {
+                msgIndex++;
+                progressStatus.textContent = statusMessages[msgIndex];
+            }
+        }, 500);
+
+        const pollInterval = setInterval(() => {
+            fetch('/scan/status')
+                .then(r => r.json())
+                .then(data => {
+                    if (data.status === 'done') {
+                        clearInterval(progressInterval);
+                        clearInterval(pollInterval);
+                        progressBar.style.width = '100%';
+                        progressStatus.textContent = '✓ Scan complete! Redirecting...';
+
+                        // Sound notification
+                        try {
+                            const ctx = new (window.AudioContext || window.webkitAudioContext)();
+                            const osc = ctx.createOscillator();
+                            const gain = ctx.createGain();
+                            osc.connect(gain); gain.connect(ctx.destination);
+                            osc.frequency.value = 800; gain.gain.value = 0.12;
+                            osc.start(); osc.stop(ctx.currentTime + 0.15);
+                            setTimeout(() => {
+                                const o2 = ctx.createOscillator();
+                                const g2 = ctx.createGain();
+                                o2.connect(g2); g2.connect(ctx.destination);
+                                o2.frequency.value = 1200; g2.gain.value = 0.12;
+                                o2.start(); o2.stop(ctx.currentTime + 0.2);
+                            }, 180);
+                        } catch(e) {}
+
+                        // Browser notification
+                        if ('Notification' in window && Notification.permission === 'granted') {
+                            new Notification('SecScan JS', {
+                                body: `Scan complete! ${data.total} vulnerabilities found.`,
+                                icon: '/static/images/hero-bg.svg'
+                            });
+                        }
+
+                        // Redirect to results
+                        setTimeout(() => {
+                            window.location.href = '/scan/' + data.scan_id;
+                        }, 800);
+
+                    } else if (data.status === 'error') {
+                        clearInterval(progressInterval);
+                        clearInterval(pollInterval);
+                        progressBar.style.width = '100%';
+                        progressBar.style.background = 'var(--accent-red)';
+                        progressStatus.textContent = '✗ Error: ' + (data.message || 'Scan failed');
+                        setTimeout(() => {
+                            scanProgress.style.display = 'none';
+                        }, 3000);
+                    }
+                })
+                .catch(() => {});
+        }, 1000);
+    }
+
     if (scanForm) {
-        scanForm.addEventListener('submit', function() {
-            scanProgress.style.display = 'flex';
-            let progress = 0;
-            let msgIndex = 0;
-
-            const interval = setInterval(() => {
-                progress += Math.random() * 8 + 2;
-                if (progress > 95) progress = 95;
-                progressBar.style.width = progress + '%';
-                
-                if (msgIndex < statusMessages.length - 1) {
-                    msgIndex++;
-                    progressStatus.textContent = statusMessages[msgIndex];
-                }
-            }, 400);
-
-            // Clean up on page unload
-            window.addEventListener('beforeunload', () => clearInterval(interval));
+        scanForm.addEventListener('submit', function(e) {
+            // Show progress immediately
+            setTimeout(() => {
+                scanProgress.style.display = 'flex';
+                startPolling();
+            }, 100);
         });
     }
 
-    // Hide progress on page show (back/forward navigation)
-    window.addEventListener('pageshow', function() {
-        if (scanProgress) scanProgress.style.display = 'none';
+    // If scan was already started (page reload after form submit), start polling
+    {% if scan_started is defined and scan_started %}
+    document.addEventListener('DOMContentLoaded', function() {
+        scanProgress.style.display = 'flex';
+        startPolling();
     });
+    {% endif %}
 </script>
 {% endblock %}
