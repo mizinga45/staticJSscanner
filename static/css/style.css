@@ -789,6 +789,14 @@ a:hover {
   word-break: break-all;
 }
 
+.code-block .code-danger {
+  color: #ff6b6b;
+  background: rgba(239, 68, 68, 0.15);
+  padding: 0.1rem 0.25rem;
+  border-radius: 3px;
+  font-weight: 600;
+}
+
 /* --- Badges --- */
 .badge {
   display: inline-flex;

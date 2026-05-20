@@ -161,6 +161,9 @@ def view_scan(scan_id):
         flash('Access denied.', 'danger')
         return redirect(url_for('main.dashboard'))
 
+    # Clear the scan job notification since user is viewing results
+    _scan_jobs.pop(current_user.id, None)
+
     vulnerabilities = scan_result.get_vulnerabilities()
     summary = scan_result.get_summary()
     extracted_urls = scan_result.get_extracted_urls()

@@ -2,12 +2,6 @@
 {% block title %}Scan Results{% endblock %}
 {% block content %}
 <div class="card card-full">
-    <!-- Toast Notification -->
-    <div class="toast" id="scanToast">
-        <span class="toast-icon">✅</span>
-        <span>Scan complete! {{ summary.total }} vulnerabilities found.</span>
-    </div>
-
     <div class="results-header">
         <div>
             <h1 style="font-size: 1.5rem;">🛡️ Scan Results</h1>
@@ -131,7 +125,7 @@
                         </div>
                         <div class="vuln-detail-row">
                             <span class="label">Code</span>
-                            <span class="value"><div class="code-block">{{ vuln.code_snippet[:250] }}{% if vuln.code_snippet|length > 250 %}...{% endif %}</div></span>
+                            <span class="value"><div class="code-block">{{ vuln.code_snippet[:250] | highlight_vuln(vuln.type) }}{% if vuln.code_snippet|length > 250 %}...{% endif %}</div></span>
                         </div>
                         <div class="vuln-detail-row">
                             <span class="label">What's wrong</span>
@@ -161,48 +155,5 @@
 document.querySelectorAll('.vuln-group-header').forEach(header => {
     header.style.cursor = 'pointer';
 });
-
-// Notification sound + browser notification when scan results load
-(function() {
-    // Play notification sound
-    try {
-        const ctx = new (window.AudioContext || window.webkitAudioContext)();
-        const osc = ctx.createOscillator();
-        const gain = ctx.createGain();
-        osc.connect(gain);
-        gain.connect(ctx.destination);
-        osc.frequency.value = 800;
-        gain.gain.value = 0.1;
-        osc.start();
-        osc.stop(ctx.currentTime + 0.15);
-        setTimeout(() => {
-            const osc2 = ctx.createOscillator();
-            const gain2 = ctx.createGain();
-            osc2.connect(gain2);
-            gain2.connect(ctx.destination);
-            osc2.frequency.value = 1200;
-            gain2.gain.value = 0.1;
-            osc2.start();
-            osc2.stop(ctx.currentTime + 0.2);
-        }, 180);
-    } catch(e) {}
-
-    // Browser notification
-    if ('Notification' in window && Notification.permission === 'granted') {
-        new Notification('SecScan JS', {
-            body: 'Scan complete! {{ summary.total }} vulnerabilities found.',
-            icon: '/static/images/hero-bg.svg'
-        });
-    } else if ('Notification' in window && Notification.permission !== 'denied') {
-        Notification.requestPermission();
-    }
-
-    // Show toast
-    const toast = document.getElementById('scanToast');
-    if (toast) {
-        toast.classList.add('show');
-        setTimeout(() => toast.classList.remove('show'), 5000);
-    }
-})();
 </script>
 {% endblock %}
