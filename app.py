@@ -20,28 +20,61 @@ app.config['UPLOAD_FOLDER'] = os.path.join(os.path.dirname(os.path.abspath(__fil
 
 # Jinja2 filter: highlight dangerous syntax in red
 HIGHLIGHT_PATTERNS = {
-    'SQL Injection': [r'(SELECT|INSERT|UPDATE|DELETE|DROP)', r'(\+\s*\w+)', r'(\$\{[^}]+\})'],
+    'SQL Injection': [r'\b(SELECT|INSERT|UPDATE|DELETE|DROP|FROM|WHERE)\b', r'(\$\{[^}]+\})'],
     'Cross-Site Scripting (XSS)': [r'(\.innerHTML)', r'(document\.write)', r'(dangerouslySetInnerHTML)'],
-    'Command Injection': [r'(exec|execSync|spawn|execFile|system)\s*\('],
-    'Insecure Use of eval()': [r'(eval)\s*\('],
+    'Command Injection': [r'\b(exec|execSync|spawn|execFile|system)\b'],
+    'Insecure Use of eval()': [r'\b(eval)\s*\('],
     'Hardcoded Secret': [r'(["\'][A-Za-z0-9_\-]{16,}["\'])'],
     'Prototype Pollution': [r'(\[[^\]]+\])\s*='],
-    'Path Traversal': [r'(readFile|readFileSync|writeFile|writeFileSync)\s*\('],
-    'Open Redirect': [r'(redirect|location\.href|location\.replace)\s*[\(=]'],
-    'Regular Expression DoS (ReDoS)': [r'(\([^)]*[+*][^)]*\)[+*])'],
-    'Insecure Randomness': [r'(Math\.random)\s*\('],
+    'Path Traversal': [r'\b(readFile|readFileSync|writeFile|writeFileSync|createReadStream)\b'],
+    'Open Redirect': [r'\b(redirect|location\.href|location\.replace)\b'],
+    'Regular Expression DoS (ReDoS)': [r'(RegExp|match|test|replace)\s*\('],
+    'Insecure Randomness': [r'(Math\.random|Math\.floor)'],
     'Angular Security Bypass': [r'(bypassSecurityTrust\w+)'],
+    'Obfuscation Warning': [],
 }
+
 
 @app.template_filter('highlight_vuln')
 def highlight_vuln(code, vuln_type):
     """Highlight dangerous syntax in red within code snippet."""
-    escaped = escape(code)
-    text = str(escaped)
+    if not code:
+        return Markup('')
+    text = str(code)
     patterns = HIGHLIGHT_PATTERNS.get(vuln_type, [])
+    if not patterns:
+        return Markup(escape(text))
+
+    # Find all matches and their positions
+    highlights = []
     for pattern in patterns:
-        text = re.sub(pattern, r'<span class="code-danger">\1</span>', text, flags=re.IGNORECASE)
-    return Markup(text)
+        for m in re.finditer(pattern, text, re.IGNORECASE):
+            highlights.append((m.start(), m.end()))
+
+    if not highlights:
+        return Markup(escape(text))
+
+    # Merge overlapping ranges
+    highlights.sort()
+    merged = [highlights[0]]
+    for start, end in highlights[1:]:
+        if start <= merged[-1][1]:
+            merged[-1] = (merged[-1][0], max(merged[-1][1], end))
+        else:
+            merged.append((start, end))
+
+    # Build output with highlighted spans
+    result = []
+    prev = 0
+    for start, end in merged:
+        result.append(escape(text[prev:start]))
+        result.append(Markup('<span class="code-danger">'))
+        result.append(escape(text[start:end]))
+        result.append(Markup('</span>'))
+        prev = end
+    result.append(escape(text[prev:]))
+
+    return Markup(''.join(str(r) for r in result))
 
 db.init_app(app)
 auth_bcrypt.init_app(app)
