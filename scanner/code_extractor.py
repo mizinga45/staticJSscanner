@@ -66,13 +66,39 @@ class CodeExtractor:
 
     @staticmethod
     def is_obfuscated(code):
+        """Detect if code is obfuscated (not just minified)."""
         lines = code.splitlines()
         if not lines:
             return False
-        if len(lines) == 1 and len(lines[0]) > 500:
+        # Check for common obfuscation indicators
+        obfuscation_signs = [
+            r'eval\s*\(\s*atob\s*\(',          # eval(atob(...))
+            r'eval\s*\(\s*unescape\s*\(',      # eval(unescape(...))
+            r'eval\s*\(\s*String\.fromCharCode', # eval(String.fromCharCode(...))
+            r'\\x[0-9a-f]{2}.*\\x[0-9a-f]{2}.*\\x[0-9a-f]{2}',  # Heavy hex encoding
+            r'\\u[0-9a-f]{4}.*\\u[0-9a-f]{4}.*\\u[0-9a-f]{4}',  # Heavy unicode encoding
+            r'_0x[a-f0-9]{4,}',                # obfuscator.io style variables
+            r'\[\"\\x',                         # Hex string array access
+        ]
+        import re
+        first_500 = code[:500]
+        for pattern in obfuscation_signs:
+            if re.search(pattern, first_500, re.IGNORECASE):
+                return True
+        return False
+
+    @staticmethod
+    def is_minified(code):
+        """Detect if code is minified (compressed but not obfuscated)."""
+        lines = code.splitlines()
+        if not lines:
+            return False
+        # Single very long line = minified
+        if len(lines) <= 3 and len(code) > 500:
             return True
-        avg_len = sum(len(line) for line in lines) / len(lines)
-        if avg_len > 300 and len(lines) < 5:
+        # Average line length > 200 with few lines = minified
+        avg_len = sum(len(l) for l in lines) / len(lines)
+        if avg_len > 200 and len(lines) < 10:
             return True
         return False
 

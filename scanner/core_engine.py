@@ -71,7 +71,11 @@ class CoreAnalysisEngine:
             else:
                 check_path = source_id
 
-            # Obfuscation warning
+            # Handle minified code: beautify first, then scan normally
+            if CodeExtractor.is_minified(code):
+                code = CodeExtractor.beautify(code)
+
+            # Handle obfuscated code: warn and skip (too unreliable to scan)
             if CodeExtractor.is_obfuscated(code):
                 warn_path = self._build_display_path(source_id, original_source_label, html_line_ref)
                 obf_vuln = Vulnerability(
@@ -79,9 +83,9 @@ class CoreAnalysisEngine:
                     cwe_id="N/A",
                     file_path=warn_path,
                     line_number=1,
-                    code_snippet="(entire file appears obfuscated/minified)",
-                    description="The code appears minified or obfuscated. Analysis accuracy may be reduced.",
-                    remediation="Use the unminified source for accurate vulnerability analysis.",
+                    code_snippet="(code uses obfuscation techniques like eval(atob(...)) or hex encoding)",
+                    description="The code is obfuscated using techniques that hide its true logic. This may be hiding vulnerabilities intentionally.",
+                    remediation="Obtain the original unobfuscated source code for accurate analysis. Obfuscated code in production is a security concern itself.",
                     confidence_score=0,
                     severity="Info"
                 )
@@ -89,7 +93,7 @@ class CoreAnalysisEngine:
                 if key not in seen:
                     seen.add(key)
                     all_vulns.append(obf_vuln)
-                continue  # Skip scanning obfuscated code to avoid false positives
+                continue  # Skip scanning obfuscated code
 
             lines = code.splitlines()
             try:
