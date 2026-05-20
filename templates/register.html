@@ -1,6 +1,48 @@
 {% extends "base.html" %}
 {% block title %}Register{% endblock %}
 {% block content %}
+<!-- Code background -->
+<div class="code-bg" aria-hidden="true">
+    <div class="code-column code-col-2">
+        <pre>const validator = require('validator');
+
+function createUser(data) {
+  if (!validator.isEmail(data.email)) {
+    throw new Error('Invalid email');
+  }
+  const hash = bcrypt.hashSync(
+    data.password, 12
+  );
+  return db.users.create({
+    name: data.name,
+    email: data.email,
+    password: hash
+  });
+}</pre>
+    </div>
+    <div class="code-column code-col-4">
+        <pre>class SecurityScanner {
+  constructor() {
+    this.rules = [];
+    this.parser = new ASTParser();
+  }
+
+  addRule(rule) {
+    this.rules.push(rule);
+  }
+
+  scan(sourceCode) {
+    const ast = this.parser.parse(
+      sourceCode
+    );
+    return this.rules.flatMap(
+      r =&gt; r.detect(ast)
+    );
+  }
+}</pre>
+    </div>
+</div>
+
 <div class="card" style="max-width: 480px;">
     <div class="text-center" style="margin-bottom: 2rem;">
         <div style="font-size: 2.5rem; margin-bottom: 0.75rem;">🚀</div>

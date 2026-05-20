@@ -1,6 +1,36 @@
 {% extends "base.html" %}
 {% block title %}Login{% endblock %}
 {% block content %}
+<!-- Code background -->
+<div class="code-bg" aria-hidden="true">
+    <div class="code-column code-col-1">
+        <pre>app.post('/login', (req, res) =&gt; {
+  const { email, pass } = req.body;
+  const user = db.findUser(email);
+  if (bcrypt.compare(pass, user.hash)) {
+    const token = jwt.sign(
+      { id: user.id },
+      process.env.SECRET
+    );
+    res.cookie('session', token);
+    res.redirect('/dashboard');
+  }
+});</pre>
+    </div>
+    <div class="code-column code-col-3">
+        <pre>function authenticate(token) {
+  try {
+    const decoded = jwt.verify(
+      token, SECRET_KEY
+    );
+    return User.findById(decoded.id);
+  } catch (err) {
+    throw new AuthError('Invalid');
+  }
+}</pre>
+    </div>
+</div>
+
 <div class="card" style="max-width: 440px;">
     <div class="text-center" style="margin-bottom: 2rem;">
         <div style="font-size: 2.5rem; margin-bottom: 0.75rem;">🔐</div>

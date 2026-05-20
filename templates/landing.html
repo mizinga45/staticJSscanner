@@ -1,6 +1,92 @@
 {% extends "base.html" %}
 {% block title %}Home{% endblock %}
 {% block content %}
+<!-- Animated code background -->
+<div class="code-bg" aria-hidden="true">
+    <div class="code-column code-col-1">
+        <pre>const express = require('express');
+const app = express();
+app.get('/api/users', (req, res) =&gt; {
+  const id = req.params.id;
+  db.query(`SELECT * FROM users
+    WHERE id = ${id}`);
+  res.json(results);
+});
+
+function validateInput(data) {
+  if (!data) return false;
+  return sanitize(data);
+}
+
+const token = process.env.SECRET;
+app.listen(3000);</pre>
+    </div>
+    <div class="code-column code-col-2">
+        <pre>import { useState } from 'react';
+
+export default function App() {
+  const [input, setInput] = useState('');
+
+  const handleSubmit = () =&gt; {
+    fetch('/api/scan', {
+      method: 'POST',
+      body: JSON.stringify({ code: input })
+    });
+  };
+
+  return (
+    &lt;div className="scanner"&gt;
+      &lt;textarea onChange={e =&gt;
+        setInput(e.target.value)}
+      /&gt;
+    &lt;/div&gt;
+  );
+}</pre>
+    </div>
+    <div class="code-column code-col-3">
+        <pre>const crypto = require('crypto');
+
+function hashPassword(pwd) {
+  const salt = crypto
+    .randomBytes(16).toString('hex');
+  return crypto.pbkdf2Sync(
+    pwd, salt, 1000, 64, 'sha512'
+  ).toString('hex');
+}
+
+module.exports = {
+  hashPassword,
+  verifyToken: (token) =&gt; {
+    return jwt.verify(
+      token, process.env.JWT_SECRET
+    );
+  }
+};</pre>
+    </div>
+    <div class="code-column code-col-4">
+        <pre>router.post('/login', async (req, res) =&gt; {
+  const { email, password } = req.body;
+  const user = await User.findOne({
+    where: { email }
+  });
+
+  if (!user) {
+    return res.status(401).json({
+      error: 'Invalid credentials'
+    });
+  }
+
+  const valid = await bcrypt.compare(
+    password, user.passwordHash
+  );
+  const token = jwt.sign(
+    { id: user.id }, SECRET
+  );
+  res.json({ token });
+});</pre>
+    </div>
+</div>
+
 <div class="landing-hero">
     <div style="margin-bottom: 2rem;">
         <img src="{{ url_for('static', filename='images/hero-bg.svg') }}" alt="Security Shield" style="width: 120px; height: 120px; margin: 0 auto; display: block; opacity: 0.9;">

@@ -67,6 +67,88 @@ body::before {
   z-index: 0;
 }
 
+/* --- Code Background (Landing Page Only) --- */
+.code-bg {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0.07;
+}
+
+.code-column {
+  position: absolute;
+  top: 0;
+  font-family: 'JetBrains Mono', 'Fira Code', monospace;
+  font-size: 0.7rem;
+  line-height: 1.7;
+  color: #60a5fa;
+  white-space: pre;
+  animation: scrollCode 40s linear infinite;
+}
+
+.code-col-1 {
+  left: 2%;
+  animation-duration: 45s;
+  color: #818cf8;
+}
+
+.code-col-2 {
+  left: 28%;
+  animation-duration: 38s;
+  animation-delay: -10s;
+  color: #34d399;
+}
+
+.code-col-3 {
+  left: 55%;
+  animation-duration: 50s;
+  animation-delay: -20s;
+  color: #60a5fa;
+}
+
+.code-col-4 {
+  left: 78%;
+  animation-duration: 42s;
+  animation-delay: -5s;
+  color: #a78bfa;
+}
+
+@keyframes scrollCode {
+  0% {
+    transform: translateY(0%);
+  }
+  100% {
+    transform: translateY(-50%);
+  }
+}
+
+/* Fade edges of code background */
+.code-bg::before,
+.code-bg::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 200px;
+  z-index: 1;
+  pointer-events: none;
+}
+
+.code-bg::before {
+  top: 0;
+  background: linear-gradient(to bottom, var(--bg-primary) 0%, transparent 100%);
+}
+
+.code-bg::after {
+  bottom: 0;
+  background: linear-gradient(to top, var(--bg-primary) 0%, transparent 100%);
+}
+
 /* --- Typography --- */
 h1, h2, h3, h4, h5, h6 {
   font-weight: 700;
