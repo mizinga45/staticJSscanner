@@ -20,16 +20,16 @@ app.config['UPLOAD_FOLDER'] = os.path.join(os.path.dirname(os.path.abspath(__fil
 
 # Jinja2 filter: highlight dangerous syntax in red
 HIGHLIGHT_PATTERNS = {
-    'SQL Injection': [r'\b(SELECT|INSERT|UPDATE|DELETE|DROP|FROM|WHERE)\b', r'(\$\{[^}]+\})'],
-    'Cross-Site Scripting (XSS)': [r'(\.innerHTML)', r'(document\.write)', r'(dangerouslySetInnerHTML)'],
+    'SQL Injection': [r'\b(SELECT|INSERT|UPDATE|DELETE|DROP|FROM|WHERE|INTO|VALUES|SET)\b', r'(\$\{[^}]+\})', r'(\+\s*\w+)'],
+    'Cross-Site Scripting (XSS)': [r'(\.innerHTML)', r'(document\.write)', r'(dangerouslySetInnerHTML)', r'(\.outerHTML)'],
     'Command Injection': [r'\b(exec|execSync|spawn|execFile|system)\b'],
     'Insecure Use of eval()': [r'\b(eval)\s*\('],
-    'Hardcoded Secret': [r'(["\'][A-Za-z0-9_\-]{16,}["\'])'],
-    'Prototype Pollution': [r'(\[[^\]]+\])\s*='],
-    'Path Traversal': [r'\b(readFile|readFileSync|writeFile|writeFileSync|createReadStream)\b'],
-    'Open Redirect': [r'\b(redirect|location\.href|location\.replace)\b'],
-    'Regular Expression DoS (ReDoS)': [r'(RegExp|match|test|replace)\s*\('],
-    'Insecure Randomness': [r'(Math\.random|Math\.floor)'],
+    'Hardcoded Secret': [r'(["\'][A-Za-z0-9_\-/.]{12,}["\'])'],
+    'Prototype Pollution': [r'(\[[^\]]+\])'],
+    'Path Traversal': [r'\b(readFile|readFileSync|writeFile|writeFileSync|createReadStream|appendFile|unlink|unlinkSync)\b'],
+    'Open Redirect': [r'\b(redirect|replace|assign)\b', r'(location\.href)', r'(location\.replace)', r'(window\.location)'],
+    'Regular Expression DoS (ReDoS)': [r'(RegExp|\.match|\.test|\.replace)\s*\(', r'(\([^)]*[+*][^)]*\)[+*])'],
+    'Insecure Randomness': [r'(Math\.random|Math\.floor)', r'\b(random)\b'],
     'Angular Security Bypass': [r'(bypassSecurityTrust\w+)'],
     'Obfuscation Warning': [],
 }
@@ -50,6 +50,15 @@ def highlight_vuln(code, vuln_type):
     for pattern in patterns:
         for m in re.finditer(pattern, text, re.IGNORECASE):
             highlights.append((m.start(), m.end()))
+
+    if not highlights:
+        # Fallback: if no pattern matched, highlight common dangerous tokens
+        fallback = [r'(location\.\w+)', r'(req\.\w+)', r'(document\.\w+)', r'(window\.\w+)',
+                    r'(\.\w+Sync)\b', r'\b(query|params|body|cookies)\b',
+                    r'\b(dataset\.\w+)', r'\b(forEach|map|filter)\s*\(']
+        for pattern in fallback:
+            for m in re.finditer(pattern, text):
+                highlights.append((m.start(), m.end()))
 
     if not highlights:
         return Markup(escape(text))
