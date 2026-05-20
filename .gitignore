@@ -1,11 +1,10 @@
 venv/
 __pycache__/
-instance/
 *.pyc
 *.pyo
 .env
+scanner.db
+instance/
 uploads/*
 !uploads/.gitkeep
 scanner/node_modules/
-*.db
-.git-cred.txt
