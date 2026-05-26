@@ -90,6 +90,9 @@ def _run_scan_background(app, user_id, source, input_method):
 @main_bp.route('/dashboard', methods=['GET', 'POST'])
 @login_required
 def dashboard():
+    if current_user.is_manager:
+        return redirect(url_for('main.manager_panel'))
+
     form = ScanForm()
     recent_scans = ScanResult.query.filter_by(user_id=current_user.id)\
         .order_by(ScanResult.scanned_at.desc()).limit(10).all()
@@ -144,7 +147,6 @@ def scan_status():
 @login_required
 def view_scan(scan_id):
     scan_result = ScanResult.query.get_or_404(scan_id)
-    # Managers can view all scans, developers only their own
     if not current_user.is_manager and scan_result.user_id != current_user.id:
         flash('Access denied.', 'danger')
         return redirect(url_for('main.dashboard'))
@@ -167,6 +169,17 @@ def view_scan(scan_id):
         'is_minified': scan_result.is_minified,
         'was_beautified': scan_result.was_beautified,
     }
+
+    # Manager sees general/summary view, developer sees full technical detail
+    if current_user.is_manager:
+        return render_template('manager_scan_view.html',
+                               vulnerabilities=vulnerabilities,
+                               summary=summary,
+                               source=scan_result.source,
+                               testing_report=testing_report,
+                               scan_id=scan_id,
+                               scanned_at=scan_result.scanned_at,
+                               developer=scan_result.user.full_name)
 
     return render_template('scan_result.html',
                            vulnerabilities=vulnerabilities,
@@ -317,6 +330,8 @@ def download_report(format):
 @main_bp.route('/history')
 @login_required
 def history():
+    if current_user.is_manager:
+        return redirect(url_for('main.manager_panel'))
     scans = ScanResult.query.filter_by(user_id=current_user.id)\
         .order_by(ScanResult.scanned_at.desc()).all()
     return render_template('history.html', scans=scans)

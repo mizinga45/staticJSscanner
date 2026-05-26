@@ -18,10 +18,11 @@
         <div class="navbar-links">
             {% if current_user.is_authenticated %}
                 {% if current_user.is_manager %}
-                    <a href="{{ url_for('main.manager_panel') }}" class="nav-link">👔 Manager</a>
+                    <a href="{{ url_for('main.manager_panel') }}" class="nav-link">👔 Dashboard</a>
+                {% else %}
+                    <a href="{{ url_for('main.dashboard') }}" class="nav-link">Scanner</a>
+                    <a href="{{ url_for('main.history') }}" class="nav-link">History</a>
                 {% endif %}
-                <a href="{{ url_for('main.dashboard') }}" class="nav-link">Scanner</a>
-                <a href="{{ url_for('main.history') }}" class="nav-link">History</a>
                 <a href="{{ url_for('auth.profile') }}" class="nav-link">{{ current_user.username }}</a>
                 <a href="{{ url_for('auth.logout') }}" class="nav-link">Logout</a>
             {% else %}

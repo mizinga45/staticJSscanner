@@ -179,24 +179,32 @@
                     </div>
                     <div class="vuln-details">
                         <div class="vuln-detail-row">
+                            <span class="label">File</span>
+                            <span class="value" style="font-family:monospace;font-size:0.8rem;">{{ vuln.file_path }}</span>
+                        </div>
+                        <div class="vuln-detail-row">
                             <span class="label">Line</span>
                             <span class="value">{{ vuln.line_number }}</span>
                         </div>
                         <div class="vuln-detail-row">
-                            <span class="label">Code</span>
+                            <span class="label">Source Code</span>
                             <span class="value"><div class="code-block">{{ vuln.code_snippet[:250] | highlight_vuln(vuln.type) }}{% if vuln.code_snippet|length > 250 %}...{% endif %}</div></span>
                         </div>
                         <div class="vuln-detail-row">
-                            <span class="label">What's wrong</span>
+                            <span class="label">Analysis</span>
                             <span class="value">{{ vuln.description }}</span>
                         </div>
                         <div class="vuln-detail-row">
-                            <span class="label">How to fix</span>
+                            <span class="label">Taint Flow</span>
+                            <span class="value" style="font-family:monospace;font-size:0.78rem;color:var(--accent-orange);">{% if 'SQL' in vuln.type %}Source (user input) → Variable → String Concat/Template → SQL Query Sink{% elif 'XSS' in vuln.type %}Source (user input) → Variable → DOM Assignment (innerHTML/document.write) Sink{% elif 'Command' in vuln.type %}Source (user input) → Variable → exec()/spawn()/system() Sink{% elif 'eval' in vuln.type %}Source (user input) → Variable → eval() Sink{% elif 'Path' in vuln.type %}Source (user input) → Variable → fs.readFile()/writeFile() Sink{% elif 'Prototype' in vuln.type %}Source (user input) → Key Variable → obj[key] Property Assignment Sink{% elif 'Redirect' in vuln.type %}Source (user input) → URL Variable → redirect()/location.href Sink{% elif 'SSRF' in vuln.type %}Source (user input) → URL Variable → fetch()/request() Sink{% elif 'Deserialization' in vuln.type %}Source (user input) → Data Variable → unserialize() Sink{% elif 'Randomness' in vuln.type %}Math.random() → Security Context (token/key generation){% elif 'ReDoS' in vuln.type %}Nested Quantifier → Regex Engine → Exponential Backtracking{% elif 'Secret' in vuln.type %}Hardcoded Value → Source Code → Exposed in Repo/Client{% else %}Source → Tainted Variable → Dangerous Sink{% endif %}</span>
+                        </div>
+                        <div class="vuln-detail-row">
+                            <span class="label">Remediation</span>
                             <span class="value" style="color: var(--accent-green);">{{ vuln.remediation }}</span>
                         </div>
                         <div class="vuln-detail-row">
                             <span class="label">Confidence</span>
-                            <span class="value">{{ vuln.confidence_score }}%</span>
+                            <span class="value">{{ vuln.confidence_score }}% — {% if vuln.confidence_score >= 80 %}Direct taint flow confirmed{% elif vuln.confidence_score >= 50 %}Indirect taint (propagated){% else %}Heuristic match{% endif %}</span>
                         </div>
                     </div>
                 </div>

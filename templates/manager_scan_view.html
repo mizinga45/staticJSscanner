@@ -1,0 +1,107 @@
+{% extends "base.html" %}
+{% block title %}Scan Review{% endblock %}
+{% block content %}
+<div class="card card-full">
+    <div class="results-header">
+        <div>
+            <h1 style="font-size: 1.5rem;">📊 Scan Review</h1>
+            <p style="color: var(--text-secondary); font-size: 0.85rem; margin-top: 0.25rem;">
+                <strong>Developer:</strong> {{ developer }} &middot;
+                <strong>Source:</strong> {{ source|truncate(60) }}
+                {% if scanned_at %} &middot; {{ scanned_at.strftime('%Y-%m-%d %H:%M') }}{% endif %}
+            </p>
+        </div>
+        <a href="{{ url_for('main.manager_panel') }}" class="btn btn-outline btn-sm">← Back to Panel</a>
+    </div>
+
+    <!-- Summary -->
+    <div class="results-summary">
+        <div class="summary-card total"><div class="count">{{ summary.total }}</div><div class="label">Total Issues</div></div>
+        <div class="summary-card critical"><div class="count">{{ summary.severity_counts.Critical }}</div><div class="label">Critical</div></div>
+        <div class="summary-card high"><div class="count">{{ summary.severity_counts.High }}</div><div class="label">High</div></div>
+        <div class="summary-card medium"><div class="count">{{ summary.severity_counts.Medium }}</div><div class="label">Medium</div></div>
+    </div>
+
+    <!-- Risk Assessment -->
+    <div class="extracted-urls-section">
+        <h3 style="font-size: 1rem; margin-bottom: 0.75rem;">⚡ Risk Assessment</h3>
+        {% if summary.severity_counts.Critical > 0 %}
+            <div class="alert alert-danger">
+                <strong>🔴 HIGH RISK:</strong> {{ summary.severity_counts.Critical }} critical vulnerabilities found. Immediate action required before deployment.
+            </div>
+        {% elif summary.severity_counts.High > 0 %}
+            <div class="alert alert-warning">
+                <strong>🟠 MODERATE RISK:</strong> {{ summary.severity_counts.High }} high-severity issues found. Should be fixed before production release.
+            </div>
+        {% elif summary.total > 0 %}
+            <div class="alert alert-info">
+                <strong>🟡 LOW RISK:</strong> Only medium/low severity issues found. Recommended to fix but not blocking.
+            </div>
+        {% else %}
+            <div class="alert alert-success">
+                <strong>✅ SECURE:</strong> No vulnerabilities detected. Code is ready for deployment.
+            </div>
+        {% endif %}
+    </div>
+
+    <!-- Testing Report -->
+    {% if testing_report %}
+    <div class="extracted-urls-section">
+        <h3 style="font-size: 1rem; margin-bottom: 0.75rem;">🧪 Security Checks Performed</h3>
+        <table class="history-table" style="margin:0;">
+            <thead><tr><th>Security Check</th><th>Result</th><th>Issues</th></tr></thead>
+            <tbody>
+                {% for rule_name, info in testing_report.items() %}
+                <tr>
+                    <td>{{ rule_name }}</td>
+                    <td>
+                        {% if info.detected %}
+                            <span class="badge badge-critical">⚠️ FOUND</span>
+                        {% else %}
+                            <span style="color:var(--accent-green);font-weight:600;">✓ CLEAR</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if info.detected %}<strong style="color:var(--accent-red);">{{ info.count }}</strong>
+                        {% else %}<span style="color:var(--text-muted);">—</span>{% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% endif %}
+
+    <!-- Vulnerability Summary (general, no code) -->
+    {% if vulnerabilities %}
+    <div class="extracted-urls-section">
+        <h3 style="font-size: 1rem; margin-bottom: 0.75rem;">📋 Issues Found</h3>
+        <table class="history-table" style="margin:0;">
+            <thead><tr><th>Severity</th><th>Type</th><th>Location</th><th>Action Required</th></tr></thead>
+            <tbody>
+                {% for vuln in vulnerabilities %}
+                <tr>
+                    <td>
+                        {% if vuln.severity == 'Critical' %}<span class="badge badge-critical">Critical</span>
+                        {% elif vuln.severity == 'High' %}<span class="badge badge-high">High</span>
+                        {% else %}<span class="badge badge-medium">Medium</span>{% endif %}
+                    </td>
+                    <td>{{ vuln.type }} ({{ vuln.cwe_id }})</td>
+                    <td style="font-size:0.8rem;color:var(--text-muted);">{{ vuln.file_path|truncate(40) }}, line {{ vuln.line_number }}</td>
+                    <td style="font-size:0.8rem;color:var(--accent-green);">{{ vuln.remediation|truncate(80) }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% endif %}
+
+    <!-- Download -->
+    <div class="report-download-section" style="margin-top:1.5rem;">
+        <div class="btn-group">
+            <a href="{{ url_for('main.download_report', format='pdf') }}" class="btn btn-primary btn-sm">📥 Download PDF Report</a>
+            <a href="{{ url_for('main.download_report', format='json') }}" class="btn btn-outline btn-sm">JSON</a>
+        </div>
+    </div>
+</div>
+{% endblock %}
