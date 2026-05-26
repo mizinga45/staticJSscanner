@@ -78,6 +78,11 @@ function createUser(data) {
         </div>
 
         <div class="mb-3">
+            <label class="form-label">Role</label>
+            {{ form.role(class="form-control") }}
+        </div>
+
+        <div class="mb-3">
             <label class="form-label">Password</label>
             {{ form.password(class="form-control", placeholder="At least 6 characters") }}
             {% if form.password.errors %}

@@ -55,28 +55,32 @@ class CoreAnalysisEngine:
         all_vulns = []
         seen = set()
         extracted_urls = []
+        # Testing report: track which rules were tested and what they found
+        testing_report = {r.vuln_type: {'tested': True, 'detected': False, 'count': 0}
+                         for r in self.rules}
+        code_info = {'is_minified': False, 'is_obfuscated': False, 'was_beautified': False}
 
         for source_id, code, html_line_ref in parts:
-            # Track extracted URLs
             if source_id.startswith('http'):
                 extracted_urls.append(source_id)
 
-            # Skip known libraries
             if self._is_library(source_id, code):
                 continue
 
-            # Determine display path
             if source_id in ('inline_script', 'source'):
                 check_path = original_source_label
             else:
                 check_path = source_id
 
-            # Handle minified code: beautify first, then scan normally
+            # Handle minified code
             if CodeExtractor.is_minified(code):
+                code_info['is_minified'] = True
                 code = CodeExtractor.beautify(code)
+                code_info['was_beautified'] = True
 
-            # Handle obfuscated code: warn and skip (too unreliable to scan)
+            # Handle obfuscated code
             if CodeExtractor.is_obfuscated(code):
+                code_info['is_obfuscated'] = True
                 warn_path = self._build_display_path(source_id, original_source_label, html_line_ref)
                 obf_vuln = Vulnerability(
                     vuln_type="Obfuscation Warning",
@@ -84,8 +88,8 @@ class CoreAnalysisEngine:
                     file_path=warn_path,
                     line_number=1,
                     code_snippet="(code uses obfuscation techniques like eval(atob(...)) or hex encoding)",
-                    description="The code is obfuscated using techniques that hide its true logic. This may be hiding vulnerabilities intentionally.",
-                    remediation="Obtain the original unobfuscated source code for accurate analysis. Obfuscated code in production is a security concern itself.",
+                    description="The code is obfuscated using techniques that hide its true logic.",
+                    remediation="Obtain the original unobfuscated source code for accurate analysis.",
                     confidence_score=0,
                     severity="Info"
                 )
@@ -93,7 +97,7 @@ class CoreAnalysisEngine:
                 if key not in seen:
                     seen.add(key)
                     all_vulns.append(obf_vuln)
-                continue  # Skip scanning obfuscated code
+                continue
 
             lines = code.splitlines()
             try:
@@ -102,18 +106,19 @@ class CoreAnalysisEngine:
             except SyntaxError:
                 continue
 
-            # Get initial tainted vars from Express handlers
             initial_tainted = self.express_tainter.get_initial_tainted_vars(ast)
 
-            # Run all detection rules
             for rule in self.rules:
                 try:
                     found = rule.detect(ast, check_path, lines, initial_tainted=initial_tainted)
                 except TypeError:
                     found = rule.detect(ast, check_path, lines)
 
+                if found:
+                    testing_report[rule.vuln_type]['detected'] = True
+                    testing_report[rule.vuln_type]['count'] += len(found)
+
                 for v in found:
-                    # Enrich with CWE details
                     details = self.cwe_mapper.get_cwe_details(
                         v.type.lower().replace(' ', '_').replace('(', '').replace(')', '')
                     )
@@ -121,22 +126,16 @@ class CoreAnalysisEngine:
                         v.cwe_id = details.get('cwe_id', 'CWE-Unknown')
                     if not v.description or v.description == rule.description:
                         v.description = details.get('description', v.description)
-
-                    # Set severity
                     v.severity = SEVERITY_MAP.get(v.cwe_id, 'Medium')
-
-                    # Set display path
                     v.file_path = self._build_display_path(source_id, original_source_label, html_line_ref)
 
-                    # Deduplicate
                     key = (v.file_path, v.line_number, v.cwe_id)
                     if key not in seen:
                         seen.add(key)
                         all_vulns.append(v)
 
-        # Filter: only keep confidence >= 50
         filtered = [v for v in all_vulns if v.type == 'Obfuscation Warning' or v.confidence_score >= 50]
-        return filtered, extracted_urls
+        return filtered, extracted_urls, testing_report, code_info
 
     def _build_display_path(self, source_id, original_source_label, html_line_ref):
         if source_id == 'inline_script':

@@ -19,6 +19,7 @@ def register():
             full_name=form.full_name.data,
             username=form.username.data,
             email=form.email.data,
+            role=form.role.data,
             password_hash=hashed
         )
         db.session.add(user)
@@ -40,7 +41,12 @@ def login():
         if user and bcrypt.check_password_hash(user.password_hash, form.password.data):
             login_user(user, remember=form.remember.data)
             next_page = request.args.get('next')
-            return redirect(next_page) if next_page else redirect(url_for('main.dashboard'))
+            if next_page:
+                return redirect(next_page)
+            # Redirect based on role
+            if user.is_manager:
+                return redirect(url_for('main.manager_panel'))
+            return redirect(url_for('main.dashboard'))
         else:
             flash('Invalid credentials.', 'danger')
     return render_template('login.html', form=form)

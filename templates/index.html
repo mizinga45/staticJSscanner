@@ -37,8 +37,12 @@
             
             <div class="mb-4">
                 <label class="form-label">📂 Local Folder Path</label>
-                {{ form.folder_path(class="form-control", placeholder="/home/user/project/src") }}
-                <p class="form-text">Recursively scans all supported files in the directory</p>
+                <div style="display:flex;gap:0.5rem;align-items:center;">
+                    {{ form.folder_path(class="form-control", placeholder="/home/user/project/src", id="folderPath") }}
+                    <label class="btn btn-outline btn-sm" style="white-space:nowrap;cursor:pointer;" for="folderBrowse">Browse</label>
+                    <input type="file" id="folderBrowse" webkitdirectory directory multiple style="display:none;">
+                </div>
+                <p class="form-text">Browse to select a folder, or paste the path manually</p>
             </div>
             
             <div style="margin-top: 2rem;">
@@ -156,6 +160,20 @@
             if (e.dataTransfer.files.length) {
                 fileInput.files = e.dataTransfer.files;
                 fileName.textContent = '✓ ' + e.dataTransfer.files[0].name;
+            }
+        });
+    }
+
+    // Folder browse
+    const folderBrowse = document.getElementById('folderBrowse');
+    const folderPath = document.getElementById('folderPath');
+    if (folderBrowse && folderPath) {
+        folderBrowse.addEventListener('change', function() {
+            if (this.files.length > 0) {
+                // Get the common folder path from the first file's webkitRelativePath
+                const path = this.files[0].webkitRelativePath;
+                const folder = path.split('/')[0];
+                folderPath.value = folder + '/ (' + this.files.length + ' files selected)';
             }
         });
     }

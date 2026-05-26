@@ -9,73 +9,53 @@ from scanner.input_handler import InputHandler
 from scanner.code_extractor import CodeExtractor
 from scanner.core_engine import CoreAnalysisEngine
 from scanner.report_generator import ReportGenerator
-from models import db, ScanResult
+from models import db, ScanResult, User
 
 main_bp = Blueprint('main', __name__)
 
-# In-memory store for background scan status per user
-_scan_jobs = {}  # user_id -> {'status': 'running'|'done'|'error', 'scan_id': int, 'message': str}
+_scan_jobs = {}
 
 
-def _run_scan_background(app, user_id, source, upload_folder):
+def _run_scan_background(app, user_id, source, input_method):
     """Run scan in background thread."""
     with app.app_context():
         try:
             input_handler = InputHandler()
             extractor = CodeExtractor()
             engine = CoreAnalysisEngine()
-            skipped_files = []
             all_extracted_urls = []
 
             if os.path.isdir(source):
                 file_paths = input_handler.get_files_from_folder(source)
                 if not file_paths:
-                    _scan_jobs[user_id] = {'status': 'error', 'message': 'No supported files found in folder.'}
+                    _scan_jobs[user_id] = {'status': 'error', 'message': 'No supported files found.'}
                     return
-
                 all_parts = []
-                for file_path in file_paths:
+                for fp in file_paths:
                     try:
-                        file_data = input_handler.accept_input(file_path)
-                        if file_data is None:
+                        data = input_handler.accept_input(fp)
+                        if data is None:
                             continue
-                        parts = extractor.extract_with_origins(file_data['html'], external_js=file_data['external_js'])
-                        if not parts:
-                            skipped_files.append(file_path)
-                            continue
-                        renamed_parts = [(file_path, code, offset) for _, code, offset in parts]
-                        for i, (fp, code, offset) in enumerate(renamed_parts):
-                            if CodeExtractor.is_obfuscated(code):
-                                renamed_parts[i] = (fp, CodeExtractor.beautify(code), offset)
-                        all_parts.extend(renamed_parts)
+                        parts = extractor.extract_with_origins(data['html'], external_js=data['external_js'])
+                        if parts:
+                            all_parts.extend([(fp, code, off) for _, code, off in parts])
                     except Exception:
                         continue
-
                 if not all_parts:
-                    _scan_jobs[user_id] = {'status': 'error', 'message': 'No JavaScript code found in folder.'}
+                    _scan_jobs[user_id] = {'status': 'error', 'message': 'No JavaScript code found.'}
                     return
-
-                vulnerabilities, extracted_urls = engine.scan(all_parts, source)
+                vulnerabilities, extracted_urls, testing_report, code_info = engine.scan(all_parts, source)
                 all_extracted_urls = extracted_urls
             else:
                 input_data = input_handler.accept_input(source)
                 if input_data is None:
-                    _scan_jobs[user_id] = {'status': 'error', 'message': 'Invalid source or inaccessible path.'}
+                    _scan_jobs[user_id] = {'status': 'error', 'message': 'Invalid source.'}
                     return
-
                 parts = extractor.extract_with_origins(input_data['html'], external_js=input_data['external_js'])
                 if not parts:
                     _scan_jobs[user_id] = {'status': 'error', 'message': 'No JavaScript code found.'}
                     return
-
-                beautified_parts = []
-                for src_id, code, line_offset in parts:
-                    if CodeExtractor.is_obfuscated(code):
-                        code = CodeExtractor.beautify(code)
-                    beautified_parts.append((src_id, code, line_offset))
-                parts = beautified_parts
-
-                vulnerabilities, extracted_urls = engine.scan(parts, source)
+                vulnerabilities, extracted_urls, testing_report, code_info = engine.scan(parts, source)
                 all_extracted_urls = extracted_urls
 
             summary = ReportGenerator.generate_summary(vulnerabilities)
@@ -84,6 +64,7 @@ def _run_scan_background(app, user_id, source, upload_folder):
             scan_result = ScanResult(
                 user_id=user_id,
                 source=source,
+                input_method=input_method,
                 total_vulns=len(vulnerabilities),
                 critical_count=summary['severity_counts']['Critical'],
                 high_count=summary['severity_counts']['High'],
@@ -91,7 +72,11 @@ def _run_scan_background(app, user_id, source, upload_folder):
                 low_count=summary['severity_counts']['Low'],
                 extracted_urls=json.dumps(all_extracted_urls),
                 results_json=json.dumps(vuln_dicts),
-                summary_json=json.dumps(summary)
+                summary_json=json.dumps(summary),
+                testing_json=json.dumps(testing_report),
+                is_minified=code_info.get('is_minified', False),
+                is_obfuscated=code_info.get('is_obfuscated', False),
+                was_beautified=code_info.get('was_beautified', False),
             )
             db.session.add(scan_result)
             db.session.commit()
@@ -111,6 +96,7 @@ def dashboard():
 
     if form.validate_on_submit():
         source = None
+        input_method = 'file'
         if form.file_upload.data:
             file = form.file_upload.data
             filename = secure_filename(file.filename)
@@ -119,21 +105,23 @@ def dashboard():
             filepath = os.path.join(upload_folder, filename)
             file.save(filepath)
             source = filepath
+            input_method = 'file'
         elif form.url_input.data:
             source = form.url_input.data.strip()
+            input_method = 'url'
         elif form.folder_path.data:
             folder = form.folder_path.data.strip()
             if os.path.isdir(folder):
                 source = folder
+                input_method = 'folder'
             else:
                 flash('Invalid folder path.', 'danger')
                 return render_template('index.html', form=form, recent_scans=recent_scans)
 
         if source:
-            # Start background scan
-            _scan_jobs[current_user.id] = {'status': 'running', 'message': 'Scan started...'}
+            _scan_jobs[current_user.id] = {'status': 'running'}
             app = current_app._get_current_object()
-            t = threading.Thread(target=_run_scan_background, args=(app, current_user.id, source, current_app.config['UPLOAD_FOLDER']))
+            t = threading.Thread(target=_run_scan_background, args=(app, current_user.id, source, input_method))
             t.daemon = True
             t.start()
             return render_template('index.html', form=form, recent_scans=recent_scans, scan_started=True)
@@ -146,7 +134,6 @@ def dashboard():
 @main_bp.route('/scan/status')
 @login_required
 def scan_status():
-    """AJAX endpoint to check background scan status."""
     job = _scan_jobs.get(current_user.id)
     if not job:
         return jsonify({'status': 'idle'})
@@ -157,23 +144,28 @@ def scan_status():
 @login_required
 def view_scan(scan_id):
     scan_result = ScanResult.query.get_or_404(scan_id)
-    if scan_result.user_id != current_user.id:
+    # Managers can view all scans, developers only their own
+    if not current_user.is_manager and scan_result.user_id != current_user.id:
         flash('Access denied.', 'danger')
         return redirect(url_for('main.dashboard'))
 
-    # Clear the scan job notification since user is viewing results
     _scan_jobs.pop(current_user.id, None)
 
     vulnerabilities = scan_result.get_vulnerabilities()
     summary = scan_result.get_summary()
     extracted_urls = scan_result.get_extracted_urls()
+    testing_report = scan_result.get_testing_report()
 
     session['report_data'] = {
         'source': scan_result.source,
         'summary': summary,
         'vulnerabilities': vulnerabilities,
+        'extracted_urls': extracted_urls,
+        'testing_report': testing_report,
         'skipped_files': [],
-        'extracted_urls': extracted_urls
+        'developer': scan_result.user.full_name if scan_result.user else 'Unknown',
+        'is_minified': scan_result.is_minified,
+        'was_beautified': scan_result.was_beautified,
     }
 
     return render_template('scan_result.html',
@@ -181,9 +173,33 @@ def view_scan(scan_id):
                            summary=summary,
                            source=scan_result.source,
                            extracted_urls=extracted_urls,
+                           testing_report=testing_report,
                            skipped_files=[],
                            scan_id=scan_id,
-                           scanned_at=scan_result.scanned_at)
+                           scanned_at=scan_result.scanned_at,
+                           is_minified=scan_result.is_minified,
+                           was_beautified=scan_result.was_beautified,
+                           developer=scan_result.user.full_name)
+
+
+@main_bp.route('/manager')
+@login_required
+def manager_panel():
+    if not current_user.is_manager:
+        flash('Access denied. Manager role required.', 'danger')
+        return redirect(url_for('main.dashboard'))
+    # Get all scans from all developers
+    all_scans = ScanResult.query.order_by(ScanResult.scanned_at.desc()).all()
+    developers = User.query.filter_by(role='developer').all()
+    total_scans = len(all_scans)
+    total_vulns = sum(s.total_vulns for s in all_scans)
+    total_critical = sum(s.critical_count for s in all_scans)
+    return render_template('manager_panel.html',
+                           scans=all_scans,
+                           developers=developers,
+                           total_scans=total_scans,
+                           total_vulns=total_vulns,
+                           total_critical=total_critical)
 
 
 @main_bp.route('/download/<format>')
@@ -191,41 +207,28 @@ def view_scan(scan_id):
 def download_report(format):
     report = session.get('report_data')
     if not report:
-        flash('No report available. Please run a scan first.', 'warning')
+        flash('No report available.', 'warning')
         return redirect(url_for('main.dashboard'))
 
     if format == 'json':
-        return Response(
-            json.dumps(report, indent=2),
-            mimetype='application/json',
-            headers={'Content-Disposition': 'attachment;filename=secscan_report.json'}
-        )
+        return Response(json.dumps(report, indent=2), mimetype='application/json',
+                        headers={'Content-Disposition': 'attachment;filename=secscan_report.json'})
     elif format == 'html':
         html = render_template('download_report.html', **report)
-        return Response(
-            html,
-            mimetype='text/html',
-            headers={'Content-Disposition': 'attachment;filename=secscan_report.html'}
-        )
+        return Response(html, mimetype='text/html',
+                        headers={'Content-Disposition': 'attachment;filename=secscan_report.html'})
     elif format == 'pdf':
         try:
             from weasyprint import HTML
             html_content = render_template('download_report.html', **report)
             pdf = HTML(string=html_content).write_pdf()
-            return Response(
-                pdf,
-                mimetype='application/pdf',
-                headers={'Content-Disposition': 'attachment;filename=secscan_report.pdf'}
-            )
-        except ImportError:
-            flash('PDF generation requires weasyprint.', 'danger')
-            return redirect(url_for('main.dashboard'))
+            return Response(pdf, mimetype='application/pdf',
+                            headers={'Content-Disposition': 'attachment;filename=secscan_report.pdf'})
         except Exception as e:
-            flash(f'PDF generation failed: {str(e)}', 'danger')
+            flash(f'PDF generation failed: {e}', 'danger')
             return redirect(url_for('main.dashboard'))
-    else:
-        flash('Invalid format.', 'danger')
-        return redirect(url_for('main.dashboard'))
+    flash('Invalid format.', 'danger')
+    return redirect(url_for('main.dashboard'))
 
 
 @main_bp.route('/history')
@@ -240,7 +243,7 @@ def history():
 @login_required
 def delete_scan(scan_id):
     scan_result = ScanResult.query.get_or_404(scan_id)
-    if scan_result.user_id != current_user.id:
+    if scan_result.user_id != current_user.id and not current_user.is_manager:
         flash('Access denied.', 'danger')
         return redirect(url_for('main.dashboard'))
     db.session.delete(scan_result)

@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+{% block title %}Manager Panel{% endblock %}
+{% block content %}
+<div class="card card-full">
+    <div class="results-header">
+        <div>
+            <h1 style="font-size: 1.5rem;">👔 Manager Panel</h1>
+            <p style="color: var(--text-secondary); font-size: 0.85rem;">Overview of all security scans across the organization</p>
+        </div>
+    </div>
+
+    <!-- Overview Stats -->
+    <div class="results-summary">
+        <div class="summary-card total">
+            <div class="count">{{ total_scans }}</div>
+            <div class="label">Total Scans</div>
+        </div>
+        <div class="summary-card critical">
+            <div class="count">{{ total_critical }}</div>
+            <div class="label">Critical Issues</div>
+        </div>
+        <div class="summary-card high">
+            <div class="count">{{ total_vulns }}</div>
+            <div class="label">Total Vulns</div>
+        </div>
+        <div class="summary-card medium">
+            <div class="count">{{ developers|length }}</div>
+            <div class="label">Developers</div>
+        </div>
+    </div>
+
+    <!-- All Scans Table -->
+    <h3 style="margin: 1.5rem 0 1rem;">All Scan Reports</h3>
+    {% if scans %}
+    <div style="overflow-x: auto;">
+        <table class="history-table">
+            <thead>
+                <tr>
+                    <th>Developer</th>
+                    <th>Source</th>
+                    <th>Method</th>
+                    <th>Critical</th>
+                    <th>High</th>
+                    <th>Medium</th>
+                    <th>Total</th>
+                    <th>Date</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for scan in scans %}
+                <tr>
+                    <td><strong>{{ scan.user.full_name }}</strong><br><span style="color:var(--text-muted);font-size:0.7rem;">@{{ scan.user.username }}</span></td>
+                    <td style="max-width:200px;word-break:break-all;font-size:0.8rem;">{{ scan.source|truncate(50) }}</td>
+                    <td><span class="badge badge-medium">{{ scan.input_method or 'file' }}</span></td>
+                    <td>{% if scan.critical_count %}<span class="badge badge-critical">{{ scan.critical_count }}</span>{% else %}<span style="color:var(--text-muted)">0</span>{% endif %}</td>
+                    <td>{% if scan.high_count %}<span class="badge badge-high">{{ scan.high_count }}</span>{% else %}<span style="color:var(--text-muted)">0</span>{% endif %}</td>
+                    <td>{% if scan.medium_count %}<span class="badge badge-medium">{{ scan.medium_count }}</span>{% else %}<span style="color:var(--text-muted)">0</span>{% endif %}</td>
+                    <td><strong>{{ scan.total_vulns }}</strong></td>
+                    <td style="white-space:nowrap;font-size:0.8rem;">{{ scan.scanned_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                    <td><a href="{{ url_for('main.view_scan', scan_id=scan.id) }}" class="btn btn-outline btn-sm">View</a></td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <p style="text-align:center;color:var(--text-muted);padding:2rem;">No scans yet.</p>
+    {% endif %}
+</div>
+{% endblock %}

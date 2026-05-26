@@ -50,7 +50,55 @@
             <a href="{{ url_for('main.download_report', format='html') }}" class="btn btn-outline btn-sm">HTML</a>
             <a href="{{ url_for('main.download_report', format='pdf') }}" class="btn btn-outline btn-sm">PDF</a>
         </div>
+        {% if developer %}
+        <p style="margin-top:0.5rem;font-size:0.75rem;color:var(--text-muted);">Scanned by: <strong>{{ developer }}</strong></p>
+        {% endif %}
     </div>
+
+    <!-- Minification / Obfuscation Info -->
+    {% if is_minified or was_beautified %}
+    <div class="alert alert-info">
+        <strong>📦 Code Status:</strong>
+        {% if is_minified and was_beautified %}
+            Minified code detected — automatically beautified (de-minified) before analysis.
+        {% elif is_minified %}
+            Minified code detected.
+        {% endif %}
+    </div>
+    {% endif %}
+
+    <!-- Testing Report: Patterns Tested / Detected / Not Found -->
+    {% if testing_report %}
+    <div class="extracted-urls-section">
+        <h3 style="font-size: 1rem; margin-bottom: 0.75rem;">🧪 Testing Report — Patterns Analyzed</h3>
+        <table class="history-table" style="margin:0;">
+            <thead>
+                <tr><th>Pattern / Rule</th><th>Status</th><th>Findings</th></tr>
+            </thead>
+            <tbody>
+                {% for rule_name, info in testing_report.items() %}
+                <tr>
+                    <td>{{ rule_name }}</td>
+                    <td>
+                        {% if info.detected %}
+                            <span class="badge badge-critical">⚠️ DETECTED</span>
+                        {% else %}
+                            <span class="badge badge-medium" style="background:rgba(16,185,129,0.15);color:#6ee7b7;border-color:rgba(16,185,129,0.3);">✓ PASS</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if info.detected %}
+                            <strong style="color:var(--accent-red);">{{ info.count }} issue{{ 's' if info.count > 1 }}</strong>
+                        {% else %}
+                            <span style="color:var(--text-muted);">No issues</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% endif %}
 
     <!-- Extracted JavaScript URLs -->
     {% if extracted_urls %}
