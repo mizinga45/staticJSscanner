@@ -188,18 +188,101 @@ def manager_panel():
     if not current_user.is_manager:
         flash('Access denied. Manager role required.', 'danger')
         return redirect(url_for('main.dashboard'))
-    # Get all scans from all developers
+
     all_scans = ScanResult.query.order_by(ScanResult.scanned_at.desc()).all()
     developers = User.query.filter_by(role='developer').all()
     total_scans = len(all_scans)
     total_vulns = sum(s.total_vulns for s in all_scans)
     total_critical = sum(s.critical_count for s in all_scans)
+
+    # Top vulnerability types across all scans
+    vuln_counts = {}
+    for scan in all_scans:
+        for v in scan.get_vulnerabilities():
+            vtype = v.get('type', 'Unknown')
+            sev = v.get('severity', 'Medium')
+            if vtype not in vuln_counts:
+                vuln_counts[vtype] = {'count': 0, 'severity': sev}
+            vuln_counts[vtype]['count'] += 1
+    top_vulns = sorted([(k, v['count'], v['severity']) for k, v in vuln_counts.items()],
+                       key=lambda x: x[1], reverse=True)[:10]
+
+    # Per-developer stats
+    dev_stats = []
+    for dev in developers:
+        dev_scans = [s for s in all_scans if s.user_id == dev.id]
+        dev_stats.append({
+            'name': dev.full_name,
+            'username': dev.username,
+            'scan_count': len(dev_scans),
+            'critical': sum(s.critical_count for s in dev_scans),
+            'high': sum(s.high_count for s in dev_scans),
+            'medium': sum(s.medium_count for s in dev_scans),
+            'total': sum(s.total_vulns for s in dev_scans),
+        })
+    dev_stats.sort(key=lambda x: x['critical'], reverse=True)
+
     return render_template('manager_panel.html',
-                           scans=all_scans,
-                           developers=developers,
-                           total_scans=total_scans,
-                           total_vulns=total_vulns,
-                           total_critical=total_critical)
+                           scans=all_scans, developers=developers,
+                           total_scans=total_scans, total_vulns=total_vulns,
+                           total_critical=total_critical,
+                           top_vulns=top_vulns, dev_stats=dev_stats)
+
+
+@main_bp.route('/manager/report')
+@login_required
+def manager_report_pdf():
+    if not current_user.is_manager:
+        flash('Access denied.', 'danger')
+        return redirect(url_for('main.dashboard'))
+
+    all_scans = ScanResult.query.order_by(ScanResult.scanned_at.desc()).all()
+    developers = User.query.filter_by(role='developer').all()
+    total_scans = len(all_scans)
+    total_vulns = sum(s.total_vulns for s in all_scans)
+    total_critical = sum(s.critical_count for s in all_scans)
+    total_high = sum(s.high_count for s in all_scans)
+    total_medium = sum(s.medium_count for s in all_scans)
+
+    # Per-developer stats
+    dev_stats = []
+    for dev in developers:
+        dev_scans = [s for s in all_scans if s.user_id == dev.id]
+        dev_stats.append({
+            'name': dev.full_name, 'username': dev.username,
+            'scan_count': len(dev_scans),
+            'critical': sum(s.critical_count for s in dev_scans),
+            'high': sum(s.high_count for s in dev_scans),
+            'medium': sum(s.medium_count for s in dev_scans),
+            'total': sum(s.total_vulns for s in dev_scans),
+        })
+
+    # Top vulns
+    vuln_counts = {}
+    for scan in all_scans:
+        for v in scan.get_vulnerabilities():
+            vtype = v.get('type', 'Unknown')
+            sev = v.get('severity', 'Medium')
+            if vtype not in vuln_counts:
+                vuln_counts[vtype] = {'count': 0, 'severity': sev}
+            vuln_counts[vtype]['count'] += 1
+    top_vulns = sorted([(k, v['count'], v['severity']) for k, v in vuln_counts.items()],
+                       key=lambda x: x[1], reverse=True)[:10]
+
+    html = render_template('manager_report_pdf.html',
+                           total_scans=total_scans, total_vulns=total_vulns,
+                           total_critical=total_critical, total_high=total_high,
+                           total_medium=total_medium, dev_stats=dev_stats,
+                           top_vulns=top_vulns, scans=all_scans,
+                           generated_by=current_user.full_name)
+    try:
+        from weasyprint import HTML
+        pdf = HTML(string=html).write_pdf()
+        return Response(pdf, mimetype='application/pdf',
+                        headers={'Content-Disposition': 'attachment;filename=organization_security_report.pdf'})
+    except Exception as e:
+        flash(f'PDF generation failed: {e}', 'danger')
+        return redirect(url_for('main.manager_panel'))
 
 
 @main_bp.route('/download/<format>')
