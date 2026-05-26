@@ -10,18 +10,13 @@ from .path_traversal import PathTraversalRule
 from .open_redirect import OpenRedirectRule
 from .regex_dos import RegexDosRule
 from .insecure_random import InsecureRandomRule
+from .insecure_deserialization import InsecureDeserializationRule
+from .ssrf import SSRFRule
 
 __all__ = [
-    'SQLInjectionRule',
-    'XSSRule',
-    'CommandInjectionRule',
-    'HardcodedSecretRule',
-    'EvalInjectionRule',
-    'AngularBypassRule',
-    'ExpressHandlerTainter',
-    'PrototypePollutionRule',
-    'PathTraversalRule',
-    'OpenRedirectRule',
-    'RegexDosRule',
-    'InsecureRandomRule',
+    'SQLInjectionRule', 'XSSRule', 'CommandInjectionRule',
+    'HardcodedSecretRule', 'EvalInjectionRule', 'AngularBypassRule',
+    'ExpressHandlerTainter', 'PrototypePollutionRule', 'PathTraversalRule',
+    'OpenRedirectRule', 'RegexDosRule', 'InsecureRandomRule',
+    'InsecureDeserializationRule', 'SSRFRule',
 ]

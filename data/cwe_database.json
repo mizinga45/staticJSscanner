@@ -53,5 +53,15 @@
         "cwe_id": "CWE-330",
         "description": "Insecure Randomness: Math.random() used for security-sensitive purposes. It is predictable and not cryptographically secure.",
         "remediation": "Use crypto.randomBytes() (Node.js) or crypto.getRandomValues() (browser) for security-sensitive random values."
+    },
+    "insecure_deserialization": {
+        "cwe_id": "CWE-502",
+        "description": "Insecure Deserialization: User input passed to deserialization function, enabling remote code execution via crafted objects.",
+        "remediation": "Never deserialize untrusted data. Use JSON.parse() with schema validation. Avoid node-serialize and similar libraries."
+    },
+    "server-side_request_forgery_ssrf": {
+        "cwe_id": "CWE-918",
+        "description": "SSRF: User-controlled URL passed to server-side HTTP request, allowing attacker to access internal services and networks.",
+        "remediation": "Validate and whitelist allowed URLs/domains. Block internal IP ranges (127.0.0.1, 10.x, 192.168.x). Use URL parsing to verify host."
     }
 }

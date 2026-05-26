@@ -31,6 +31,8 @@ HIGHLIGHT_PATTERNS = {
     'Regular Expression DoS (ReDoS)': [r'(RegExp|\.match|\.test|\.replace)\s*\(', r'(\([^)]*[+*][^)]*\)[+*])'],
     'Insecure Randomness': [r'(Math\.random|Math\.floor)', r'\b(random)\b'],
     'Angular Security Bypass': [r'(bypassSecurityTrust\w+)'],
+    'Insecure Deserialization': [r'\b(unserialize|deserialize)\b'],
+    'Server-Side Request Forgery (SSRF)': [r'\b(fetch|axios|request|http\.get)\b'],
     'Obfuscation Warning': [],
 }
 

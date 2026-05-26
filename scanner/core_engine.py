@@ -3,7 +3,8 @@ from scanner.rules import (
     SQLInjectionRule, XSSRule, CommandInjectionRule,
     HardcodedSecretRule, EvalInjectionRule, AngularBypassRule,
     ExpressHandlerTainter, PrototypePollutionRule, PathTraversalRule,
-    OpenRedirectRule, RegexDosRule, InsecureRandomRule
+    OpenRedirectRule, RegexDosRule, InsecureRandomRule,
+    InsecureDeserializationRule, SSRFRule
 )
 from scanner.cwe_mapper import CWEMapper
 from scanner.vulnerability import Vulnerability
@@ -14,9 +15,11 @@ SEVERITY_MAP = {
     'CWE-78': 'Critical',   # Command Injection
     'CWE-89': 'Critical',   # SQL Injection
     'CWE-22': 'Critical',   # Path Traversal
+    'CWE-502': 'Critical',  # Insecure Deserialization
     'CWE-95': 'High',       # eval injection
     'CWE-79': 'High',       # XSS
     'CWE-1321': 'High',     # Prototype Pollution
+    'CWE-918': 'High',      # SSRF
     'CWE-798': 'Medium',    # Hardcoded secrets
     'CWE-601': 'Medium',    # Open Redirect
     'CWE-1333': 'Medium',   # ReDoS
@@ -48,6 +51,8 @@ class CoreAnalysisEngine:
             OpenRedirectRule(),
             RegexDosRule(),
             InsecureRandomRule(),
+            InsecureDeserializationRule(),
+            SSRFRule(),
         ]
         self.cwe_mapper = CWEMapper()
 
