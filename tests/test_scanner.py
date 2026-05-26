@@ -23,7 +23,7 @@ def scan_file(filepath):
     engine = CoreAnalysisEngine()
     data = handler.accept_input(filepath)
     parts = extractor.extract_with_origins(data['html'], external_js=data['external_js'])
-    vulns, urls = engine.scan(parts, filepath)
+    vulns, urls, testing, info = engine.scan(parts, filepath)
     return vulns
 
 
