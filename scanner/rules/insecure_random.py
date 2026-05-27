@@ -29,20 +29,22 @@ class InsecureRandomRule(VulnerabilityRule):
 
             if 'Math.random' in line:
                 # Check if it's in a security context
-                lower_line = line.lower()
-                # Check surrounding lines too
                 context_start = max(0, lineno - 3)
                 context_end = min(len(code_lines), lineno + 1)
                 context = ' '.join(code_lines[context_start:context_end]).lower()
 
                 for keyword in self.security_contexts:
                     if keyword in context:
+                        # Capture snippet centered on Math.random
+                        idx = line.find('Math.random')
+                        start = max(0, idx - 30)
+                        snippet = line[start:start+120].strip()
                         vulns.append(Vulnerability(
                             vuln_type=self.vuln_type,
                             cwe_id=self.cwe_id,
                             file_path=file_path,
                             line_number=lineno,
-                            code_snippet=stripped[:150],
+                            code_snippet=snippet,
                             description=f"Math.random() is not cryptographically secure and is used near security-related code ('{keyword}').",
                             remediation="Use crypto.randomBytes() (Node.js) or crypto.getRandomValues() (browser) for security-sensitive random values.",
                             confidence_score=75,

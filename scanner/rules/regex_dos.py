@@ -33,7 +33,7 @@ class RegexDosRule(VulnerabilityRule):
             if regex_match:
                 pattern = regex_match.group(1)
                 if self._is_evil_regex(pattern):
-                    vulns.append(self._make_vuln(file_path, lineno, stripped, pattern))
+                    vulns.append(self._make_vuln(file_path, lineno, line, pattern))
                 continue
 
             # Check for regex literals: /pattern/
@@ -41,7 +41,7 @@ class RegexDosRule(VulnerabilityRule):
             if literal_match:
                 pattern = literal_match.group(1)
                 if self._is_evil_regex(pattern):
-                    vulns.append(self._make_vuln(file_path, lineno, stripped, pattern))
+                    vulns.append(self._make_vuln(file_path, lineno, line, pattern))
 
         return vulns
 
@@ -51,7 +51,13 @@ class RegexDosRule(VulnerabilityRule):
                 return True
         return False
 
-    def _make_vuln(self, file_path, line, snippet, pattern):
+    def _make_vuln(self, file_path, lineno, line, pattern):
+        # Center snippet on the regex pattern
+        idx = line.find(pattern)
+        if idx == -1:
+            idx = line.find('RegExp')
+        start = max(0, idx - 20) if idx > 0 else 0
+        snippet = line[start:start+120].strip()
         return Vulnerability(
             vuln_type=self.vuln_type,
             cwe_id=self.cwe_id,
