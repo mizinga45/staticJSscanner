@@ -54,19 +54,17 @@ def highlight_vuln(code, vuln_type):
             highlights.append((m.start(), m.end()))
 
     if not highlights:
-        # Fallback: if no pattern matched, highlight common dangerous tokens
+        # Fallback: highlight data-flow indicators only (not generic keywords)
         fallback = [r'(location\.\w+)', r'(req\.\w+)', r'(document\.\w+)', r'(window\.\w+)',
                     r'(\.\w+Sync)\b', r'\b(query|params|body|cookies)\b',
-                    r'\b(dataset\.\w+)', r'\b(forEach|map|filter)\s*\(',
-                    r'\b(function|module|exports|typeof|undefined)\b',
-                    r'(\w+\.\w+)\s*\(']
+                    r'\b(dataset\.\w+)']
         for pattern in fallback:
             for m in re.finditer(pattern, text):
                 highlights.append((m.start(), m.end()))
-                if len(highlights) >= 3:
-                    break
-            if len(highlights) >= 3:
-                break
+
+    # If still nothing found, don't force-highlight irrelevant code
+    if not highlights:
+        return Markup(escape(text))
 
     if not highlights:
         return Markup(escape(text))

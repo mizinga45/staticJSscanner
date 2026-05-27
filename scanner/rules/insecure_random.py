@@ -16,8 +16,9 @@ class InsecureRandomRule(VulnerabilityRule):
         # Context keywords that suggest security use
         self.security_contexts = [
             'token', 'secret', 'key', 'password', 'hash', 'salt',
-            'session', 'csrf', 'nonce', 'otp', 'auth', 'id',
-            'uuid', 'random_id', 'generateId', 'createToken'
+            'session', 'csrf', 'nonce', 'otp', 'auth',
+            'uuid', 'generateid', 'createtoken', 'randomid',
+            'sessionid', 'accesstoken', 'refreshtoken'
         ]
 
     def detect(self, ast, file_path, code_lines, **kwargs):
