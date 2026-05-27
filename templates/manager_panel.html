@@ -10,6 +10,16 @@
         <a href="{{ url_for('main.manager_report_pdf') }}" class="btn btn-primary btn-sm">📥 Export General Report (PDF)</a>
     </div>
 
+    <!-- Add Developer by Invite Code -->
+    <div class="extracted-urls-section" style="margin-bottom:1.5rem;">
+        <h3 style="font-size: 1rem; margin-bottom: 0.75rem;">🔗 Link a Developer</h3>
+        <p style="font-size:0.8rem;color:var(--text-secondary);margin-bottom:0.75rem;">Enter the 8-character invite code from your developer to view their reports.</p>
+        <form method="POST" style="display:flex;gap:0.5rem;align-items:center;">
+            <input type="text" name="invite_code" placeholder="e.g. A3K9X2BF" maxlength="8" style="padding:0.5rem 0.75rem;background:var(--bg-secondary);border:1px solid var(--border-color);border-radius:6px;color:var(--text-primary);font-size:1rem;letter-spacing:2px;text-transform:uppercase;width:160px;" required>
+            <button type="submit" class="btn btn-primary btn-sm">Link Developer</button>
+        </form>
+    </div>
+
     <!-- Overview Stats -->
     <div class="results-summary">
         <div class="summary-card total">
@@ -55,7 +65,7 @@
     <div class="extracted-urls-section">
         <h3 style="font-size: 1rem; margin-bottom: 0.75rem;">👥 Developer Summary</h3>
         <table class="history-table" style="margin:0;">
-            <thead><tr><th>Developer</th><th>Scans</th><th>Critical</th><th>High</th><th>Medium</th><th>Total Vulns</th></tr></thead>
+            <thead><tr><th>Developer</th><th>Scans</th><th>Critical</th><th>High</th><th>Medium</th><th>Total Vulns</th><th></th></tr></thead>
             <tbody>
                 {% for dev in dev_stats %}
                 <tr>
@@ -65,6 +75,13 @@
                     <td>{% if dev.high %}<span class="badge badge-high">{{ dev.high }}</span>{% else %}<span style="color:var(--text-muted)">0</span>{% endif %}</td>
                     <td>{% if dev.medium %}<span class="badge badge-medium">{{ dev.medium }}</span>{% else %}<span style="color:var(--text-muted)">0</span>{% endif %}</td>
                     <td><strong>{{ dev.total }}</strong></td>
+                    <td>
+                        {% for d in developers if d.username == dev.username %}
+                        <form method="POST" action="{{ url_for('main.unlink_developer', dev_id=d.id) }}" style="margin:0;" onsubmit="return confirm('Unlink this developer?')">
+                            <button type="submit" class="btn btn-danger btn-sm">Unlink</button>
+                        </form>
+                        {% endfor %}
+                    </td>
                 </tr>
                 {% endfor %}
             </tbody>

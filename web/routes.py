@@ -9,7 +9,7 @@ from scanner.input_handler import InputHandler
 from scanner.code_extractor import CodeExtractor
 from scanner.core_engine import CoreAnalysisEngine
 from scanner.report_generator import ReportGenerator
-from models import db, ScanResult, User
+from models import db, ScanResult, User, ManagerLink
 
 main_bp = Blueprint('main', __name__)
 
@@ -151,6 +151,12 @@ def view_scan(scan_id):
     if not current_user.is_manager and scan_result.user_id != current_user.id:
         flash('Access denied.', 'danger')
         return redirect(url_for('main.dashboard'))
+    # Manager can only view linked developers' scans
+    if current_user.is_manager:
+        link = ManagerLink.query.filter_by(manager_id=current_user.id, developer_id=scan_result.user_id).first()
+        if not link:
+            flash('Access denied. Developer not linked.', 'danger')
+            return redirect(url_for('main.manager_panel'))
 
     _scan_jobs.pop(current_user.id, None)
 
@@ -198,20 +204,41 @@ def view_scan(scan_id):
                            developer=scan_result.user.full_name)
 
 
-@main_bp.route('/manager')
+@main_bp.route('/manager', methods=['GET', 'POST'])
 @login_required
 def manager_panel():
     if not current_user.is_manager:
         flash('Access denied. Manager role required.', 'danger')
         return redirect(url_for('main.dashboard'))
 
-    all_scans = ScanResult.query.order_by(ScanResult.scanned_at.desc()).all()
-    developers = User.query.filter_by(role='developer').all()
+    # Handle adding developer by invite code
+    if request.method == 'POST':
+        code = request.form.get('invite_code', '').strip().upper()
+        if code:
+            dev = User.query.filter_by(invite_code=code, role='developer').first()
+            if not dev:
+                flash('Invalid invite code.', 'danger')
+            elif ManagerLink.query.filter_by(manager_id=current_user.id, developer_id=dev.id).first():
+                flash(f'{dev.full_name} is already linked.', 'warning')
+            else:
+                link = ManagerLink(manager_id=current_user.id, developer_id=dev.id)
+                db.session.add(link)
+                db.session.commit()
+                flash(f'✓ {dev.full_name} linked successfully!', 'success')
+
+    # Get only linked developers
+    links = ManagerLink.query.filter_by(manager_id=current_user.id).all()
+    linked_dev_ids = [l.developer_id for l in links]
+    developers = User.query.filter(User.id.in_(linked_dev_ids)).all() if linked_dev_ids else []
+
+    # Get scans only from linked developers
+    all_scans = ScanResult.query.filter(ScanResult.user_id.in_(linked_dev_ids))\
+        .order_by(ScanResult.scanned_at.desc()).all() if linked_dev_ids else []
+
     total_scans = len(all_scans)
     total_vulns = sum(s.total_vulns for s in all_scans)
     total_critical = sum(s.critical_count for s in all_scans)
 
-    # Top vulnerability types across all scans
     vuln_counts = {}
     for scan in all_scans:
         for v in scan.get_vulnerabilities():
@@ -223,13 +250,11 @@ def manager_panel():
     top_vulns = sorted([(k, v['count'], v['severity']) for k, v in vuln_counts.items()],
                        key=lambda x: x[1], reverse=True)[:10]
 
-    # Per-developer stats
     dev_stats = []
     for dev in developers:
         dev_scans = [s for s in all_scans if s.user_id == dev.id]
         dev_stats.append({
-            'name': dev.full_name,
-            'username': dev.username,
+            'name': dev.full_name, 'username': dev.username,
             'scan_count': len(dev_scans),
             'critical': sum(s.critical_count for s in dev_scans),
             'high': sum(s.high_count for s in dev_scans),
@@ -242,7 +267,20 @@ def manager_panel():
                            scans=all_scans, developers=developers,
                            total_scans=total_scans, total_vulns=total_vulns,
                            total_critical=total_critical,
-                           top_vulns=top_vulns, dev_stats=dev_stats)
+                           top_vulns=top_vulns, dev_stats=dev_stats, links=links)
+
+
+@main_bp.route('/manager/unlink/<int:dev_id>', methods=['POST'])
+@login_required
+def unlink_developer(dev_id):
+    if not current_user.is_manager:
+        return redirect(url_for('main.dashboard'))
+    link = ManagerLink.query.filter_by(manager_id=current_user.id, developer_id=dev_id).first()
+    if link:
+        db.session.delete(link)
+        db.session.commit()
+        flash('Developer unlinked.', 'success')
+    return redirect(url_for('main.manager_panel'))
 
 
 @main_bp.route('/manager/report')

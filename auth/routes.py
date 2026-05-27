@@ -1,6 +1,6 @@
 from flask import Blueprint, render_template, redirect, url_for, flash, request
 from flask_login import login_user, current_user, logout_user, login_required
-from models import db, User, ScanResult
+from models import db, User, ScanResult, ManagerLink
 from auth.forms import RegistrationForm, LoginForm
 from flask_bcrypt import Bcrypt
 
@@ -58,9 +58,15 @@ def logout():
     return redirect(url_for('landing'))
 
 
-@auth_bp.route('/profile')
+@auth_bp.route('/profile', methods=['GET', 'POST'])
 @login_required
 def profile():
+    # Generate invite code for developer
+    if request.method == 'POST' and not current_user.is_manager:
+        current_user.generate_invite_code()
+        db.session.commit()
+        flash(f'New invite code generated: {current_user.invite_code}', 'success')
+
     scans = ScanResult.query.filter_by(user_id=current_user.id)\
         .order_by(ScanResult.scanned_at.desc()).all()
     total_vulns = sum(s.total_vulns for s in scans)

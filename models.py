@@ -13,12 +13,29 @@ class User(db.Model, UserMixin):
     email = db.Column(db.String(120), unique=True, nullable=False)
     password_hash = db.Column(db.String(128), nullable=False)
     role = db.Column(db.String(20), default='developer')  # 'developer' or 'manager'
+    invite_code = db.Column(db.String(8), unique=True)  # Developer's shareable code
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     scans = db.relationship('ScanResult', backref='user', lazy=True, order_by='ScanResult.scanned_at.desc()')
 
     @property
     def is_manager(self):
         return self.role == 'manager'
+
+    def generate_invite_code(self):
+        import random, string
+        self.invite_code = ''.join(random.choices(string.ascii_uppercase + string.digits, k=8))
+        return self.invite_code
+
+
+class ManagerLink(db.Model):
+    """Links a manager to a developer (manager can view developer's reports)."""
+    id = db.Column(db.Integer, primary_key=True)
+    manager_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    developer_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    linked_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    manager = db.relationship('User', foreign_keys=[manager_id], backref='linked_developers')
+    developer = db.relationship('User', foreign_keys=[developer_id])
 
 
 class ScanResult(db.Model):

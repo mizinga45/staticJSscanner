@@ -17,6 +17,26 @@
         <a href="{{ url_for('auth.logout') }}" class="btn btn-outline btn-sm">Logout</a>
     </div>
 
+    <!-- Invite Code Section (Developer only) -->
+    {% if not user.is_manager %}
+    <div class="extracted-urls-section" style="margin-bottom:1.5rem;">
+        <h3 style="font-size: 1rem; margin-bottom: 0.75rem;">🔗 Manager Invite Code</h3>
+        <p style="font-size:0.85rem;color:var(--text-secondary);margin-bottom:0.75rem;">Share this code with your manager so they can view your scan reports.</p>
+        {% if user.invite_code %}
+            <div style="display:flex;align-items:center;gap:1rem;">
+                <code style="font-size:1.5rem;font-weight:700;color:var(--accent-cyan);background:var(--bg-secondary);padding:0.5rem 1rem;border-radius:6px;letter-spacing:2px;">{{ user.invite_code }}</code>
+                <form method="POST" style="margin:0;">
+                    <button type="submit" class="btn btn-outline btn-sm">🔄 Regenerate</button>
+                </form>
+            </div>
+        {% else %}
+            <form method="POST">
+                <button type="submit" class="btn btn-primary btn-sm">Generate Invite Code</button>
+            </form>
+        {% endif %}
+    </div>
+    {% endif %}
+
     <!-- Stats -->
     <div class="stats-row" style="justify-content: flex-start; margin-bottom: 2rem;">
         <div class="stat-item">
