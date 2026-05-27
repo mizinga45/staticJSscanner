@@ -28,20 +28,23 @@ SecScan JS is a web-based static analysis tool that detects security vulnerabili
 
 ## Features
 
-- **11 Vulnerability Types** — Comprehensive coverage of JavaScript security weaknesses
+- **13 Vulnerability Types** — Comprehensive OWASP-aligned coverage of JavaScript security weaknesses
 - **AST-Based Taint Analysis** — Tracks user-controlled data flow from sources to dangerous sinks
+- **Sanitizer-Aware** — Recognizes DOMPurify, path.basename, escapeHtml as taint-clearing
 - **Inter-procedural Analysis** — Follows tainted data across function calls
 - **CWE Mapping** — Every vulnerability mapped to its CWE ID with severity and remediation
-- **Multiple Input Methods** — Upload files, scan URLs (fetches linked JS), or scan entire folders
+- **Multiple Input Methods** — Upload files, scan URLs (fetches linked JS), or browse folders
 - **JS Extraction** — Automatically extracts JavaScript from HTML and PHP files
+- **Deobfuscation** — Reverses 5 common obfuscation algorithms (hex, base64, charcode, unicode, array-based)
+- **Minification Handling** — Auto-beautifies minified code before analysis
 - **Report Export** — Download reports in JSON, HTML, or PDF format
-- **Scan History** — All scans saved with full results, viewable anytime
-- **User Authentication** — Login/register system with profile and scan history
-- **Background Scanning** — Scans run asynchronously; navigate freely and get notified when done
-- **Real-time Notifications** — Sound + browser notification when scan completes
-- **False Positive Reduction** — Skips libraries, detects sanitizers, context-aware analysis
-- **Obfuscation Detection** — Warns when code is minified/obfuscated
-- **Syntax Highlighting** — Dangerous code patterns highlighted in red in results
+- **Manager & Developer Roles** — Separate panels with different report views
+- **Invite Code System** — Developers share 8-char codes to grant managers access to their reports
+- **Testing Report** — Shows which patterns were tested, detected, and passed
+- **Background Scanning** — Async scans with progress bar and sound notification
+- **Red Syntax Highlighting** — Dangerous code patterns highlighted in red
+- **Scan History** — Full results stored, viewable anytime
+- **False Positive Reduction** — Skips libraries, detects sanitizers, deep context-aware analysis
 - **Severity Classification** — Critical, High, Medium ratings for prioritization
 
 ---
@@ -53,11 +56,16 @@ SecScan JS is a web-based static analysis tool that detects security vulnerabili
 | 1 | SQL Injection | CWE-89 | Critical | String concatenation or template literals in SQL queries |
 | 2 | Command Injection | CWE-78 | Critical | User input passed to exec(), spawn(), system() |
 | 3 | Path Traversal | CWE-22 | Critical | User input in fs.readFile(), writeFile() operations |
-| 4 | Cross-Site Scripting (XSS) | CWE-79 | High | User input in innerHTML, document.write() |
-| 5 | Insecure eval() | CWE-95 | High | Dynamic/user input passed to eval() |
-| 6 | Prototype Pollution | CWE-1321 | High | User-controlled key in object property assignment |
-| 7 | Angular Security Bypass | CWE-79 | High | bypassSecurityTrust* with user input |
-| 8 | Hardcoded Secrets | CWE-798 | Medium | API keys, passwords, tokens in source code |
+| 4 | Insecure Deserialization | CWE-502 | Critical | User input passed to unserialize/deserialize |
+| 5 | Cross-Site Scripting (XSS) | CWE-79 | High | User input in innerHTML, document.write() |
+| 6 | Insecure eval() | CWE-95 | High | Dynamic/user input passed to eval() |
+| 7 | Prototype Pollution | CWE-1321 | High | User-controlled key in object property assignment |
+| 8 | SSRF | CWE-918 | High | User-controlled URL in fetch/axios/request |
+| 9 | Angular Security Bypass | CWE-79 | High | bypassSecurityTrust* with user input |
+| 10 | Hardcoded Secrets | CWE-798 | Medium | API keys, passwords, tokens in source code |
+| 11 | Open Redirect | CWE-601 | Medium | User input in redirect/location.href |
+| 12 | ReDoS | CWE-1333 | Medium | Regex with nested quantifiers (catastrophic backtracking) |
+| 13 | Insecure Randomness | CWE-330 | Medium | Math.random() assigned to security-sensitive variables |
 | 9 | Open Redirect | CWE-601 | Medium | User input in redirect/location.href |
 | 10 | ReDoS | CWE-1333 | Medium | Regex with nested quantifiers (catastrophic backtracking) |
 | 11 | Insecure Randomness | CWE-330 | Medium | Math.random() used in security contexts |
@@ -218,42 +226,32 @@ The application starts at: **http://localhost:5000**
 
 ## Usage Guide
 
-### 1. Create an Account
-- Go to http://localhost:5000
-- Click "Create Account"
-- Fill in your name, username, email, and password
+### Roles
 
-### 2. Login
-- Use your email/username and password to sign in
+There are two roles:
 
-### 3. Scan JavaScript Code
-You have three options:
+| Role | Access |
+|---|---|
+| **Developer** | Scanner, scan history, report downloads, invite code generation |
+| **Manager** | Manager panel (linked developers' reports only), org-wide PDF export |
 
-**Option A: Upload a File**
-- Click "Upload" and select a `.js`, `.html`, `.php`, or `.txt` file
-- Drag and drop is also supported
+### Developer Flow
 
-**Option B: Enter a URL**
-- Paste any URL (e.g., `https://example.com`)
-- The scanner will fetch the page and all linked `.js` files automatically
+1. **Register** as Developer at `/auth/register`
+2. **Login** → redirected to Scanner Dashboard
+3. **Scan** by uploading a file, entering a URL, or browsing a folder
+4. **View Results** — technical detail with taint flow, red-highlighted code, CWE mapping
+5. **Download Report** — JSON, HTML, or PDF
+6. **Generate Invite Code** — go to Profile → click "Generate Invite Code" → share the 8-char code with your manager
 
-**Option C: Scan a Folder**
-- Enter a local folder path (e.g., `/home/user/project/src`)
-- All `.js`, `.html`, `.php`, `.txt` files will be scanned recursively
+### Manager Flow
 
-### 4. View Results
-- Vulnerabilities are grouped by file with severity badges
-- Each finding shows: CWE ID, line number, code snippet (with red highlighting), description, and how to fix
-- Extracted JavaScript URLs are listed with status (⚠️ has issues / ✓ clean)
-
-### 5. Download Report
-- Click JSON, HTML, or PDF to download a formatted report
-- PDF is A4-formatted and suitable for printing or sharing
-
-### 6. Scan History
-- All scans are saved automatically
-- View any past scan from the History page
-- Delete scans you no longer need
+1. **Register** as Manager at `/auth/register`
+2. **Login** → redirected to Manager Panel
+3. **Link Developers** — enter the 8-char invite code from your developer
+4. **View Reports** — general/summary view (risk assessment, no raw code)
+5. **Export Org Report** — PDF with all linked developers' stats
+6. **Unlink** — remove a developer from your panel anytime
 
 ---
 
