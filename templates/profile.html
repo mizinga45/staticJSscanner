@@ -24,11 +24,13 @@
         <p style="font-size:0.85rem;color:var(--text-secondary);margin-bottom:0.75rem;">Share this code with your manager so they can view your scan reports.</p>
         {% if user.invite_code %}
             <div style="display:flex;align-items:center;gap:1rem;">
-                <code style="font-size:1.5rem;font-weight:700;color:var(--accent-cyan);background:var(--bg-secondary);padding:0.5rem 1rem;border-radius:6px;letter-spacing:2px;">{{ user.invite_code }}</code>
+                <code id="inviteCode" onclick="copyCode()" style="font-size:1.5rem;font-weight:700;color:var(--accent-cyan);background:var(--bg-secondary);padding:0.5rem 1rem;border-radius:6px;letter-spacing:2px;cursor:pointer;" title="Click to copy">{{ user.invite_code }}</code>
+                <span id="copyMsg" style="font-size:0.75rem;color:var(--accent-green);display:none;">✓ Copied!</span>
                 <form method="POST" style="margin:0;">
                     <button type="submit" class="btn btn-outline btn-sm">🔄 Regenerate</button>
                 </form>
             </div>
+            <p style="font-size:0.75rem;color:var(--text-muted);margin-top:0.5rem;">Click the code to copy it</p>
         {% else %}
             <form method="POST">
                 <button type="submit" class="btn btn-primary btn-sm">Generate Invite Code</button>
@@ -86,4 +88,17 @@
         <p style="color: var(--text-muted); text-align: center; padding: 2rem;">No scans yet.</p>
     {% endif %}
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function copyCode() {
+    const code = document.getElementById('inviteCode').textContent;
+    navigator.clipboard.writeText(code).then(() => {
+        const msg = document.getElementById('copyMsg');
+        msg.style.display = 'inline';
+        setTimeout(() => { msg.style.display = 'none'; }, 2000);
+    });
+}
+</script>
 {% endblock %}
