@@ -66,6 +66,11 @@
         {% endif %}
     </div>
     {% endif %}
+    {% if deobfuscation_method is defined and deobfuscation_method %}
+    <div class="alert alert-warning">
+        <strong>🔓 Deobfuscation Applied:</strong> {{ deobfuscation_method }} — obfuscated code was reversed and analyzed successfully.
+    </div>
+    {% endif %}
 
     <!-- Testing Report: Patterns Tested / Detected / Not Found -->
     {% if testing_report %}

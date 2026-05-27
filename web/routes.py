@@ -77,6 +77,7 @@ def _run_scan_background(app, user_id, source, input_method):
                 is_minified=code_info.get('is_minified', False),
                 is_obfuscated=code_info.get('is_obfuscated', False),
                 was_beautified=code_info.get('was_beautified', False),
+                deobfuscation_method=code_info.get('deobfuscation_method'),
             )
             db.session.add(scan_result)
             db.session.commit()
@@ -168,6 +169,7 @@ def view_scan(scan_id):
         'developer': scan_result.user.full_name if scan_result.user else 'Unknown',
         'is_minified': scan_result.is_minified,
         'was_beautified': scan_result.was_beautified,
+        'deobfuscation_method': scan_result.deobfuscation_method,
     }
 
     # Manager sees general/summary view, developer sees full technical detail
@@ -192,6 +194,7 @@ def view_scan(scan_id):
                            scanned_at=scan_result.scanned_at,
                            is_minified=scan_result.is_minified,
                            was_beautified=scan_result.was_beautified,
+                           deobfuscation_method=scan_result.deobfuscation_method,
                            developer=scan_result.user.full_name)
 
 

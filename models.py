@@ -38,6 +38,7 @@ class ScanResult(db.Model):
     is_minified = db.Column(db.Boolean, default=False)
     is_obfuscated = db.Column(db.Boolean, default=False)
     was_beautified = db.Column(db.Boolean, default=False)
+    deobfuscation_method = db.Column(db.String(100), default=None)
     scanned_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     def get_vulnerabilities(self):
