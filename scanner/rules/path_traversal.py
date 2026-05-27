@@ -47,10 +47,13 @@ class PathTraversalRule(VulnerabilityRule):
                 var_id = decl.get('id')
                 if var_id and var_id.get('type') == 'Identifier' and init:
                     name = var_id.get('name')
-                    if self._is_from_user_input(init):
+                    if self._is_sanitized_path(init):
+                        tainted.discard(name)  # path.basename/resolve clears taint
+                    elif self._is_from_user_input(init):
                         tainted.add(name)
                     elif self._references_tainted(init, tainted):
-                        tainted.add(name)
+                        if not self._is_sanitized_path(init):
+                            tainted.add(name)
 
         elif node_type == 'AssignmentExpression':
             left = node.get('left')

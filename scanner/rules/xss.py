@@ -45,17 +45,22 @@ class XSSRule(VulnerabilityRule):
                 var_id = decl.get('id')
                 if var_id and var_id.get('type') == 'Identifier' and init:
                     var_name = var_id.get('name')
-                    if self._is_from_user_input(init):
+                    if self._is_sanitized(init):
+                        tainted.discard(var_name)  # Sanitizer clears taint
+                    elif self._is_from_user_input(init):
                         tainted.add(var_name)
                     elif self._references_tainted(init, tainted):
-                        tainted.add(var_name)
+                        if not self._is_sanitized(init):
+                            tainted.add(var_name)
 
         elif node_type == 'AssignmentExpression':
             left = node.get('left')
             right = node.get('right')
             if left and left.get('type') == 'Identifier' and right:
                 var_name = left.get('name')
-                if self._is_from_user_input(right):
+                if self._is_sanitized(right):
+                    tainted.discard(var_name)
+                elif self._is_from_user_input(right):
                     tainted.add(var_name)
                 elif self._references_tainted(right, tainted):
                     tainted.add(var_name)
