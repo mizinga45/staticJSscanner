@@ -62,7 +62,7 @@ class RegexDosRule(VulnerabilityRule):
             vuln_type=self.vuln_type,
             cwe_id=self.cwe_id,
             file_path=file_path,
-            line_number=line,
+            line_number=lineno,
             code_snippet=snippet[:150],
             description=f"Regex pattern contains nested quantifiers or overlapping alternation that can cause catastrophic backtracking (ReDoS).",
             remediation="Rewrite the regex to avoid nested quantifiers. Use atomic groups or possessive quantifiers. Consider using a regex timeout or the 're2' library.",
