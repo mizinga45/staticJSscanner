@@ -57,10 +57,16 @@ def highlight_vuln(code, vuln_type):
         # Fallback: if no pattern matched, highlight common dangerous tokens
         fallback = [r'(location\.\w+)', r'(req\.\w+)', r'(document\.\w+)', r'(window\.\w+)',
                     r'(\.\w+Sync)\b', r'\b(query|params|body|cookies)\b',
-                    r'\b(dataset\.\w+)', r'\b(forEach|map|filter)\s*\(']
+                    r'\b(dataset\.\w+)', r'\b(forEach|map|filter)\s*\(',
+                    r'\b(function|module|exports|typeof|undefined)\b',
+                    r'(\w+\.\w+)\s*\(']
         for pattern in fallback:
             for m in re.finditer(pattern, text):
                 highlights.append((m.start(), m.end()))
+                if len(highlights) >= 3:
+                    break
+            if len(highlights) >= 3:
+                break
 
     if not highlights:
         return Markup(escape(text))
