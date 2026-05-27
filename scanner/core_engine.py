@@ -83,26 +83,33 @@ class CoreAnalysisEngine:
                 code = CodeExtractor.beautify(code)
                 code_info['was_beautified'] = True
 
-            # Handle obfuscated code
+            # Handle obfuscated code: try to deobfuscate, then scan
             if CodeExtractor.is_obfuscated(code):
                 code_info['is_obfuscated'] = True
-                warn_path = self._build_display_path(source_id, original_source_label, html_line_ref)
-                obf_vuln = Vulnerability(
-                    vuln_type="Obfuscation Warning",
-                    cwe_id="N/A",
-                    file_path=warn_path,
-                    line_number=1,
-                    code_snippet="(code uses obfuscation techniques like eval(atob(...)) or hex encoding)",
-                    description="The code is obfuscated using techniques that hide its true logic.",
-                    remediation="Obtain the original unobfuscated source code for accurate analysis.",
-                    confidence_score=0,
-                    severity="Info"
-                )
-                key = (obf_vuln.file_path, 'OBFUSCATION')
-                if key not in seen:
-                    seen.add(key)
-                    all_vulns.append(obf_vuln)
-                continue
+                deobfuscated, deob_method = CodeExtractor.deobfuscate(code)
+                if deob_method:
+                    # Successfully deobfuscated — scan the clean version
+                    code = deobfuscated
+                    code_info['deobfuscation_method'] = deob_method
+                else:
+                    # Cannot deobfuscate — warn and skip
+                    warn_path = self._build_display_path(source_id, original_source_label, html_line_ref)
+                    obf_vuln = Vulnerability(
+                        vuln_type="Obfuscation Warning",
+                        cwe_id="N/A",
+                        file_path=warn_path,
+                        line_number=1,
+                        code_snippet="(code uses obfuscation techniques that could not be reversed)",
+                        description="The code is obfuscated using techniques that hide its true logic. Automatic deobfuscation was attempted but failed.",
+                        remediation="Obtain the original unobfuscated source code for accurate analysis.",
+                        confidence_score=0,
+                        severity="Info"
+                    )
+                    key = (obf_vuln.file_path, 'OBFUSCATION')
+                    if key not in seen:
+                        seen.add(key)
+                        all_vulns.append(obf_vuln)
+                    continue
 
             lines = code.splitlines()
             try:

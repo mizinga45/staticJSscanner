@@ -70,20 +70,22 @@ class CodeExtractor:
         lines = code.splitlines()
         if not lines:
             return False
-        # Check for common obfuscation indicators
         obfuscation_signs = [
-            r'eval\s*\(\s*atob\s*\(',          # eval(atob(...))
-            r'eval\s*\(\s*unescape\s*\(',      # eval(unescape(...))
-            r'eval\s*\(\s*String\.fromCharCode', # eval(String.fromCharCode(...))
-            r'\\x[0-9a-f]{2}.*\\x[0-9a-f]{2}.*\\x[0-9a-f]{2}',  # Heavy hex encoding
-            r'\\u[0-9a-f]{4}.*\\u[0-9a-f]{4}.*\\u[0-9a-f]{4}',  # Heavy unicode encoding
-            r'_0x[a-f0-9]{4,}',                # obfuscator.io style variables
-            r'\[\"\\x',                         # Hex string array access
+            r'eval\s*\(\s*atob\s*\(',
+            r'eval\s*\(\s*unescape\s*\(',
+            r'eval\s*\(\s*String\.fromCharCode',
+            r'\\x[0-9a-f]{2}.*\\x[0-9a-f]{2}.*\\x[0-9a-f]{2}',
+            r'\\u[0-9a-f]{4}.*\\u[0-9a-f]{4}.*\\u[0-9a-f]{4}',
+            r'_0x[a-f0-9]{4,}',
+            r'\[\"\\x',
+            r'atob\s*\(\s*["\'][A-Za-z0-9+/=]{20,}',  # atob with long base64
+            r'String\.fromCharCode\s*\(\s*\d+\s*,\s*\d+\s*,\s*\d+',  # 3+ char codes
+            r'unescape\s*\(\s*["\']%[0-9a-f]{2}',  # unescape with percent encoding
         ]
         import re
-        first_500 = code[:500]
+        check = code[:2000]
         for pattern in obfuscation_signs:
-            if re.search(pattern, first_500, re.IGNORECASE):
+            if re.search(pattern, check, re.IGNORECASE):
                 return True
         return False
 
@@ -104,7 +106,7 @@ class CodeExtractor:
 
     @staticmethod
     def beautify(js_code):
-        """Deobfuscate / pretty-print minified JavaScript."""
+        """Pretty-print minified JavaScript."""
         try:
             import jsbeautifier
             opts = jsbeautifier.default_options()
@@ -113,3 +115,87 @@ class CodeExtractor:
             return jsbeautifier.beautify(js_code, opts)
         except Exception:
             return js_code
+
+    @staticmethod
+    def deobfuscate(code):
+        """
+        Attempt to deobfuscate commonly known obfuscation patterns.
+        Returns (deobfuscated_code, method_used) or (original_code, None).
+        """
+        import re, base64
+
+        original = code
+        method = None
+
+        # 1. Hex string decoding: "\x48\x65\x6c\x6c\x6f" → "Hello"
+        hex_pattern = r'(?:"|\')((?:\\x[0-9a-fA-F]{2})+)(?:"|\')'
+        if re.search(hex_pattern, code):
+            def decode_hex(m):
+                try:
+                    return '"' + bytes.fromhex(m.group(1).replace('\\x', '')).decode('utf-8') + '"'
+                except Exception:
+                    return m.group(0)
+            code = re.sub(hex_pattern, decode_hex, code)
+            if code != original:
+                method = 'Hex string decoding'
+
+        # 2. Unicode escape decoding: "\u0048\u0065" → "He"
+        unicode_pattern = r'(?:"|\')((?:\\u[0-9a-fA-F]{4})+)(?:"|\')'
+        if re.search(unicode_pattern, code):
+            def decode_unicode(m):
+                try:
+                    s = m.group(1).encode().decode('unicode_escape')
+                    return '"' + s + '"'
+                except Exception:
+                    return m.group(0)
+            code = re.sub(unicode_pattern, decode_unicode, code)
+            if code != original and not method:
+                method = 'Unicode escape decoding'
+
+        # 3. Base64 decoding: atob("SGVsbG8=") → "Hello"
+        atob_pattern = r'atob\s*\(\s*["\']([A-Za-z0-9+/=]+)["\']\s*\)'
+        if re.search(atob_pattern, code):
+            def decode_atob(m):
+                try:
+                    decoded = base64.b64decode(m.group(1)).decode('utf-8')
+                    return '"' + decoded.replace('"', '\\"').replace('\n', '\\n') + '"'
+                except Exception:
+                    return m.group(0)
+            code = re.sub(atob_pattern, decode_atob, code)
+            if code != original and not method:
+                method = 'Base64 (atob) decoding'
+
+        # 4. String.fromCharCode: String.fromCharCode(72,101,108) → "Hel"
+        charcode_pattern = r'String\.fromCharCode\s*\(([\d,\s]+)\)'
+        if re.search(charcode_pattern, code):
+            def decode_charcode(m):
+                try:
+                    chars = [int(c.strip()) for c in m.group(1).split(',')]
+                    return '"' + ''.join(chr(c) for c in chars) + '"'
+                except Exception:
+                    return m.group(0)
+            code = re.sub(charcode_pattern, decode_charcode, code)
+            if code != original and not method:
+                method = 'String.fromCharCode decoding'
+
+        # 5. Array-based obfuscation: var _0x1234=["eval","test"]; _0x1234[0]
+        array_pattern = r'var\s+(_0x[a-f0-9]+)\s*=\s*\[((?:"[^"]*"|\'[^\']*\')(?:\s*,\s*(?:"[^"]*"|\'[^\']*\'))*)\];'
+        array_match = re.search(array_pattern, code)
+        if array_match:
+            arr_name = array_match.group(1)
+            try:
+                items = re.findall(r'["\']([^"\']*)["\']', array_match.group(2))
+                def replace_access(m):
+                    idx = int(m.group(1))
+                    return '"' + items[idx] + '"' if idx < len(items) else m.group(0)
+                code = re.sub(re.escape(arr_name) + r'\[(\d+)\]', replace_access, code)
+                if code != original and not method:
+                    method = 'Array-based string inlining'
+            except Exception:
+                pass
+
+        # Beautify result if deobfuscation happened
+        if method:
+            code = CodeExtractor.beautify(code)
+
+        return code, method
