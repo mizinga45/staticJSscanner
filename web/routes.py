@@ -283,6 +283,86 @@ def unlink_developer(dev_id):
     return redirect(url_for('main.manager_panel'))
 
 
+@main_bp.route('/manager/scan/<int:scan_id>/pdf')
+@login_required
+def manager_scan_pdf(scan_id):
+    """Download individual scan report named by domain."""
+    if not current_user.is_manager:
+        return redirect(url_for('main.dashboard'))
+    scan = ScanResult.query.get_or_404(scan_id)
+    link = ManagerLink.query.filter_by(manager_id=current_user.id, developer_id=scan.user_id).first()
+    if not link:
+        flash('Access denied.', 'danger')
+        return redirect(url_for('main.manager_panel'))
+
+    vulns = scan.get_vulnerabilities()
+    summary = scan.get_summary()
+    # Extract domain for filename
+    from urllib.parse import urlparse
+    source = scan.source
+    if source.startswith('http'):
+        domain = urlparse(source).netloc.replace('www.', '')
+    else:
+        domain = source.split('/')[-1].replace('.js', '').replace('.html', '')
+    filename = f"{domain}-REPORT.pdf"
+
+    html = render_template('manager_general_report_pdf.html',
+                           source=scan.source, summary=summary,
+                           vulnerabilities=vulns, developer=scan.user.full_name,
+                           scanned_at=scan.scanned_at, domain=domain)
+    try:
+        from weasyprint import HTML
+        pdf = HTML(string=html).write_pdf()
+        return Response(pdf, mimetype='application/pdf',
+                        headers={'Content-Disposition': f'attachment;filename={filename}'})
+    except Exception as e:
+        flash(f'PDF failed: {e}', 'danger')
+        return redirect(url_for('main.manager_panel'))
+
+
+@main_bp.route('/manager/merged-report')
+@login_required
+def manager_merged_report():
+    """Download ALL-PROJECT-MERGED-REPORT.pdf combining all linked developers' scans."""
+    if not current_user.is_manager:
+        return redirect(url_for('main.dashboard'))
+
+    links = ManagerLink.query.filter_by(manager_id=current_user.id).all()
+    linked_dev_ids = [l.developer_id for l in links]
+    if not linked_dev_ids:
+        flash('No developers linked.', 'warning')
+        return redirect(url_for('main.manager_panel'))
+
+    all_scans = ScanResult.query.filter(ScanResult.user_id.in_(linked_dev_ids))\
+        .order_by(ScanResult.scanned_at.desc()).all()
+    developers = User.query.filter(User.id.in_(linked_dev_ids)).all()
+
+    html = render_template('manager_report_pdf.html',
+                           total_scans=len(all_scans),
+                           total_vulns=sum(s.total_vulns for s in all_scans),
+                           total_critical=sum(s.critical_count for s in all_scans),
+                           total_high=sum(s.high_count for s in all_scans),
+                           total_medium=sum(s.medium_count for s in all_scans),
+                           dev_stats=[{
+                               'name': d.full_name, 'username': d.username,
+                               'scan_count': len([s for s in all_scans if s.user_id == d.id]),
+                               'critical': sum(s.critical_count for s in all_scans if s.user_id == d.id),
+                               'high': sum(s.high_count for s in all_scans if s.user_id == d.id),
+                               'medium': sum(s.medium_count for s in all_scans if s.user_id == d.id),
+                               'total': sum(s.total_vulns for s in all_scans if s.user_id == d.id),
+                           } for d in developers],
+                           top_vulns=[], scans=all_scans,
+                           generated_by=current_user.full_name)
+    try:
+        from weasyprint import HTML
+        pdf = HTML(string=html).write_pdf()
+        return Response(pdf, mimetype='application/pdf',
+                        headers={'Content-Disposition': 'attachment;filename=ALL-PROJECT-MERGED-REPORT.pdf'})
+    except Exception as e:
+        flash(f'PDF failed: {e}', 'danger')
+        return redirect(url_for('main.manager_panel'))
+
+
 @main_bp.route('/manager/report')
 @login_required
 def manager_report_pdf():

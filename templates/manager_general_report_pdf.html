@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>{{ domain }} - Security Report</title>
+<style>
+@page { size: A4; margin: 2cm 1.5cm; }
+body { font-family: 'Helvetica Neue', Arial, sans-serif; font-size: 11px; color: #1e293b; line-height: 1.5; }
+h1 { font-size: 20px; color: #0f172a; border-bottom: 3px solid #3b82f6; padding-bottom: 8px; margin-bottom: 15px; }
+h2 { font-size: 14px; color: #0f172a; border-bottom: 1px solid #e2e8f0; padding-bottom: 5px; margin: 20px 0 10px; }
+.meta { color: #64748b; font-size: 10px; margin-bottom: 20px; }
+.summary { display: flex; gap: 12px; margin: 15px 0; }
+.box { flex: 1; border: 1px solid #e2e8f0; border-radius: 6px; padding: 12px; text-align: center; }
+.box .num { font-size: 22px; font-weight: 800; display: block; }
+.box .lbl { font-size: 8px; text-transform: uppercase; color: #64748b; }
+.box.crit .num { color: #dc2626; } .box.crit { background: #fef2f2; }
+.box.high .num { color: #d97706; } .box.high { background: #fffbeb; }
+.box.med .num { color: #2563eb; }
+.box.total .num { color: #3b82f6; }
+.risk { padding: 12px; border-radius: 6px; margin: 15px 0; font-size: 12px; font-weight: 600; }
+.risk.critical { background: #fef2f2; border: 1px solid #fecaca; color: #991b1b; }
+.risk.moderate { background: #fffbeb; border: 1px solid #fed7aa; color: #92400e; }
+.risk.low { background: #eff6ff; border: 1px solid #bfdbfe; color: #1e40af; }
+.risk.safe { background: #f0fdf4; border: 1px solid #bbf7d0; color: #166534; }
+table { width: 100%; border-collapse: collapse; margin: 10px 0; font-size: 10px; }
+th, td { padding: 6px 8px; text-align: left; border-bottom: 1px solid #e2e8f0; }
+th { background: #f8fafc; font-weight: 600; color: #475569; text-transform: uppercase; font-size: 9px; }
+.badge { display: inline-block; padding: 1px 5px; border-radius: 3px; font-size: 8px; font-weight: 700; }
+.b-crit { background: #dc2626; color: white; }
+.b-high { background: #d97706; color: white; }
+.b-med { background: #2563eb; color: white; }
+.footer { margin-top: 30px; padding-top: 10px; border-top: 1px solid #e2e8f0; text-align: center; font-size: 9px; color: #94a3b8; }
+</style>
+</head>
+<body>
+<h1>🛡️ {{ domain }} — Security Report</h1>
+<div class="meta">
+    <strong>Target:</strong> {{ source }}<br>
+    <strong>Scanned by:</strong> {{ developer }}<br>
+    <strong>Date:</strong> {{ scanned_at.strftime('%Y-%m-%d %H:%M') if scanned_at else 'N/A' }}
+</div>
+
+<h2>Risk Assessment</h2>
+{% if summary.severity_counts.Critical > 0 %}
+<div class="risk critical">🔴 HIGH RISK — {{ summary.severity_counts.Critical }} critical vulnerabilities require immediate attention before deployment.</div>
+{% elif summary.severity_counts.High > 0 %}
+<div class="risk moderate">🟠 MODERATE RISK — {{ summary.severity_counts.High }} high-severity issues should be resolved before production.</div>
+{% elif summary.total > 0 %}
+<div class="risk low">🟡 LOW RISK — Only medium/low issues found. Recommended to fix but not blocking.</div>
+{% else %}
+<div class="risk safe">✅ SECURE — No vulnerabilities detected. Application is ready for deployment.</div>
+{% endif %}
+
+<h2>Summary</h2>
+<div class="summary">
+    <div class="box total"><span class="num">{{ summary.total }}</span><span class="lbl">Total Issues</span></div>
+    <div class="box crit"><span class="num">{{ summary.severity_counts.Critical }}</span><span class="lbl">Critical</span></div>
+    <div class="box high"><span class="num">{{ summary.severity_counts.High }}</span><span class="lbl">High</span></div>
+    <div class="box med"><span class="num">{{ summary.severity_counts.Medium }}</span><span class="lbl">Medium</span></div>
+</div>
+
+{% if vulnerabilities %}
+<h2>Issues Found</h2>
+<table>
+    <thead><tr><th>Severity</th><th>Issue Type</th><th>Recommendation</th></tr></thead>
+    <tbody>
+        {% for vuln in vulnerabilities %}
+        <tr>
+            <td><span class="badge {% if vuln.severity == 'Critical' %}b-crit{% elif vuln.severity == 'High' %}b-high{% else %}b-med{% endif %}">{{ vuln.severity }}</span></td>
+            <td>{{ vuln.type }} ({{ vuln.cwe_id }})</td>
+            <td>{{ vuln.remediation }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endif %}
+
+<div class="footer">
+    SecScan JS — General Security Report<br>
+    This report contains a non-technical overview. For technical details, contact the developer.
+</div>
+</body>
+</html>
