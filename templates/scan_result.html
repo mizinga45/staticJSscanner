@@ -184,12 +184,8 @@
                     </div>
                     <div class="vuln-details">
                         <div class="vuln-detail-row">
-                            <span class="label">File</span>
-                            <span class="value" style="font-family:monospace;font-size:0.8rem;">{{ vuln.file_path }}</span>
-                        </div>
-                        <div class="vuln-detail-row">
-                            <span class="label">Line</span>
-                            <span class="value">{{ vuln.line_number }}</span>
+                            <span class="label">Location</span>
+                            <span class="value" style="font-family:monospace;font-size:0.8rem;">{{ vuln.file_path|truncate(80) }} : <strong style="color:var(--accent-cyan);">line {{ vuln.line_number }}</strong></span>
                         </div>
                         <div class="vuln-detail-row">
                             <span class="label">Source Code</span>
