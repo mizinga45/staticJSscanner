@@ -7,8 +7,7 @@
             <h1 style="font-size: 1.5rem;">👔 Manager Panel</h1>
             <p style="color: var(--text-secondary); font-size: 0.85rem;">Organization security overview</p>
         </div>
-        <a href="{{ url_for('main.manager_report_pdf') }}" class="btn btn-primary btn-sm">📥 Export General Report (PDF)</a>
-        <a href="{{ url_for('main.manager_merged_report') }}" class="btn btn-outline btn-sm">📥 ALL-PROJECT-MERGED-REPORT</a>
+        <a href="{{ url_for('main.manager_merged_report') }}" class="btn btn-primary btn-sm">📥 ALL-PROJECT-MERGED-REPORT</a>
     </div>
 
     <!-- Add Developer by Invite Code -->
@@ -126,7 +125,7 @@
                     <td>{% if scan.medium_count %}<span class="badge badge-medium">{{ scan.medium_count }}</span>{% else %}<span style="color:var(--text-muted)">0</span>{% endif %}</td>
                     <td><strong>{{ scan.total_vulns }}</strong></td>
                     <td style="white-space:nowrap;font-size:0.8rem;">{{ scan.scanned_at.strftime('%Y-%m-%d %H:%M') }}</td>
-                    <td><a href="{{ url_for('main.view_scan', scan_id=scan.id) }}" class="btn btn-outline btn-sm">View</a></td>
+                    <td><a href="{{ url_for('main.view_scan', scan_id=scan.id) }}" class="btn btn-outline btn-sm">Report</a></td>
                 </tr>
                 {% endfor %}
             </tbody>

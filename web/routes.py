@@ -16,7 +16,7 @@ main_bp = Blueprint('main', __name__)
 _scan_jobs = {}
 
 
-def _run_scan_background(app, user_id, source, input_method):
+def _run_scan_background(app, user_id, source, input_method, max_depth=6, js_only=False):
     """Run scan in background thread."""
     with app.app_context():
         try:
@@ -26,7 +26,7 @@ def _run_scan_background(app, user_id, source, input_method):
             all_extracted_urls = []
 
             if os.path.isdir(source):
-                file_paths = input_handler.get_files_from_folder(source)
+                file_paths = input_handler.get_files_from_folder(source, max_depth=max_depth, js_only=js_only)
                 if not file_paths:
                     _scan_jobs[user_id] = {'status': 'error', 'message': 'No supported files found.'}
                     return
@@ -125,7 +125,9 @@ def dashboard():
         if source:
             _scan_jobs[current_user.id] = {'status': 'running'}
             app = current_app._get_current_object()
-            t = threading.Thread(target=_run_scan_background, args=(app, current_user.id, source, input_method))
+            max_depth = int(form.scan_depth.data) if form.folder_path.data else 6
+            js_only = form.js_only.data if form.folder_path.data else False
+            t = threading.Thread(target=_run_scan_background, args=(app, current_user.id, source, input_method, max_depth, js_only))
             t.daemon = True
             t.start()
             return render_template('index.html', form=form, recent_scans=recent_scans, scan_started=True)
@@ -164,19 +166,6 @@ def view_scan(scan_id):
     summary = scan_result.get_summary()
     extracted_urls = scan_result.get_extracted_urls()
     testing_report = scan_result.get_testing_report()
-
-    session['report_data'] = {
-        'source': scan_result.source,
-        'summary': summary,
-        'vulnerabilities': vulnerabilities,
-        'extracted_urls': extracted_urls,
-        'testing_report': testing_report,
-        'skipped_files': [],
-        'developer': scan_result.user.full_name if scan_result.user else 'Unknown',
-        'is_minified': scan_result.is_minified,
-        'was_beautified': scan_result.was_beautified,
-        'deobfuscation_method': scan_result.deobfuscation_method,
-    }
 
     # Manager sees general/summary view, developer sees full technical detail
     if current_user.is_manager:
@@ -309,7 +298,8 @@ def manager_scan_pdf(scan_id):
     html = render_template('manager_general_report_pdf.html',
                            source=scan.source, summary=summary,
                            vulnerabilities=vulns, developer=scan.user.full_name,
-                           scanned_at=scan.scanned_at, domain=domain)
+                           scanned_at=scan.scanned_at, domain=domain,
+                           manager_name=current_user.full_name)
     try:
         from weasyprint import HTML
         pdf = HTML(string=html).write_pdf()
@@ -419,28 +409,39 @@ def manager_report_pdf():
         return redirect(url_for('main.manager_panel'))
 
 
-@main_bp.route('/download/<format>')
+@main_bp.route('/download/<int:scan_id>/<format>')
 @login_required
-def download_report(format):
-    report = session.get('report_data')
-    if not report:
-        flash('No report available.', 'warning')
+def download_report(scan_id, format):
+    """Download report directly from database — no session size limit."""
+    scan = ScanResult.query.get_or_404(scan_id)
+    if scan.user_id != current_user.id and not current_user.is_manager:
+        flash('Access denied.', 'danger')
         return redirect(url_for('main.dashboard'))
+
+    report = {
+        'source': scan.source,
+        'summary': scan.get_summary(),
+        'vulnerabilities': scan.get_vulnerabilities(),
+        'extracted_urls': scan.get_extracted_urls(),
+        'testing_report': scan.get_testing_report(),
+        'developer': scan.user.full_name,
+        'skipped_files': [],
+    }
 
     if format == 'json':
         return Response(json.dumps(report, indent=2), mimetype='application/json',
-                        headers={'Content-Disposition': 'attachment;filename=secscan_report.json'})
+                        headers={'Content-Disposition': f'attachment;filename=secscan_report_{scan_id}.json'})
     elif format == 'html':
         html = render_template('download_report.html', **report)
         return Response(html, mimetype='text/html',
-                        headers={'Content-Disposition': 'attachment;filename=secscan_report.html'})
+                        headers={'Content-Disposition': f'attachment;filename=secscan_report_{scan_id}.html'})
     elif format == 'pdf':
         try:
             from weasyprint import HTML
             html_content = render_template('download_report.html', **report)
             pdf = HTML(string=html_content).write_pdf()
             return Response(pdf, mimetype='application/pdf',
-                            headers={'Content-Disposition': 'attachment;filename=secscan_report.pdf'})
+                            headers={'Content-Disposition': f'attachment;filename=secscan_report_{scan_id}.pdf'})
         except Exception as e:
             flash(f'PDF generation failed: {e}', 'danger')
             return redirect(url_for('main.dashboard'))

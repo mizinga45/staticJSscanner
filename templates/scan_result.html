@@ -46,9 +46,9 @@
     <div class="report-download-section">
         <h3 style="font-size: 1rem; margin-bottom: 0.75rem;">📥 Download Report</h3>
         <div class="btn-group">
-            <a href="{{ url_for('main.download_report', format='json') }}" class="btn btn-outline btn-sm">JSON</a>
-            <a href="{{ url_for('main.download_report', format='html') }}" class="btn btn-outline btn-sm">HTML</a>
-            <a href="{{ url_for('main.download_report', format='pdf') }}" class="btn btn-outline btn-sm">PDF</a>
+            <a href="{{ url_for('main.download_report', scan_id=scan_id, format='json') }}" class="btn btn-outline btn-sm">JSON</a>
+            <a href="{{ url_for('main.download_report', scan_id=scan_id, format='html') }}" class="btn btn-outline btn-sm">HTML</a>
+            <a href="{{ url_for('main.download_report', scan_id=scan_id, format='pdf') }}" class="btn btn-outline btn-sm">PDF</a>
         </div>
         {% if developer %}
         <p style="margin-top:0.5rem;font-size:0.75rem;color:var(--text-muted);">Scanned by: <strong>{{ developer }}</strong></p>

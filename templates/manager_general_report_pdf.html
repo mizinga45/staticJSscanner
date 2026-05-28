@@ -37,6 +37,7 @@ th { background: #f8fafc; font-weight: 600; color: #475569; text-transform: uppe
 <div class="meta">
     <strong>Target:</strong> {{ source }}<br>
     <strong>Scanned by:</strong> {{ developer }}<br>
+    <strong>Reviewed by:</strong> {{ manager_name }}<br>
     <strong>Date:</strong> {{ scanned_at.strftime('%Y-%m-%d %H:%M') if scanned_at else 'N/A' }}
 </div>
 

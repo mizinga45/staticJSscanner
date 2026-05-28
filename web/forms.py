@@ -1,7 +1,7 @@
 import os
 from flask_wtf import FlaskForm
-from flask_wtf.file import FileField, FileAllowed, MultipleFileField
-from wtforms import StringField, SubmitField
+from flask_wtf.file import FileField, FileAllowed
+from wtforms import StringField, SubmitField, SelectField, BooleanField
 from wtforms.validators import Optional, ValidationError
 from urllib.parse import urlparse
 
@@ -32,4 +32,14 @@ class ScanForm(FlaskForm):
     ])
     url_input = StringField('Or Enter URL', validators=[Optional(), validate_url])
     folder_path = StringField('Or Enter Folder Path', validators=[Optional(), validate_folder_path])
+    scan_depth = SelectField('Recursion Depth', choices=[
+        ('0', '0 — Current folder only'),
+        ('1', '1 — One level deep'),
+        ('2', '2 — Two levels deep'),
+        ('3', '3 — Three levels deep'),
+        ('4', '4 — Four levels deep'),
+        ('5', '5 — Five levels deep'),
+        ('6', '6 — Six levels deep (max)'),
+    ], default='6')
+    js_only = BooleanField('JavaScript files only (.js)')
     submit = SubmitField('Scan Now')

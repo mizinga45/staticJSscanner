@@ -42,7 +42,16 @@
                     <label class="btn btn-outline btn-sm" style="white-space:nowrap;cursor:pointer;" for="folderBrowse">Browse</label>
                     <input type="file" id="folderBrowse" webkitdirectory directory multiple style="display:none;">
                 </div>
-                <p class="form-text">Browse to select a folder, or paste the path manually</p>
+                <div style="display:flex;gap:1rem;margin-top:0.5rem;align-items:center;">
+                    <div>
+                        <label class="form-text" style="margin:0;">Depth:</label>
+                        {{ form.scan_depth(style="padding:0.3rem;background:var(--bg-secondary);border:1px solid var(--border-color);border-radius:4px;color:var(--text-primary);font-size:0.75rem;") }}
+                    </div>
+                    <label class="form-check" style="font-size:0.8rem;color:var(--text-secondary);">
+                        {{ form.js_only(class="form-check-input") }} .js files only
+                    </label>
+                </div>
+                <p class="form-text">Browse or paste path. Choose recursion depth and file filter.</p>
             </div>
             
             <div style="margin-top: 2rem;">
@@ -164,18 +173,31 @@
         });
     }
 
-    // Folder browse
+    // Folder browse — get actual path from selected files
     const folderBrowse = document.getElementById('folderBrowse');
     const folderPath = document.getElementById('folderPath');
     if (folderBrowse && folderPath) {
         folderBrowse.addEventListener('change', function() {
             if (this.files.length > 0) {
-                // Get the common folder path from the first file's webkitRelativePath
-                const path = this.files[0].webkitRelativePath;
-                const folder = path.split('/')[0];
-                folderPath.value = folder + '/ (' + this.files.length + ' files selected)';
+                // webkitRelativePath gives "foldername/subfolder/file.js"
+                // We need the actual system path — but browsers don't expose it for security
+                // So we show the folder name and file count as guidance
+                const firstPath = this.files[0].webkitRelativePath;
+                const folderName = firstPath.split('/')[0];
+                folderPath.value = '';
+                folderPath.placeholder = folderName + '/ — ' + this.files.length + ' files (paste full path below)';
+                flash_msg('Browser cannot access full path. Please paste the folder path manually: e.g. /home/user/' + folderName);
             }
         });
+    }
+
+    function flash_msg(msg) {
+        const el = document.createElement('div');
+        el.className = 'alert alert-info';
+        el.style.cssText = 'position:fixed;top:70px;left:50%;transform:translateX(-50%);z-index:9999;max-width:500px;font-size:0.8rem;';
+        el.textContent = msg;
+        document.body.appendChild(el);
+        setTimeout(() => el.remove(), 5000);
     }
 
     // Progress bar + polling for background scan
