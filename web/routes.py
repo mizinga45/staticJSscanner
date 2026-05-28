@@ -16,7 +16,7 @@ main_bp = Blueprint('main', __name__)
 _scan_jobs = {}
 
 
-def _run_scan_background(app, user_id, source, input_method):
+def _run_scan_background(app, user_id, source, input_method, js_only=False):
     """Run scan in background thread."""
     with app.app_context():
         try:
@@ -26,7 +26,7 @@ def _run_scan_background(app, user_id, source, input_method):
             all_extracted_urls = []
 
             if os.path.isdir(source):
-                file_paths = input_handler.get_files_from_folder(source)
+                file_paths = input_handler.get_files_from_folder(source, js_only=js_only)
                 if not file_paths:
                     _scan_jobs[user_id] = {'status': 'error', 'message': 'No supported files found.'}
                     return
@@ -128,12 +128,11 @@ def dashboard():
             if folder_files and folder_files[0].filename:
                 upload_folder = current_app.config['UPLOAD_FOLDER']
                 folder_dir = os.path.join(upload_folder, 'folder_scan')
-                # Clean previous folder scan
                 import shutil
                 if os.path.exists(folder_dir):
                     shutil.rmtree(folder_dir)
-                # Save all uploaded files preserving relative paths
-                supported = ('.js', '.html', '.php', '.txt')
+                js_only = request.form.get('js_only') == 'on'
+                supported = ('.js',) if js_only else ('.js', '.html', '.php', '.txt')
                 saved = 0
                 for f in folder_files:
                     if f.filename and f.filename.lower().endswith(supported):
@@ -146,10 +145,13 @@ def dashboard():
                     source = folder_dir
                     input_method = 'folder'
 
+        # Determine js_only for server path scan
+        js_only_flag = request.form.get('js_only') == 'on'
+
         if source:
             _scan_jobs[current_user.id] = {'status': 'running'}
             app = current_app._get_current_object()
-            t = threading.Thread(target=_run_scan_background, args=(app, current_user.id, source, input_method))
+            t = threading.Thread(target=_run_scan_background, args=(app, current_user.id, source, input_method, js_only_flag))
             t.daemon = True
             t.start()
             return render_template('index.html', form=form, recent_scans=recent_scans, scan_started=True)

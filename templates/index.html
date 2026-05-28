@@ -41,9 +41,12 @@
                     <input type="file" id="folderInput" name="folder_upload" webkitdirectory directory multiple style="position:absolute;inset:0;opacity:0;cursor:pointer;">
                     <div class="upload-icon" style="font-size:1.5rem;">📂</div>
                     <p class="upload-text"><strong>Click to select a folder</strong></p>
-                    <p class="form-text">All .js, .html, .php files inside will be scanned recursively</p>
+                    <p class="form-text">All supported files inside will be scanned recursively</p>
                     <p id="folderName" style="color: var(--accent-green); margin-top: 0.5rem; font-size: 0.85rem;"></p>
                 </div>
+                <label class="form-check" style="margin-top:0.5rem;font-size:0.85rem;color:var(--text-secondary);">
+                    <input type="checkbox" name="js_only" class="form-check-input" id="jsOnlyCheck"> JavaScript files only (.js)
+                </label>
             </div>
 
             <div class="input-divider">or</div>
