@@ -48,14 +48,6 @@
                     <input type="checkbox" name="js_only" class="form-check-input" id="jsOnlyCheck"> JavaScript files only (.js)
                 </label>
             </div>
-
-            <div class="input-divider">or</div>
-
-            <div class="mb-4">
-                <label class="form-label">📂 Server Folder Path (local)</label>
-                {{ form.folder_path(class="form-control", placeholder="/home/user/project/src") }}
-                <p class="form-text">Paste a local server path to scan recursively</p>
-            </div>
             
             <div style="margin-top: 2rem;">
                 {{ form.submit(class="btn btn-primary btn-lg w-100", id="scanBtn") }}

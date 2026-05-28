@@ -31,6 +31,7 @@ def _run_scan_background(app, user_id, source, input_method, js_only=False):
                     _scan_jobs[user_id] = {'status': 'error', 'message': 'No supported files found.'}
                     return
                 all_parts = []
+                scanned_files = []
                 for fp in file_paths:
                     try:
                         data = input_handler.accept_input(fp)
@@ -39,13 +40,14 @@ def _run_scan_background(app, user_id, source, input_method, js_only=False):
                         parts = extractor.extract_with_origins(data['html'], external_js=data['external_js'])
                         if parts:
                             all_parts.extend([(fp, code, off) for _, code, off in parts])
+                            scanned_files.append(os.path.basename(fp))
                     except Exception:
                         continue
                 if not all_parts:
                     _scan_jobs[user_id] = {'status': 'error', 'message': 'No JavaScript code found.'}
                     return
                 vulnerabilities, extracted_urls, testing_report, code_info = engine.scan(all_parts, source)
-                all_extracted_urls = extracted_urls
+                all_extracted_urls = extracted_urls + scanned_files
             else:
                 input_data = input_handler.accept_input(source)
                 if input_data is None:

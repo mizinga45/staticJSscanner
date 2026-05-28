@@ -108,7 +108,7 @@
     <!-- Extracted JavaScript URLs -->
     {% if extracted_urls %}
     <div class="extracted-urls-section">
-        <h3 style="font-size: 1rem; margin-bottom: 0.75rem;">🌐 Extracted JavaScript Sources ({{ extracted_urls|length }})</h3>
+        <h3 style="font-size: 1rem; margin-bottom: 0.75rem;">🌐 Scanned Sources ({{ extracted_urls|length }})</h3>
         <div class="urls-list">
             {% for url in extracted_urls %}
             <div class="url-item">
@@ -121,7 +121,11 @@
                 {% else %}
                     <span class="url-badge url-badge-safe">✓</span>
                 {% endif %}
-                <a href="{{ url }}" target="_blank" rel="noopener">{{ url }}</a>
+                {% if url.startswith('http') %}
+                    <a href="{{ url }}" target="_blank" rel="noopener">{{ url }}</a>
+                {% else %}
+                    <span style="color:var(--text-secondary);font-size:0.8rem;">📄 {{ url }}</span>
+                {% endif %}
                 {% if has_vuln %}
                     <span class="badge badge-critical" style="font-size: 0.6rem; margin-left: auto;">{{ has_vuln|length }} issue{{ 's' if has_vuln|length > 1 }}</span>
                 {% endif %}
