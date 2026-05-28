@@ -16,7 +16,7 @@ main_bp = Blueprint('main', __name__)
 _scan_jobs = {}
 
 
-def _run_scan_background(app, user_id, source, input_method, max_depth=6, js_only=False):
+def _run_scan_background(app, user_id, source, input_method):
     """Run scan in background thread."""
     with app.app_context():
         try:
@@ -26,7 +26,7 @@ def _run_scan_background(app, user_id, source, input_method, max_depth=6, js_onl
             all_extracted_urls = []
 
             if os.path.isdir(source):
-                file_paths = input_handler.get_files_from_folder(source, max_depth=max_depth, js_only=js_only)
+                file_paths = input_handler.get_files_from_folder(source)
                 if not file_paths:
                     _scan_jobs[user_id] = {'status': 'error', 'message': 'No supported files found.'}
                     return
@@ -122,12 +122,34 @@ def dashboard():
                 flash('Invalid folder path.', 'danger')
                 return render_template('index.html', form=form, recent_scans=recent_scans)
 
+        # Handle folder upload via browser (webkitdirectory)
+        if not source:
+            folder_files = request.files.getlist('folder_upload')
+            if folder_files and folder_files[0].filename:
+                upload_folder = current_app.config['UPLOAD_FOLDER']
+                folder_dir = os.path.join(upload_folder, 'folder_scan')
+                # Clean previous folder scan
+                import shutil
+                if os.path.exists(folder_dir):
+                    shutil.rmtree(folder_dir)
+                # Save all uploaded files preserving relative paths
+                supported = ('.js', '.html', '.php', '.txt')
+                saved = 0
+                for f in folder_files:
+                    if f.filename and f.filename.lower().endswith(supported):
+                        rel_path = secure_filename(f.filename.replace('/', '_'))
+                        dest = os.path.join(folder_dir, rel_path)
+                        os.makedirs(os.path.dirname(dest), exist_ok=True)
+                        f.save(dest)
+                        saved += 1
+                if saved > 0:
+                    source = folder_dir
+                    input_method = 'folder'
+
         if source:
             _scan_jobs[current_user.id] = {'status': 'running'}
             app = current_app._get_current_object()
-            max_depth = int(form.scan_depth.data) if form.folder_path.data else 6
-            js_only = form.js_only.data if form.folder_path.data else False
-            t = threading.Thread(target=_run_scan_background, args=(app, current_user.id, source, input_method, max_depth, js_only))
+            t = threading.Thread(target=_run_scan_background, args=(app, current_user.id, source, input_method))
             t.daemon = True
             t.start()
             return render_template('index.html', form=form, recent_scans=recent_scans, scan_started=True)
