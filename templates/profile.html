@@ -12,8 +12,12 @@
     </div>
 
     <div style="display: flex; gap: 1rem; margin-bottom: 2rem; flex-wrap: wrap;">
-        <a href="{{ url_for('main.dashboard') }}" class="btn btn-primary btn-sm">🔍 New Scan</a>
-        <a href="{{ url_for('main.history') }}" class="btn btn-outline btn-sm">📋 Scan History</a>
+        {% if user.is_manager %}
+            <a href="{{ url_for('main.manager_panel') }}" class="btn btn-primary btn-sm">👔 Dashboard</a>
+        {% else %}
+            <a href="{{ url_for('main.dashboard') }}" class="btn btn-primary btn-sm">🔍 New Scan</a>
+            <a href="{{ url_for('main.history') }}" class="btn btn-outline btn-sm">📋 Scan History</a>
+        {% endif %}
         <a href="{{ url_for('auth.logout') }}" class="btn btn-outline btn-sm">Logout</a>
     </div>
 

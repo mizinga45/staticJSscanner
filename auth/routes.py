@@ -67,7 +67,15 @@ def profile():
         db.session.commit()
         flash(f'New invite code generated: {current_user.invite_code}', 'success')
 
-    scans = ScanResult.query.filter_by(user_id=current_user.id)\
-        .order_by(ScanResult.scanned_at.desc()).all()
+    if current_user.is_manager:
+        # Manager stats: from linked developers
+        links = ManagerLink.query.filter_by(manager_id=current_user.id).all()
+        linked_ids = [l.developer_id for l in links]
+        scans = ScanResult.query.filter(ScanResult.user_id.in_(linked_ids))\
+            .order_by(ScanResult.scanned_at.desc()).all() if linked_ids else []
+    else:
+        scans = ScanResult.query.filter_by(user_id=current_user.id)\
+            .order_by(ScanResult.scanned_at.desc()).all()
+
     total_vulns = sum(s.total_vulns for s in scans)
     return render_template('profile.html', user=current_user, scans=scans, total_vulns=total_vulns)
