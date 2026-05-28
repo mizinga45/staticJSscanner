@@ -133,19 +133,31 @@ def dashboard():
                 import shutil
                 if os.path.exists(folder_dir):
                     shutil.rmtree(folder_dir)
+                os.makedirs(folder_dir, exist_ok=True)
                 js_only = request.form.get('js_only') == 'on'
                 supported = ('.js',) if js_only else ('.js', '.html', '.php', '.txt')
                 saved = 0
                 for f in folder_files:
-                    if f.filename and f.filename.lower().endswith(supported):
-                        rel_path = secure_filename(f.filename.replace('/', '_'))
-                        dest = os.path.join(folder_dir, rel_path)
-                        os.makedirs(os.path.dirname(dest), exist_ok=True)
+                    fname = f.filename or ''
+                    # Check extension from the actual filename (last part of path)
+                    basename = fname.rsplit('/', 1)[-1] if '/' in fname else fname
+                    if basename and basename.lower().endswith(supported):
+                        safe_name = secure_filename(basename)
+                        if not safe_name:
+                            continue
+                        dest = os.path.join(folder_dir, safe_name)
+                        # Avoid overwriting files with same name
+                        if os.path.exists(dest):
+                            name, ext = os.path.splitext(safe_name)
+                            dest = os.path.join(folder_dir, f"{name}_{saved}{ext}")
                         f.save(dest)
                         saved += 1
                 if saved > 0:
                     source = folder_dir
                     input_method = 'folder'
+                else:
+                    flash('No supported files found in the selected folder.', 'warning')
+                    return render_template('index.html', form=form, recent_scans=recent_scans)
 
         # Determine js_only for server path scan
         js_only_flag = request.form.get('js_only') == 'on'
