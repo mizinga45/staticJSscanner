@@ -448,3 +448,11 @@ python app.py
 ## License
 
 MIT License — See [LICENSE](LICENSE) for details.
+
+## Admin helper script
+
+A helper script is included at `scripts/create_admin.py` that can create or reset an admin user. Run it from the project root using:
+
+```bash
+./venv/bin/python scripts/create_admin.py
+```
