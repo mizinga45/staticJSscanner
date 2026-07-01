@@ -19,24 +19,10 @@ def register():
             full_name=form.full_name.data,
             username=form.username.data,
             email=form.email.data,
-            role=form.role.data,
+            role='developer',
             password_hash=hashed
         )
         db.session.add(user)
-        db.session.flush()  # get user.id before committing
-
-        # Create Institution record if role=institution
-        if form.role.data == 'institution':
-            inst_name = form.institution_name.data.strip() if form.institution_name.data else user.full_name
-            inst = Institution(
-                name=inst_name or user.full_name,
-                email=user.email,
-                phone=form.phone.data.strip() if form.phone.data else None,
-            )
-            db.session.add(inst)
-            db.session.flush()
-            user.institution_id = inst.id
-
         db.session.commit()
         flash('Account created! Please log in.', 'success')
         return redirect(url_for('auth.login'))

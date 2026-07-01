@@ -1,148 +1,61 @@
 {% extends "base.html" %}
 {% block title %}Register{% endblock %}
 {% block content %}
-<!-- Code background -->
 <div class="code-bg" aria-hidden="true">
-    <div class="code-column code-col-2">
-        <pre>const validator = require('validator');
-
+    <div class="code-column code-col-2"><pre>const bcrypt = require('bcrypt');
 function createUser(data) {
-  if (!validator.isEmail(data.email)) {
-    throw new Error('Invalid email');
-  }
-  const hash = bcrypt.hashSync(
-    data.password, 12
-  );
+  const hash = bcrypt.hashSync(data.password, 12);
   return db.users.create({
-    name: data.name,
-    email: data.email,
-    password: hash
+    name: data.name, email: data.email, password: hash
   });
-}</pre>
-    </div>
-    <div class="code-column code-col-4">
-        <pre>class SecurityScanner {
-  constructor() {
-    this.rules = [];
-    this.parser = new ASTParser();
+}</pre></div>
+    <div class="code-column code-col-4"><pre>class Scanner {
+  scan(code) {
+    const ast = acorn.parse(code);
+    return this.rules.flatMap(r => r.detect(ast));
   }
-
-  addRule(rule) {
-    this.rules.push(rule);
-  }
-
-  scan(sourceCode) {
-    const ast = this.parser.parse(
-      sourceCode
-    );
-    return this.rules.flatMap(
-      r =&gt; r.detect(ast)
-    );
-  }
-}</pre>
-    </div>
+}</pre></div>
 </div>
-
-<div class="card" style="max-width: 480px;">
-    <div class="text-center" style="margin-bottom: 2rem;">
-        <div style="font-size: 2.5rem; margin-bottom: 0.75rem;">🚀</div>
-        <h1 style="font-size: 1.5rem; margin-bottom: 0.5rem;">Create Account</h1>
-        <p style="color: var(--text-secondary); font-size: 0.9rem;">Join to start scanning your JavaScript for vulnerabilities</p>
+<div class="card" style="max-width:480px;">
+    <div class="text-center" style="margin-bottom:2rem;">
+        <div style="font-size:2.5rem;margin-bottom:.75rem;">🚀</div>
+        <h1 style="font-size:1.5rem;margin-bottom:.5rem;">Create Account</h1>
+        <p style="color:var(--text-secondary);font-size:.9rem;">Start with 3 free scans — no credit card needed.</p>
     </div>
-
     <form method="POST">
         {{ form.hidden_tag() }}
-
         <div class="mb-3">
             <label class="form-label">Full Name</label>
             {{ form.full_name(class="form-control", placeholder="John Doe") }}
-            {% if form.full_name.errors %}
-                <div class="text-danger">{{ form.full_name.errors[0] }}</div>
-            {% endif %}
+            {% if form.full_name.errors %}<div class="text-danger">{{ form.full_name.errors[0] }}</div>{% endif %}
         </div>
-
         <div class="mb-3">
             <label class="form-label">Username</label>
             {{ form.username(class="form-control", placeholder="johndoe") }}
-            {% if form.username.errors %}
-                <div class="text-danger">{{ form.username.errors[0] }}</div>
-            {% endif %}
+            {% if form.username.errors %}<div class="text-danger">{{ form.username.errors[0] }}</div>{% endif %}
         </div>
-
         <div class="mb-3">
             <label class="form-label">Email</label>
             {{ form.email(class="form-control", placeholder="john@example.com") }}
-            {% if form.email.errors %}
-                <div class="text-danger">{{ form.email.errors[0] }}</div>
-            {% endif %}
+            {% if form.email.errors %}<div class="text-danger">{{ form.email.errors[0] }}</div>{% endif %}
         </div>
-
-        <div class="mb-3">
-            <label class="form-label">Account Type</label>
-            {{ form.role(class="form-control", id="roleSelect") }}
-        </div>
-
-        <!-- Institution fields — shown only when institution role selected -->
-        <div id="institutionFields" style="display:none;">
-            <div class="mb-3">
-                <label class="form-label">Institution Name <span style="color:var(--accent-red);">*</span></label>
-                {{ form.institution_name(class="form-control", placeholder="e.g. University of Dodoma", id="institutionName") }}
-                {% if form.institution_name.errors %}
-                    <div class="text-danger">{{ form.institution_name.errors[0] }}</div>
-                {% endif %}
-            </div>
-            <div class="mb-3">
-                <label class="form-label">Phone Number</label>
-                {{ form.phone(class="form-control", placeholder="+255 712 345 678") }}
-                {% if form.phone.errors %}
-                    <div class="text-danger">{{ form.phone.errors[0] }}</div>
-                {% endif %}
-            </div>
-        </div>
-
         <div class="mb-3">
             <label class="form-label">Password</label>
             {{ form.password(class="form-control", placeholder="At least 6 characters") }}
-            {% if form.password.errors %}
-                <div class="text-danger">{{ form.password.errors[0] }}</div>
-            {% endif %}
+            {% if form.password.errors %}<div class="text-danger">{{ form.password.errors[0] }}</div>{% endif %}
         </div>
-
         <div class="mb-4">
             <label class="form-label">Confirm Password</label>
             {{ form.confirm_password(class="form-control", placeholder="Re-enter password") }}
-            {% if form.confirm_password.errors %}
-                <div class="text-danger">{{ form.confirm_password.errors[0] }}</div>
-            {% endif %}
+            {% if form.confirm_password.errors %}<div class="text-danger">{{ form.confirm_password.errors[0] }}</div>{% endif %}
         </div>
-
         {{ form.submit(class="btn btn-primary w-100 btn-lg") }}
     </form>
-    
-    <p style="text-align: center; margin-top: 1.5rem; color: var(--text-secondary); font-size: 0.9rem;">
+    <p style="text-align:center;margin-top:1.5rem;color:var(--text-secondary);font-size:.9rem;">
         Already have an account? <a href="{{ url_for('auth.login') }}">Sign in</a>
     </p>
+    <p style="text-align:center;margin-top:.5rem;color:var(--text-muted);font-size:.8rem;">
+        Need a team plan? <a href="{{ url_for('pricing') }}">See pricing →</a>
+    </p>
 </div>
-{% endblock %}
-
-{% block scripts %}
-<script>
-    const roleSelect = document.getElementById('roleSelect');
-    const institutionFields = document.getElementById('institutionFields');
-    const institutionName = document.getElementById('institutionName');
-
-    function toggleInstitutionFields() {
-        const isInstitution = roleSelect.value === 'institution';
-        institutionFields.style.display = isInstitution ? 'block' : 'none';
-        if (institutionName) {
-            institutionName.required = isInstitution;
-        }
-    }
-
-    if (roleSelect) {
-        roleSelect.addEventListener('change', toggleInstitutionFields);
-        // Run on load in case of form re-render with errors
-        toggleInstitutionFields();
-    }
-</script>
 {% endblock %}

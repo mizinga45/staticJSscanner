@@ -178,8 +178,7 @@
         <div class="no-vulns">✅ No vulnerabilities detected. Code appears secure.</div>
         {% endif %}
 
-        {% set sev_rank = {'Critical': 0, 'High': 1, 'Medium': 2, 'Low': 3} %}
-        {% for vuln in vulnerabilities | sort(attribute='severity', key=lambda v: sev_rank.get(v.get('severity','Medium'), 2)) %}
+        {% for vuln in vulnerabilities %}
         {% set sev = vuln.severity | lower %}
         {% set vl = vuln.get('vuln_level', vuln.get('confidence_label', 'Medium')) %}
         <div class="vuln-card">

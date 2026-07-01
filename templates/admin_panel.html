@@ -56,29 +56,41 @@
         <div style="overflow-x:auto;">
           <table class="history-table">
             <thead>
-              <tr><th>Name</th><th>Username</th><th>Role</th><th>Plan</th><th>Scans</th><th>Joined</th></tr>
+              <tr><th>Name</th><th>Username</th><th>Role</th><th>Plan</th><th>Scans</th><th>Actions</th></tr>
             </thead>
             <tbody>
               {% for user in all_users %}
               <tr>
-                <td style="font-weight:500;">{{ user.full_name }}</td>
+                <td style="font-weight:500;">{{ user.full_name }}<br><span style="font-size:.7rem;color:var(--text-muted);">{{ user.email }}</span></td>
                 <td style="color:var(--text-muted);">@{{ user.username }}</td>
                 <td>
-                  <span style="padding:2px 8px;border-radius:4px;font-size:.72rem;font-weight:700;
-                    background:{% if user.role=='admin' %}rgba(239,68,68,.15){% elif user.role=='manager' %}rgba(139,92,246,.15){% elif user.role=='institution' %}rgba(245,158,11,.15){% else %}rgba(59,130,246,.15){% endif %};
-                    color:{% if user.role=='admin' %}var(--accent-red){% elif user.role=='manager' %}var(--accent-purple){% elif user.role=='institution' %}var(--accent-orange){% else %}var(--accent-blue){% endif %};">
-                    {{ user.role | upper }}
-                  </span>
+                  <form method="POST" action="/admin/user/{{ user.id }}/role" style="display:inline;">
+                    <select name="role" onchange="this.form.submit()" style="background:var(--bg-secondary);border:1px solid var(--border-color);border-radius:4px;color:var(--text-primary);font-size:.72rem;padding:2px 4px;">
+                      {% for r in ['developer','manager','admin'] %}
+                      <option value="{{ r }}" {% if user.role==r %}selected{% endif %}>{{ r|upper }}</option>
+                      {% endfor %}
+                    </select>
+                  </form>
                 </td>
                 <td>
-                  <span style="padding:2px 8px;border-radius:4px;font-size:.72rem;font-weight:600;
-                    background:{% if user.subscription_plan=='enterprise' %}rgba(245,158,11,.15){% elif user.subscription_plan=='pro' %}rgba(59,130,246,.15){% else %}rgba(100,116,139,.15){% endif %};
-                    color:{% if user.subscription_plan=='enterprise' %}var(--accent-orange){% elif user.subscription_plan=='pro' %}var(--accent-blue){% else %}var(--text-muted){% endif %};">
-                    {{ user.subscription_plan | upper }}
-                  </span>
+                  <form method="POST" action="/admin/user/{{ user.id }}/plan" style="display:inline;">
+                    <select name="plan" onchange="this.form.submit()" style="background:var(--bg-secondary);border:1px solid var(--border-color);border-radius:4px;color:var(--text-primary);font-size:.72rem;padding:2px 4px;">
+                      {% for p in ['free','pro','enterprise'] %}
+                      <option value="{{ p }}" {% if user.subscription_plan==p %}selected{% endif %}>{{ p|upper }}</option>
+                      {% endfor %}
+                    </select>
+                  </form>
                 </td>
                 <td>{{ user.scans|length }}</td>
-                <td style="font-size:.78rem;color:var(--text-muted);">{{ user.created_at.strftime('%Y-%m-%d') }}</td>
+                <td>
+                  {% if not user.is_admin %}
+                  <form method="POST" action="/admin/user/{{ user.id }}/delete" style="display:inline;" onsubmit="return confirm('Delete @{{ user.username }}?')">
+                    <button type="submit" class="btn btn-danger btn-sm" style="padding:3px 8px;font-size:.72rem;">Delete</button>
+                  </form>
+                  {% else %}
+                  <span style="font-size:.72rem;color:var(--text-muted);">Protected</span>
+                  {% endif %}
+                </td>
               </tr>
               {% endfor %}
             </tbody>

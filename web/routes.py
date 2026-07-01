@@ -9,6 +9,7 @@ from web.forms import ScanForm
 from scanner.input_handler import InputHandler
 from scanner.code_extractor import CodeExtractor
 from scanner.core_engine import CoreAnalysisEngine
+from scanner.subtechniques import ALL_SUBTECHNIQUES
 from scanner.report_generator import ReportGenerator
 from models import db, ScanResult, User, ManagerDeveloperLink, Institution, Payment, PLANS
 
@@ -287,6 +288,7 @@ def view_scan(scan_id):
                            source=scan_result.source,
                            extracted_urls=extracted_urls,
                            testing_report=testing_report,
+                           all_subtechniques=ALL_SUBTECHNIQUES,
                            skipped_files=[],
                            scan_id=scan_id,
                            scanned_at=scan_result.scanned_at,
@@ -304,10 +306,13 @@ def download_report(scan_id, format):
         flash('Access denied.', 'danger')
         return redirect(url_for('main.dashboard'))
 
+    _sev = {'Critical': 0, 'High': 1, 'Medium': 2, 'Low': 3, 'Info': 4}
+    vulns = sorted(scan.get_vulnerabilities(),
+                   key=lambda v: _sev.get(v.get('severity', 'Medium'), 2))
     report = {
         'source': scan.source,
         'summary': scan.get_summary(),
-        'vulnerabilities': scan.get_vulnerabilities(),
+        'vulnerabilities': vulns,
         'extracted_urls': scan.get_extracted_urls(),
         'testing_report': scan.get_testing_report(),
         'developer': scan.user.full_name,
@@ -829,3 +834,94 @@ def pay_subscription(plan):
         'success'
     )
     return redirect(url_for('main.subscription'))
+
+
+# ─────────────────────────────────────────────
+# Admin CRUD
+# ─────────────────────────────────────────────
+
+@main_bp.route('/admin/user/<int:user_id>/delete', methods=['POST'])
+@login_required
+def admin_delete_user(user_id):
+    if not current_user.is_admin:
+        return 'Forbidden', 403
+    user = User.query.get_or_404(user_id)
+    if user.is_admin:
+        flash('Cannot delete admin account.', 'danger')
+        return redirect(url_for('main.admin_panel') + '#users')
+    # Delete linked scans
+    ScanResult.query.filter_by(user_id=user.id).delete()
+    ManagerDeveloperLink.query.filter(
+        (ManagerDeveloperLink.manager_id == user.id) |
+        (ManagerDeveloperLink.developer_id == user.id)
+    ).delete()
+    db.session.delete(user)
+    db.session.commit()
+    flash(f'User @{user.username} deleted.', 'success')
+    return redirect(url_for('main.admin_panel') + '#users')
+
+
+@main_bp.route('/admin/user/<int:user_id>/role', methods=['POST'])
+@login_required
+def admin_update_role(user_id):
+    if not current_user.is_admin:
+        return 'Forbidden', 403
+    user = User.query.get_or_404(user_id)
+    new_role = request.form.get('role', '').strip()
+    if new_role not in ('admin', 'manager', 'developer', 'institution'):
+        flash('Invalid role.', 'danger')
+        return redirect(url_for('main.admin_panel') + '#users')
+    if user.is_admin and new_role != 'admin':
+        flash('Cannot demote admin.', 'danger')
+        return redirect(url_for('main.admin_panel') + '#users')
+    user.role = new_role
+    db.session.commit()
+    flash(f'@{user.username} role updated to {new_role}.', 'success')
+    return redirect(url_for('main.admin_panel') + '#users')
+
+
+@main_bp.route('/admin/user/<int:user_id>/plan', methods=['POST'])
+@login_required
+def admin_update_plan(user_id):
+    if not current_user.is_admin:
+        return 'Forbidden', 403
+    user = User.query.get_or_404(user_id)
+    new_plan = request.form.get('plan', '').strip()
+    if new_plan not in ('free', 'pro', 'enterprise'):
+        flash('Invalid plan.', 'danger')
+        return redirect(url_for('main.admin_panel') + '#subs')
+    user.subscription_plan = new_plan
+    if new_plan != 'free':
+        user.trial_scans_used = 0
+    db.session.commit()
+    flash(f'@{user.username} plan updated to {new_plan}.', 'success')
+    return redirect(url_for('main.admin_panel') + '#subs')
+
+
+@main_bp.route('/admin/payment/<int:payment_id>/confirm', methods=['POST'])
+@login_required
+def admin_confirm_payment(payment_id):
+    if not current_user.is_admin:
+        return 'Forbidden', 403
+    payment = Payment.query.get_or_404(payment_id)
+    payment.status = 'confirmed'
+    from datetime import datetime
+    payment.paid_at = datetime.utcnow()
+    # Activate the plan
+    payment.user.subscription_plan = payment.plan
+    payment.user.trial_scans_used = 0
+    db.session.commit()
+    flash(f'Payment confirmed. @{payment.user.username} upgraded to {payment.plan}.', 'success')
+    return redirect(url_for('main.admin_panel') + '#subs')
+
+
+@main_bp.route('/admin/scan/<int:scan_id>/delete', methods=['POST'])
+@login_required
+def admin_delete_scan(scan_id):
+    if not current_user.is_admin:
+        return 'Forbidden', 403
+    scan = ScanResult.query.get_or_404(scan_id)
+    db.session.delete(scan)
+    db.session.commit()
+    flash('Scan deleted.', 'success')
+    return redirect(url_for('main.admin_panel') + '#users')

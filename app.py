@@ -109,6 +109,12 @@ app.register_blueprint(main_bp)
 app.register_blueprint(auth_bp, url_prefix='/auth')
 
 
+@app.route('/favicon.ico')
+def favicon():
+    from flask import send_from_directory
+    return send_from_directory(app.static_folder + '/images', 'hero-bg.svg', mimetype='image/svg+xml')
+
+
 @app.route('/')
 def landing():
     return render_template('landing.html')

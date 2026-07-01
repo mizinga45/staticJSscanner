@@ -240,14 +240,51 @@
         </div>
         {% endfor %}
     {% endif %}
+
+    <!-- Sub-technique Analysis -->
+    {% if all_subtechniques and vulnerabilities %}
+    <div class="extracted-urls-section" style="margin-top:1.5rem;">
+        <h3 style="font-size:1rem;margin-bottom:.75rem;">🔬 Sub-Technique Analysis</h3>
+        <table class="history-table" style="margin:0;">
+            <thead><tr><th>Vulnerability Type</th><th>Sub-Technique Tested</th><th>Result</th></tr></thead>
+            <tbody>
+            {% for vtype, subs in all_subtechniques.items() %}
+                {% set vuln_found = namespace(found=false, sub='') %}
+                {% for v in vulnerabilities if v.type == vtype %}
+                    {% set vuln_found.found = true %}
+                    {% if not vuln_found.sub %}
+                        {% set vuln_found.sub = (v.get('subtechnique') or v.get('sqli_subtype') or '') %}
+                    {% endif %}
+                {% endfor %}
+                {% if vuln_found.found %}
+                    {% for sub in subs %}
+                    <tr>
+                        <td style="font-size:.8rem;">{{ vtype }}</td>
+                        <td style="font-size:.8rem;">{{ sub }}</td>
+                        <td>
+                            {% if vuln_found.sub == sub %}
+                                <span class="badge badge-critical" style="font-size:.65rem;">⚠️ FOUND</span>
+                            {% elif not vuln_found.sub and loop.first %}
+                                <span class="badge badge-critical" style="font-size:.65rem;">⚠️ DETECTED</span>
+                            {% else %}
+                                <span style="color:var(--text-muted);font-size:.78rem;">— Not detected</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                {% endif %}
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% endif %}
+
 </div>
 {% endblock %}
 
+
 {% block scripts %}
 <script>
-// Collapsible groups
-document.querySelectorAll('.vuln-group-header').forEach(header => {
-    header.style.cursor = 'pointer';
-});
+document.querySelectorAll('.vuln-group-header').forEach(h => { h.style.cursor='pointer'; });
 </script>
 {% endblock %}
