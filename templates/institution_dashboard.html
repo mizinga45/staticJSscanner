@@ -1,507 +1,106 @@
 {% extends "base.html" %}
 {% block title %}Institution Dashboard{% endblock %}
 {% block content %}
-<style>
-  /* ── Institution dashboard overrides — slightly lighter theme ── */
-  body { background: #111827; }
-  .main-container { background: #111827; }
+<div style="max-width:1000px;width:100%;">
 
-  .inst-page { max-width: 1100px; width: 100%; }
-
-  /* Welcome header */
-  .inst-welcome {
-    background: linear-gradient(135deg, rgba(59,130,246,0.12), rgba(139,92,246,0.08));
-    border: 1px solid rgba(59,130,246,0.25);
-    border-radius: 16px;
-    padding: 2rem 2.25rem;
-    margin-bottom: 2rem;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    flex-wrap: wrap;
-    gap: 1rem;
-  }
-
-  .inst-welcome-text h1 {
-    font-size: 1.5rem;
-    font-weight: 800;
-    letter-spacing: -0.02em;
-    margin-bottom: 0.3rem;
-  }
-
-  .inst-welcome-text p {
-    font-size: 0.875rem;
-    color: var(--text-secondary, #94a3b8);
-  }
-
-  .inst-badge {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.4rem;
-    padding: 0.4rem 1rem;
-    background: rgba(139,92,246,0.15);
-    border: 1px solid rgba(139,92,246,0.35);
-    border-radius: 100px;
-    font-size: 0.75rem;
-    font-weight: 700;
-    color: #a78bfa;
-    letter-spacing: 0.04em;
-    text-transform: uppercase;
-  }
-
-  /* Stats row */
-  .stats-row {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 1rem;
-    margin-bottom: 2rem;
-  }
-
-  @media (max-width: 800px) { .stats-row { grid-template-columns: repeat(2, 1fr); } }
-  @media (max-width: 480px) { .stats-row { grid-template-columns: 1fr; } }
-
-  .stat-card {
-    background: #1f2937;
-    border: 1px solid rgba(255,255,255,0.06);
-    border-radius: 14px;
-    padding: 1.5rem;
-    transition: transform 0.2s;
-  }
-
-  .stat-card:hover { transform: translateY(-2px); }
-
-  .stat-card .stat-icon {
-    font-size: 1.75rem;
-    margin-bottom: 0.75rem;
-  }
-
-  .stat-card .stat-value {
-    font-size: 2rem;
-    font-weight: 900;
-    letter-spacing: -0.03em;
-    line-height: 1;
-    margin-bottom: 0.3rem;
-  }
-
-  .stat-card .stat-label {
-    font-size: 0.8rem;
-    color: var(--text-secondary, #94a3b8);
-    font-weight: 500;
-  }
-
-  /* Section cards */
-  .inst-section {
-    background: #1f2937;
-    border: 1px solid rgba(255,255,255,0.06);
-    border-radius: 16px;
-    padding: 1.75rem;
-    margin-bottom: 1.5rem;
-  }
-
-  .inst-section-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: 1.25rem;
-    flex-wrap: wrap;
-    gap: 0.75rem;
-  }
-
-  .inst-section h3 {
-    font-size: 1rem;
-    font-weight: 700;
-    letter-spacing: -0.01em;
-  }
-
-  /* Table */
-  .inst-table {
-    width: 100%;
-    border-collapse: collapse;
-    font-size: 0.85rem;
-  }
-
-  .inst-table th {
-    text-align: left;
-    padding: 0.6rem 0.75rem;
-    font-size: 0.72rem;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
-    color: #64748b;
-    border-bottom: 1px solid rgba(255,255,255,0.06);
-    white-space: nowrap;
-  }
-
-  .inst-table td {
-    padding: 0.75rem;
-    color: #94a3b8;
-    border-bottom: 1px solid rgba(255,255,255,0.04);
-    vertical-align: middle;
-  }
-
-  .inst-table tbody tr:last-child td { border-bottom: none; }
-  .inst-table tbody tr:hover td { background: rgba(255,255,255,0.02); }
-
-  /* Developer avatar */
-  .dev-avatar {
-    width: 34px;
-    height: 34px;
-    border-radius: 50%;
-    background: linear-gradient(135deg, #3b82f6, #8b5cf6);
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 0.75rem;
-    font-weight: 700;
-    color: #fff;
-    flex-shrink: 0;
-    margin-right: 0.6rem;
-  }
-
-  .dev-cell {
-    display: flex;
-    align-items: center;
-  }
-
-  /* Status badge */
-  .status-active {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.3rem;
-    padding: 0.2rem 0.6rem;
-    background: rgba(16,185,129,0.1);
-    color: #10b981;
-    border: 1px solid rgba(16,185,129,0.25);
-    border-radius: 100px;
-    font-size: 0.72rem;
-    font-weight: 600;
-  }
-
-  .status-inactive {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.3rem;
-    padding: 0.2rem 0.6rem;
-    background: rgba(100,116,139,0.1);
-    color: #64748b;
-    border: 1px solid rgba(100,116,139,0.2);
-    border-radius: 100px;
-    font-size: 0.72rem;
-    font-weight: 600;
-  }
-
-  /* Add Developer modal */
-  .modal-backdrop {
-    display: none;
-    position: fixed;
-    inset: 0;
-    background: rgba(0,0,0,0.75);
-    backdrop-filter: blur(6px);
-    z-index: 1000;
-    align-items: center;
-    justify-content: center;
-    padding: 1rem;
-  }
-  .modal-backdrop.open { display: flex; }
-
-  .modal-box {
-    background: #1f2937;
-    border: 1px solid rgba(255,255,255,0.1);
-    border-radius: 18px;
-    padding: 2rem;
-    max-width: 460px;
-    width: 100%;
-    position: relative;
-    animation: mIn 0.22s ease;
-  }
-
-  @keyframes mIn {
-    from { opacity: 0; transform: scale(0.95); }
-    to   { opacity: 1; transform: scale(1); }
-  }
-
-  .modal-close {
-    position: absolute; top: 1rem; right: 1rem;
-    background: none; border: none;
-    color: #64748b; font-size: 1.2rem; cursor: pointer;
-  }
-  .modal-close:hover { color: #f1f5f9; }
-
-  .modal-box h3 { font-size: 1.1rem; font-weight: 700; margin-bottom: 1.25rem; }
-
-  .form-row {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 0.75rem;
-    margin-bottom: 0.75rem;
-  }
-
-  @media (max-width: 480px) { .form-row { grid-template-columns: 1fr; } }
-
-  .form-field { display: flex; flex-direction: column; gap: 0.3rem; }
-  .form-field.full { grid-column: 1 / -1; }
-
-  .form-field label {
-    font-size: 0.78rem;
-    font-weight: 600;
-    color: #94a3b8;
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
-  }
-
-  .form-field input {
-    padding: 0.6rem 0.85rem;
-    background: rgba(255,255,255,0.04);
-    border: 1px solid rgba(255,255,255,0.1);
-    border-radius: 8px;
-    color: #f1f5f9;
-    font-size: 0.875rem;
-    outline: none;
-    transition: border-color 0.2s;
-  }
-
-  .form-field input:focus {
-    border-color: #3b82f6;
-    background: rgba(59,130,246,0.05);
-  }
-
-  /* Vuln chart */
-  .vuln-bar-row {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    margin-bottom: 0.65rem;
-    font-size: 0.82rem;
-  }
-
-  .vuln-bar-label {
-    min-width: 200px;
-    color: #94a3b8;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-
-  .vuln-bar-track {
-    flex: 1;
-    height: 8px;
-    background: rgba(255,255,255,0.06);
-    border-radius: 100px;
-    overflow: hidden;
-  }
-
-  .vuln-bar-fill {
-    height: 100%;
-    border-radius: 100px;
-    background: linear-gradient(90deg, #3b82f6, #8b5cf6);
-  }
-
-  .vuln-bar-count {
-    min-width: 40px;
-    text-align: right;
-    font-weight: 700;
-    color: #f1f5f9;
-  }
-
-  .empty-state {
-    text-align: center;
-    padding: 2.5rem 1rem;
-    color: #475569;
-    font-size: 0.875rem;
-  }
-</style>
-
-<div class="inst-page">
-
-  <!-- ── WELCOME HEADER ── -->
-  <div class="inst-welcome">
-    <div class="inst-welcome-text">
-      <h1>🏛️ Welcome, {{ institution_name }}</h1>
-      <p>Institution security dashboard — manage your developers and track vulnerabilities.</p>
+  <!-- Header -->
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:2rem;flex-wrap:wrap;gap:1rem;">
+    <div>
+      <h1 style="font-size:1.6rem;">🏛️ {{ institution.name if institution else current_user.full_name }}</h1>
+      <p style="color:var(--text-secondary);font-size:.875rem;margin-top:.25rem;">Institution Dashboard · {{ current_user.email }}</p>
     </div>
-    <div class="inst-badge">🏛️ Institution</div>
+    <a href="{{ url_for('auth.logout') }}" class="btn btn-outline btn-sm">Logout</a>
   </div>
 
-  <!-- ── STATS ROW ── -->
-  <div class="stats-row">
-    <div class="stat-card">
-      <div class="stat-icon">👥</div>
-      <div class="stat-value" style="color:#3b82f6;">{{ total_developers }}</div>
-      <div class="stat-label">Total Developers</div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-icon">🔍</div>
-      <div class="stat-value" style="color:#10b981;">{{ total_scans }}</div>
-      <div class="stat-label">Total Scans</div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-icon">⚠️</div>
-      <div class="stat-value" style="color:#f59e0b;">{{ total_vulns }}</div>
-      <div class="stat-label">Total Vulnerabilities</div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-icon">🔴</div>
-      <div class="stat-value" style="color:#ef4444;">{{ total_critical }}</div>
-      <div class="stat-label">Critical Issues</div>
-    </div>
+  <!-- Stats -->
+  <div class="results-summary" style="margin-bottom:2rem;">
+    <div class="summary-card total"><div class="count">{{ developers|length }}</div><div class="label">Developers</div></div>
+    <div class="summary-card total"><div class="count">{{ total_scans }}</div><div class="label">Total Scans</div></div>
+    <div class="summary-card critical"><div class="count">{{ total_critical }}</div><div class="label">Critical Issues</div></div>
+    <div class="summary-card high"><div class="count">{{ total_vulns }}</div><div class="label">Total Vulns</div></div>
   </div>
 
-  <!-- ── DEVELOPER MANAGEMENT TABLE ── -->
-  <div class="inst-section">
-    <div class="inst-section-header">
-      <h3>👨‍💻 Developer Management</h3>
-      <button class="btn btn-primary btn-sm" onclick="document.getElementById('addDevModal').classList.add('open');document.body.style.overflow='hidden';">
-        + Add Developer
-      </button>
-    </div>
+  <!-- Add Developer + Team Table -->
+  <div style="display:grid;grid-template-columns:1fr 320px;gap:1.5rem;align-items:start;">
 
-    {% if devs %}
-    <div style="overflow-x: auto;">
-      <table class="inst-table">
-        <thead>
-          <tr>
-            <th>Developer</th>
-            <th>Username</th>
-            <th>Scans</th>
-            <th>Vulnerabilities</th>
-            <th>Critical</th>
-            <th>Status</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for d in devs %}
-          {% set d_scans = d.scans | list %}
-          {% set d_vulns = d_scans | sum(attribute='total_vulns') %}
-          {% set d_critical = d_scans | sum(attribute='critical_count') %}
-          <tr>
-            <td>
-              <div class="dev-cell">
-                <div class="dev-avatar">{{ d.full_name[:2].upper() }}</div>
-                <div>
-                  <div style="font-weight:600;color:#f1f5f9;">{{ d.full_name }}</div>
-                  <div style="font-size:0.75rem;color:#475569;">{{ d.email }}</div>
+    <!-- Team Table -->
+    <div class="card" style="max-width:none;">
+      <h3 style="font-size:1rem;margin-bottom:1rem;">👥 Developers</h3>
+      {% if developers %}
+      <div style="overflow-x:auto;">
+        <table class="history-table">
+          <thead><tr><th>Name</th><th>Username</th><th>Scans</th><th>Vulns</th><th>Last Scan</th></tr></thead>
+          <tbody>
+            {% for dev in developers %}
+            <tr>
+              <td>
+                <div style="display:flex;align-items:center;gap:.6rem;">
+                  <div style="width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,var(--accent-blue),var(--accent-purple));display:flex;align-items:center;justify-content:center;font-size:.8rem;font-weight:700;flex-shrink:0;">{{ dev.full_name[0] }}</div>
+                  {{ dev.full_name }}
                 </div>
-              </div>
-            </td>
-            <td style="font-family:monospace;font-size:0.82rem;">@{{ d.username }}</td>
-            <td style="font-weight:700;color:#f1f5f9;">{{ d_scans | length }}</td>
-            <td>
-              {% if d_vulns > 0 %}
-                <span style="font-weight:700;color:{% if d_vulns > 10 %}#ef4444{% elif d_vulns > 4 %}#f59e0b{% else %}#94a3b8{% endif %};">
-                  {{ d_vulns }}
-                </span>
-              {% else %}
-                <span style="color:#475569;">0</span>
-              {% endif %}
-            </td>
-            <td>
-              {% if d_critical > 0 %}
-                <span style="font-weight:700;color:#ef4444;">{{ d_critical }}</span>
-              {% else %}
-                <span style="color:#475569;">0</span>
-              {% endif %}
-            </td>
-            <td>
-              {% if d.is_active %}
-                <span class="status-active">● Active</span>
-              {% else %}
-                <span class="status-inactive">○ Inactive</span>
-              {% endif %}
-            </td>
-          </tr>
-          {% endfor %}
-        </tbody>
-      </table>
-    </div>
-    {% else %}
-    <div class="empty-state">
-      <div style="font-size:2.5rem;margin-bottom:0.75rem;">👥</div>
-      <p>No developers added yet. Click <strong>Add Developer</strong> to get started.</p>
-    </div>
-    {% endif %}
-  </div>
-
-  <!-- ── TOP VULNERABILITIES CHART ── -->
-  <div class="inst-section">
-    <div class="inst-section-header">
-      <h3>📊 Top Vulnerability Types Across Institution</h3>
+              </td>
+              <td style="color:var(--text-muted);">@{{ dev.username }}</td>
+              <td>{{ dev.scans|length }}</td>
+              <td>
+                {% set tv = dev.scans|sum(attribute='total_vulns') %}
+                {% if tv > 0 %}<span class="badge badge-critical">{{ tv }}</span>{% else %}<span style="color:var(--accent-green);">✓ 0</span>{% endif %}
+              </td>
+              <td style="font-size:.78rem;color:var(--text-muted);">
+                {% if dev.scans %}{{ dev.scans[0].scanned_at.strftime('%Y-%m-%d') }}{% else %}Never{% endif %}
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <div style="text-align:center;padding:2.5rem;color:var(--text-muted);">
+        <div style="font-size:2.5rem;margin-bottom:.75rem;">👥</div>
+        <p>No developers yet. Add your first developer →</p>
+      </div>
+      {% endif %}
     </div>
 
-    {% if top_vulns %}
-    {% set max_count = top_vulns[0][1] %}
-    {% for name, count, severity in top_vulns %}
-    <div class="vuln-bar-row">
-      <div class="vuln-bar-label" title="{{ name }}">{{ name }}</div>
-      <div class="vuln-bar-track">
-        <div class="vuln-bar-fill"
-             style="width: {{ [((count / max_count) * 100)|int, 100]|min }}%;
-                    background: {% if severity == 'Critical' %}linear-gradient(90deg,#ef4444,#dc2626){% elif severity == 'High' %}linear-gradient(90deg,#f97316,#ea580c){% else %}linear-gradient(90deg,#3b82f6,#8b5cf6){% endif %};">
+    <!-- Add Developer Form -->
+    <div class="card" style="max-width:none;">
+      <h3 style="font-size:1rem;margin-bottom:1rem;">➕ Add Developer</h3>
+      <form method="POST" action="{{ url_for('main.institution_add_developer') }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() if csrf_token is defined else '' }}">
+        <div class="mb-3">
+          <label class="form-label">Full Name</label>
+          <input type="text" name="full_name" class="form-control" placeholder="Jane Doe" required>
         </div>
-      </div>
-      <div class="vuln-bar-count">{{ count }}</div>
-      <div>
-        {% if severity == 'Critical' %}<span class="badge badge-critical" style="font-size:0.7rem;">{{ severity }}</span>
-        {% elif severity == 'High' %}<span class="badge badge-high" style="font-size:0.7rem;">{{ severity }}</span>
-        {% else %}<span class="badge badge-medium" style="font-size:0.7rem;">{{ severity }}</span>{% endif %}
-      </div>
+        <div class="mb-3">
+          <label class="form-label">Username</label>
+          <input type="text" name="username" class="form-control" placeholder="janedoe" required>
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Email</label>
+          <input type="email" name="email" class="form-control" placeholder="jane@company.com" required>
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Password</label>
+          <input type="password" name="password" class="form-control" placeholder="Minimum 6 chars" required minlength="6">
+        </div>
+        <button type="submit" class="btn btn-primary w-100">Create Developer Account</button>
+      </form>
     </div>
-    {% endfor %}
-    {% else %}
-    <div class="empty-state">
-      <div style="font-size:2rem;margin-bottom:0.5rem;">📊</div>
-      <p>No vulnerability data yet — add developers and let them run scans.</p>
-    </div>
-    {% endif %}
   </div>
+
+  <!-- Top Vulnerabilities across institution -->
+  {% if top_vulns %}
+  <div class="card" style="max-width:none;margin-top:1.5rem;">
+    <h3 style="font-size:1rem;margin-bottom:1rem;">🔥 Most Common Issues (Across All Developers)</h3>
+    <div style="display:flex;flex-wrap:wrap;gap:.75rem;">
+      {% for vtype, count, severity in top_vulns %}
+      <div style="background:var(--bg-secondary);border:1px solid var(--border-color);border-radius:8px;padding:.6rem 1rem;font-size:.82rem;">
+        <span style="color:{% if severity=='Critical' %}var(--accent-red){% elif severity=='High' %}var(--accent-orange){% else %}var(--accent-blue){% endif %};font-weight:700;">{{ count }}</span>
+        <span style="color:var(--text-secondary);margin-left:.4rem;">{{ vtype }}</span>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
 
 </div>
-
-<!-- ── ADD DEVELOPER MODAL ── -->
-<div class="modal-backdrop" id="addDevModal">
-  <div class="modal-box">
-    <button class="modal-close" onclick="document.getElementById('addDevModal').classList.remove('open');document.body.style.overflow='';">✕</button>
-    <h3>➕ Add Developer</h3>
-    <form method="POST" action="{{ url_for('main.institution_add_developer') }}">
-      <div class="form-row">
-        <div class="form-field">
-          <label>Full Name</label>
-          <input type="text" name="full_name" placeholder="Jane Doe" required>
-        </div>
-        <div class="form-field">
-          <label>Username</label>
-          <input type="text" name="username" placeholder="janedoe" required>
-        </div>
-        <div class="form-field">
-          <label>Email</label>
-          <input type="email" name="email" placeholder="jane@example.com" required>
-        </div>
-        <div class="form-field">
-          <label>Password</label>
-          <input type="password" name="password" placeholder="min 6 chars" required minlength="6">
-        </div>
-      </div>
-      <button type="submit" class="btn btn-primary" style="width:100%;margin-top:0.5rem;">
-        Create Developer Account
-      </button>
-    </form>
-  </div>
-</div>
-
-{% endblock %}
-
-{% block scripts %}
-<script>
-document.getElementById('addDevModal').addEventListener('click', function(e) {
-  if (e.target === this) {
-    this.classList.remove('open');
-    document.body.style.overflow = '';
-  }
-});
-document.addEventListener('keydown', function(e) {
-  if (e.key === 'Escape') {
-    document.getElementById('addDevModal').classList.remove('open');
-    document.body.style.overflow = '';
-  }
-});
-</script>
 {% endblock %}

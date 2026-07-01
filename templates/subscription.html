@@ -1,608 +1,182 @@
 {% extends "base.html" %}
-{% block title %}Subscription &amp; Billing{% endblock %}
+{% block title %}Subscription{% endblock %}
 {% block content %}
-<style>
-  /* ── Premium subscription page overrides ── */
-  .sub-page { max-width: 1000px; width: 100%; }
+<div style="max-width:960px;width:100%;margin:0 auto;">
 
-  /* Current plan header */
-  .plan-header {
-    background: var(--bg-secondary, #1a1f35);
-    border: 1px solid var(--border-color, rgba(255,255,255,0.07));
-    border-radius: 16px;
-    padding: 2rem;
-    margin-bottom: 2rem;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    flex-wrap: wrap;
-    gap: 1rem;
-  }
-
-  .plan-header-info h2 {
-    font-size: 1.25rem;
-    font-weight: 700;
-    margin-bottom: 0.4rem;
-    letter-spacing: -0.02em;
-  }
-
-  .plan-header-info p {
-    font-size: 0.875rem;
-    color: var(--text-secondary, #94a3b8);
-  }
-
-  .plan-badge {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.3rem;
-    padding: 0.3rem 0.85rem;
-    border-radius: 100px;
-    font-size: 0.75rem;
-    font-weight: 700;
-    letter-spacing: 0.05em;
-    text-transform: uppercase;
-  }
-
-  .badge-free  { background: rgba(16,185,129,0.15); color: #10b981; border: 1px solid rgba(16,185,129,0.3); }
-  .badge-pro   { background: rgba(249,115,22,0.15); color: #f97316; border: 1px solid rgba(249,115,22,0.3); }
-  .badge-ent   { background: rgba(139,92,246,0.15); color: #a78bfa; border: 1px solid rgba(139,92,246,0.3); }
-
-  /* Trial progress */
-  .trial-block {
-    background: rgba(245,158,11,0.06);
-    border: 1px solid rgba(245,158,11,0.2);
-    border-radius: 12px;
-    padding: 1.25rem 1.5rem;
-    margin-bottom: 2rem;
-  }
-
-  .trial-label {
-    display: flex;
-    justify-content: space-between;
-    font-size: 0.85rem;
-    font-weight: 600;
-    margin-bottom: 0.6rem;
-  }
-
-  .trial-label span:first-child { color: #fbbf24; }
-  .trial-label span:last-child  { color: var(--text-secondary, #94a3b8); }
-
-  .trial-bar {
-    height: 8px;
-    background: rgba(255,255,255,0.06);
-    border-radius: 100px;
-    overflow: hidden;
-  }
-
-  .trial-bar-fill {
-    height: 100%;
-    background: linear-gradient(90deg, #f59e0b, #ef4444);
-    border-radius: 100px;
-    transition: width 0.6s ease;
-  }
-
-  .trial-hint {
-    font-size: 0.78rem;
-    color: var(--text-muted, #64748b);
-    margin-top: 0.5rem;
-  }
-
-  /* Pricing grid */
-  .plan-grid {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 1.25rem;
-    margin-bottom: 2.5rem;
-    align-items: start;
-  }
-
-  @media (max-width: 760px) {
-    .plan-grid { grid-template-columns: 1fr; }
-    .plan-header { flex-direction: column; }
-  }
-
-  .plan-card {
-    background: var(--bg-secondary, #1a1f35);
-    border: 1px solid var(--border-color, rgba(255,255,255,0.07));
-    border-radius: 14px;
-    padding: 1.75rem;
-    position: relative;
-    transition: all 0.2s;
-  }
-
-  .plan-card:hover { transform: translateY(-3px); box-shadow: 0 16px 48px rgba(0,0,0,0.3); }
-  .plan-card.current-plan { border-color: #3b82f6; }
-  .plan-card.featured-plan { border-color: rgba(59,130,246,0.5); background: linear-gradient(180deg, rgba(59,130,246,0.07) 0%, var(--bg-secondary,#1a1f35) 60%); }
-
-  .current-tag {
-    position: absolute;
-    top: -11px;
-    left: 50%;
-    transform: translateX(-50%);
-    background: #3b82f6;
-    color: #fff;
-    font-size: 0.65rem;
-    font-weight: 700;
-    letter-spacing: 0.06em;
-    padding: 0.18rem 0.75rem;
-    border-radius: 100px;
-    white-space: nowrap;
-  }
-
-  .plan-card-name {
-    font-size: 0.75rem;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
-    color: var(--text-secondary, #94a3b8);
-    margin-bottom: 0.4rem;
-  }
-
-  .plan-card-price {
-    font-size: 2rem;
-    font-weight: 900;
-    letter-spacing: -0.03em;
-    line-height: 1;
-    margin-bottom: 0.2rem;
-  }
-
-  .plan-card-period {
-    font-size: 0.78rem;
-    color: var(--text-muted, #64748b);
-    margin-bottom: 1.25rem;
-  }
-
-  .plan-features {
-    list-style: none;
-    padding: 0;
-    margin: 0 0 1.5rem;
-  }
-
-  .plan-features li {
-    display: flex;
-    align-items: flex-start;
-    gap: 0.5rem;
-    font-size: 0.82rem;
-    padding: 0.3rem 0;
-    color: var(--text-secondary, #94a3b8);
-  }
-
-  .plan-features li.ok { color: var(--text-primary, #f1f5f9); }
-  .plan-features li .fi { flex-shrink: 0; margin-top: 1px; }
-  .fi-y { color: #10b981; }
-  .fi-n { color: #475569; }
-
-  .btn-upgrade {
-    width: 100%;
-    padding: 0.6rem 1rem;
-    border-radius: 8px;
-    font-size: 0.875rem;
-    font-weight: 600;
-    cursor: pointer;
-    border: none;
-    transition: all 0.2s;
-  }
-
-  .btn-upgrade-blue {
-    background: #3b82f6;
-    color: #fff;
-  }
-  .btn-upgrade-blue:hover { background: #2563eb; transform: translateY(-1px); }
-
-  .btn-upgrade-purple {
-    background: linear-gradient(135deg, #3b82f6, #8b5cf6);
-    color: #fff;
-  }
-  .btn-upgrade-purple:hover { opacity: 0.9; transform: translateY(-1px); }
-
-  /* ── MODAL ── */
-  .modal-backdrop {
-    display: none;
-    position: fixed;
-    inset: 0;
-    background: rgba(0,0,0,0.7);
-    backdrop-filter: blur(6px);
-    z-index: 1000;
-    align-items: center;
-    justify-content: center;
-    padding: 1rem;
-  }
-
-  .modal-backdrop.open { display: flex; }
-
-  .modal-box {
-    background: #1a1f35;
-    border: 1px solid rgba(255,255,255,0.1);
-    border-radius: 20px;
-    padding: 2rem;
-    max-width: 460px;
-    width: 100%;
-    position: relative;
-    animation: modalIn 0.25s ease;
-  }
-
-  @keyframes modalIn {
-    from { opacity: 0; transform: scale(0.95) translateY(10px); }
-    to   { opacity: 1; transform: scale(1) translateY(0); }
-  }
-
-  .modal-close {
-    position: absolute;
-    top: 1rem;
-    right: 1rem;
-    background: none;
-    border: none;
-    color: #64748b;
-    font-size: 1.25rem;
-    cursor: pointer;
-    line-height: 1;
-    padding: 0.2rem 0.4rem;
-  }
-  .modal-close:hover { color: #f1f5f9; }
-
-  .modal-box h3 {
-    font-size: 1.15rem;
-    font-weight: 700;
-    margin-bottom: 0.35rem;
-    letter-spacing: -0.01em;
-  }
-
-  .modal-box .modal-subtitle {
-    font-size: 0.85rem;
-    color: #94a3b8;
-    margin-bottom: 1.5rem;
-  }
-
-  .mpesa-card {
-    background: rgba(16,185,129,0.06);
-    border: 1px solid rgba(16,185,129,0.25);
-    border-radius: 12px;
-    padding: 1.25rem;
-    margin-bottom: 1.5rem;
-  }
-
-  .mpesa-card h4 {
-    font-size: 0.75rem;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
-    color: #10b981;
-    margin-bottom: 0.9rem;
-  }
-
-  .mpesa-row {
-    display: flex;
-    justify-content: space-between;
-    font-size: 0.875rem;
-    padding: 0.35rem 0;
-    border-bottom: 1px solid rgba(255,255,255,0.05);
-  }
-
-  .mpesa-row:last-child { border-bottom: none; }
-  .mpesa-row .mlabel { color: #64748b; }
-  .mpesa-row .mvalue { font-weight: 600; color: #f1f5f9; }
-
-  .modal-form-group {
-    margin-bottom: 1rem;
-  }
-
-  .modal-form-group label {
-    display: block;
-    font-size: 0.8rem;
-    font-weight: 600;
-    color: #94a3b8;
-    margin-bottom: 0.4rem;
-  }
-
-  .modal-form-group input {
-    width: 100%;
-    padding: 0.65rem 0.9rem;
-    background: rgba(255,255,255,0.04);
-    border: 1px solid rgba(255,255,255,0.1);
-    border-radius: 8px;
-    color: #f1f5f9;
-    font-size: 0.875rem;
-    outline: none;
-    transition: border-color 0.2s;
-  }
-
-  .modal-form-group input:focus {
-    border-color: #3b82f6;
-    background: rgba(59,130,246,0.05);
-  }
-
-  .modal-submit {
-    width: 100%;
-    padding: 0.75rem;
-    background: #10b981;
-    color: #fff;
-    border: none;
-    border-radius: 8px;
-    font-size: 0.9rem;
-    font-weight: 700;
-    cursor: pointer;
-    transition: all 0.2s;
-  }
-
-  .modal-submit:hover { background: #059669; }
-
-  /* ── PAYMENT HISTORY ── */
-  .history-section {
-    background: var(--bg-secondary, #1a1f35);
-    border: 1px solid var(--border-color, rgba(255,255,255,0.07));
-    border-radius: 16px;
-    padding: 1.75rem;
-    margin-bottom: 2rem;
-  }
-
-  .history-section h3 {
-    font-size: 1rem;
-    font-weight: 700;
-    margin-bottom: 1.25rem;
-    letter-spacing: -0.01em;
-  }
-
-  .pay-table {
-    width: 100%;
-    border-collapse: collapse;
-    font-size: 0.85rem;
-  }
-
-  .pay-table th {
-    text-align: left;
-    padding: 0.5rem 0.75rem;
-    font-size: 0.72rem;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
-    color: #64748b;
-    border-bottom: 1px solid rgba(255,255,255,0.06);
-  }
-
-  .pay-table td {
-    padding: 0.7rem 0.75rem;
-    color: #94a3b8;
-    border-bottom: 1px solid rgba(255,255,255,0.04);
-  }
-
-  .pay-table tbody tr:last-child td { border-bottom: none; }
-
-  .pay-table tr:hover td { background: rgba(255,255,255,0.02); }
-
-  .status-pending   { color: #f59e0b; font-weight: 600; }
-  .status-confirmed { color: #10b981; font-weight: 600; }
-
-  .empty-state {
-    text-align: center;
-    padding: 2.5rem;
-    color: #475569;
-    font-size: 0.875rem;
-  }
-</style>
-
-<div class="sub-page">
-
-  <!-- ── CURRENT PLAN HEADER ── -->
-  <div class="plan-header">
-    <div class="plan-header-info">
-      <h2>
-        Billing &amp; Subscription
-        &nbsp;
-        {% if user.subscription_plan == 'free' %}
-          <span class="plan-badge badge-free">🟢 Free Trial</span>
-        {% elif user.subscription_plan == 'pro' %}
-          <span class="plan-badge badge-pro">🟠 Pro</span>
-        {% else %}
-          <span class="plan-badge badge-ent">🟣 Enterprise</span>
-        {% endif %}
-      </h2>
-      <p>Manage your plan, review payment history, and upgrade anytime.</p>
-    </div>
-    <a href="{{ url_for('main.dashboard') }}" class="btn btn-outline btn-sm">← Back to Scanner</a>
-  </div>
-
-  <!-- ── TRIAL COUNTER (free plan only) ── -->
-  {% if user.subscription_plan == 'free' %}
-  {% set scans_used = user.trial_scans_used %}
-  {% set pct = [(scans_used / 3 * 100)|int, 100]|min %}
-  <div class="trial-block">
-    <div class="trial-label">
-      <span>⚡ Trial Scans Used</span>
-      <span>{{ scans_used }} of 3</span>
-    </div>
-    <div class="trial-bar">
-      <div class="trial-bar-fill" style="width: {{ pct }}%;"></div>
-    </div>
-    <p class="trial-hint">
-      {% if scans_used >= 3 %}
-        Trial exhausted — upgrade below to continue scanning.
-      {% else %}
-        {{ 3 - scans_used }} scan{{ 's' if (3 - scans_used) != 1 }} remaining. Upgrade to Pro for 100 scans/month.
-      {% endif %}
-    </p>
-  </div>
-  {% endif %}
-
-  <!-- ── PLAN CARDS ── -->
-  <div class="plan-grid">
-
-    <!-- FREE -->
-    <div class="plan-card {% if user.subscription_plan == 'free' %}current-plan{% endif %}">
-      {% if user.subscription_plan == 'free' %}<div class="current-tag">CURRENT PLAN</div>{% endif %}
-      <div class="plan-card-name">Free</div>
-      <div class="plan-card-price" style="color:#10b981;">0 <span style="font-size:1rem;font-weight:600;">TZS</span></div>
-      <div class="plan-card-period">One-time trial</div>
-      <ul class="plan-features">
-        <li class="ok"><span class="fi fi-y">✓</span> 3 scans trial</li>
-        <li class="ok"><span class="fi fi-y">✓</span> All vulnerability types</li>
-        <li class="ok"><span class="fi fi-y">✓</span> JSON / HTML / PDF reports</li>
-        <li><span class="fi fi-n">✗</span> Batch URL scanning</li>
-        <li><span class="fi fi-n">✗</span> Priority support</li>
-      </ul>
-      {% if user.subscription_plan == 'free' %}
-      <div style="text-align:center;font-size:0.82rem;color:#10b981;font-weight:600;padding:0.5rem;">✓ Active Plan</div>
-      {% endif %}
-    </div>
-
-    <!-- PRO -->
-    <div class="plan-card featured-plan {% if user.subscription_plan == 'pro' %}current-plan{% endif %}">
-      {% if user.subscription_plan == 'pro' %}<div class="current-tag">CURRENT PLAN</div>{% endif %}
-      <div class="plan-card-name" style="color:#3b82f6;">Pro</div>
-      <div class="plan-card-price" style="color:#3b82f6;">25,000 <span style="font-size:1rem;font-weight:600;">TZS</span></div>
-      <div class="plan-card-period">per month</div>
-      <ul class="plan-features">
-        <li class="ok"><span class="fi fi-y" style="color:#3b82f6;">✓</span> 100 scans / month</li>
-        <li class="ok"><span class="fi fi-y" style="color:#3b82f6;">✓</span> All vulnerability types</li>
-        <li class="ok"><span class="fi fi-y" style="color:#3b82f6;">✓</span> JSON / HTML / PDF reports</li>
-        <li class="ok"><span class="fi fi-y" style="color:#3b82f6;">✓</span> Batch URL scanning</li>
-        <li class="ok"><span class="fi fi-y" style="color:#3b82f6;">✓</span> Priority support</li>
-        <li><span class="fi fi-n">✗</span> Team management</li>
-      </ul>
-      {% if user.subscription_plan == 'pro' %}
-      <div style="text-align:center;font-size:0.82rem;color:#3b82f6;font-weight:600;padding:0.5rem;">✓ Active — {{ user.scans_remaining }} scans left</div>
-      {% else %}
-      <button type="button" class="btn-upgrade btn-upgrade-blue" onclick="openModal('pro', 'Pro', 25000)">
-        Upgrade to Pro →
-      </button>
-      {% endif %}
-    </div>
-
-    <!-- ENTERPRISE -->
-    <div class="plan-card {% if user.subscription_plan == 'enterprise' %}current-plan{% endif %}" style="border-color:rgba(139,92,246,0.4);">
-      {% if user.subscription_plan == 'enterprise' %}<div class="current-tag" style="background:#8b5cf6;">CURRENT PLAN</div>{% endif %}
-      <div class="plan-card-name" style="color:#a78bfa;">Enterprise</div>
-      <div class="plan-card-price" style="color:#a78bfa;">75,000 <span style="font-size:1rem;font-weight:600;">TZS</span></div>
-      <div class="plan-card-period">per month</div>
-      <ul class="plan-features">
-        <li class="ok"><span class="fi fi-y" style="color:#a78bfa;">✓</span> Unlimited scans</li>
-        <li class="ok"><span class="fi fi-y" style="color:#a78bfa;">✓</span> All vulnerability types</li>
-        <li class="ok"><span class="fi fi-y" style="color:#a78bfa;">✓</span> JSON / HTML / PDF reports</li>
-        <li class="ok"><span class="fi fi-y" style="color:#a78bfa;">✓</span> Batch URL scanning</li>
-        <li class="ok"><span class="fi fi-y" style="color:#a78bfa;">✓</span> Priority support &amp; SLA</li>
-        <li class="ok"><span class="fi fi-y" style="color:#a78bfa;">✓</span> Team management</li>
-      </ul>
+  <!-- Current Plan Banner -->
+  <div style="background:var(--bg-card);border:1px solid var(--border-color);border-radius:var(--radius-lg);padding:1.75rem 2rem;margin-bottom:2rem;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:1rem;">
+    <div>
+      <p style="font-size:.75rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:.3rem;">Current Plan</p>
       {% if user.subscription_plan == 'enterprise' %}
-      <div style="text-align:center;font-size:0.82rem;color:#a78bfa;font-weight:600;padding:0.5rem;">✓ Active — Unlimited scans</div>
+        <h2 style="font-size:1.4rem;"><span style="background:linear-gradient(135deg,#f59e0b,#ef4444);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">Enterprise</span></h2>
+        <p style="color:var(--text-secondary);font-size:.85rem;margin-top:.25rem;">Unlimited scans · All features · Priority support</p>
+      {% elif user.subscription_plan == 'pro' %}
+        <h2 style="font-size:1.4rem;"><span style="background:linear-gradient(135deg,var(--accent-blue),var(--accent-purple));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">Pro</span></h2>
+        <p style="color:var(--text-secondary);font-size:.85rem;margin-top:.25rem;">100 scans/month · All features · Batch scanning</p>
       {% else %}
-      <button type="button" class="btn-upgrade btn-upgrade-purple" onclick="openModal('enterprise', 'Enterprise', 75000)">
-        Upgrade to Enterprise →
-      </button>
+        <h2 style="font-size:1.4rem;color:var(--accent-green);">Free Trial</h2>
+        <p style="color:var(--text-secondary);font-size:.85rem;margin-top:.25rem;">{{ user.scans_remaining }} of {{ trial_scans }} trial scans remaining</p>
+        <!-- Trial Progress Bar -->
+        <div style="width:220px;height:6px;background:var(--bg-secondary);border-radius:3px;margin-top:.6rem;overflow:hidden;">
+          <div style="height:100%;width:{{ ((trial_scans - user.scans_remaining) / trial_scans * 100)|int }}%;background:{% if user.scans_remaining == 0 %}var(--accent-red){% elif user.scans_remaining == 1 %}var(--accent-orange){% else %}var(--accent-green){% endif %};border-radius:3px;transition:.3s;"></div>
+        </div>
       {% endif %}
     </div>
-
-  </div>
-
-  <!-- ── PAYMENT HISTORY ── -->
-  <div class="history-section">
-    <h3>📋 Payment History</h3>
-    {% if payments %}
-    <table class="pay-table">
-      <thead>
-        <tr>
-          <th>#</th>
-          <th>Plan</th>
-          <th>Amount (TZS)</th>
-          <th>Reference</th>
-          <th>Status</th>
-          <th>Date</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for p in payments %}
-        <tr>
-          <td style="color:#475569;">{{ loop.index }}</td>
-          <td style="font-weight:600;color:#f1f5f9;text-transform:capitalize;">{{ p.plan }}</td>
-          <td style="font-weight:700;color:#f1f5f9;">{{ "{:,}".format(p.amount_tzs) }}</td>
-          <td style="font-family:monospace;font-size:0.82rem;">{{ p.reference or '—' }}</td>
-          <td>
-            {% if p.status == 'confirmed' %}
-              <span class="status-confirmed">✓ Confirmed</span>
-            {% else %}
-              <span class="status-pending">⏳ Pending</span>
-            {% endif %}
-          </td>
-          <td style="font-size:0.78rem;white-space:nowrap;">{{ p.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
-        </tr>
-        {% endfor %}
-      </tbody>
-    </table>
-    {% else %}
-    <div class="empty-state">
-      <div style="font-size:2rem;margin-bottom:0.5rem;">💳</div>
-      No payment history yet. Upgrade above to get started.
+    {% if user.subscription_plan != 'free' %}
+    <div style="text-align:right;">
+      <span style="background:{% if user.subscription_plan=='enterprise' %}rgba(245,158,11,.15){% else %}rgba(59,130,246,.15){% endif %};color:{% if user.subscription_plan=='enterprise' %}var(--accent-orange){% else %}var(--accent-blue){% endif %};padding:.4rem 1rem;border-radius:20px;font-size:.8rem;font-weight:700;">ACTIVE</span>
     </div>
     {% endif %}
   </div>
 
-</div>
+  <!-- Plan Cards -->
+  <h3 style="font-size:1rem;color:var(--text-secondary);margin-bottom:1.25rem;text-align:center;">
+    {% if user.subscription_plan == 'free' %}Upgrade to unlock more scans{% else %}Manage your subscription{% endif %}
+  </h3>
 
-<!-- ── M-PESA PAYMENT MODAL ── -->
-<div class="modal-backdrop" id="payModal">
-  <div class="modal-box">
-    <button class="modal-close" onclick="closeModal()">✕</button>
-    <h3 id="modalTitle">Upgrade to Pro</h3>
-    <p class="modal-subtitle">Complete payment via M-Pesa, then submit your reference number below.</p>
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(270px,1fr));gap:1.25rem;margin-bottom:2.5rem;">
 
-    <div class="mpesa-card">
-      <h4>📱 M-Pesa Payment Instructions</h4>
-      <div class="mpesa-row">
-        <span class="mlabel">Send payment to</span>
-        <span class="mvalue">+255 712 345 678 (SecScan JS)</span>
+    <!-- Free -->
+    <div style="background:var(--bg-card);border:1px solid {% if user.subscription_plan=='free' %}var(--accent-green){% else %}var(--border-color){% endif %};border-radius:var(--radius-lg);padding:1.75rem;position:relative;">
+      {% if user.subscription_plan == 'free' %}<span style="position:absolute;top:-.6rem;left:50%;transform:translateX(-50%);background:var(--accent-green);color:#000;font-size:.65rem;font-weight:700;padding:3px 12px;border-radius:10px;white-space:nowrap;">CURRENT</span>{% endif %}
+      <div style="font-size:1.75rem;margin-bottom:.6rem;">🆓</div>
+      <p style="font-size:.7rem;text-transform:uppercase;letter-spacing:.08em;color:var(--text-muted);margin-bottom:.3rem;">Free Trial</p>
+      <div style="display:flex;align-items:baseline;gap:.3rem;margin:.5rem 0 1rem;">
+        <span style="font-size:.9rem;color:var(--text-secondary);">TZS</span>
+        <span style="font-size:2.25rem;font-weight:900;">0</span>
       </div>
-      <div class="mpesa-row">
-        <span class="mlabel">Amount</span>
-        <span class="mvalue" id="modalAmount">25,000 TZS</span>
-      </div>
-      <div class="mpesa-row">
-        <span class="mlabel">Reference / Description</span>
-        <span class="mvalue">{{ current_user.username }}</span>
-      </div>
+      <ul style="list-style:none;padding:0;font-size:.82rem;color:var(--text-secondary);margin-bottom:1.25rem;">
+        <li style="padding:.3rem 0;">✅ 3 scans total</li>
+        <li style="padding:.3rem 0;">✅ All 13 vulnerability types</li>
+        <li style="padding:.3rem 0;">✅ PDF/HTML/JSON reports</li>
+        <li style="padding:.3rem 0;color:var(--text-muted);">✗ Batch URL scanning</li>
+      </ul>
+      {% if user.subscription_plan != 'free' %}<div style="text-align:center;font-size:.8rem;color:var(--text-muted);">Your previous plan</div>{% endif %}
     </div>
 
-    <form method="POST" id="payForm" action="{{ url_for('main.pay_subscription', plan='pro') }}">
-      <div class="modal-form-group">
-        <label for="referenceInput">M-Pesa Transaction Reference Number</label>
-        <input
-          type="text"
-          id="referenceInput"
-          name="reference"
-          placeholder="e.g. QJ45KL9M2P"
-          required
-          autocomplete="off"
-        >
+    <!-- Pro -->
+    <div style="background:var(--bg-card);border:2px solid {% if user.subscription_plan=='pro' %}var(--accent-blue){% else %}rgba(59,130,246,.3){% endif %};border-radius:var(--radius-lg);padding:1.75rem;position:relative;box-shadow:{% if user.subscription_plan=='pro' %}0 0 20px rgba(59,130,246,.2){% else %}none{% endif %};">
+      {% if user.subscription_plan == 'pro' %}<span style="position:absolute;top:-.6rem;left:50%;transform:translateX(-50%);background:var(--accent-blue);color:#fff;font-size:.65rem;font-weight:700;padding:3px 12px;border-radius:10px;white-space:nowrap;">CURRENT</span>
+      {% else %}<span style="position:absolute;top:-.6rem;left:50%;transform:translateX(-50%);background:linear-gradient(135deg,var(--accent-blue),var(--accent-purple));color:#fff;font-size:.65rem;font-weight:700;padding:3px 12px;border-radius:10px;white-space:nowrap;">MOST POPULAR</span>{% endif %}
+      <div style="font-size:1.75rem;margin-bottom:.6rem;">⚡</div>
+      <p style="font-size:.7rem;text-transform:uppercase;letter-spacing:.08em;color:var(--text-muted);margin-bottom:.3rem;">Pro</p>
+      <div style="display:flex;align-items:baseline;gap:.3rem;margin:.5rem 0 .25rem;">
+        <span style="font-size:.9rem;color:var(--text-secondary);">TZS</span>
+        <span style="font-size:2.25rem;font-weight:900;">25,000</span>
+        <span style="font-size:.82rem;color:var(--text-muted);">/month</span>
       </div>
-      <button type="submit" class="modal-submit">✓ Confirm Payment Submitted</button>
-    </form>
+      <ul style="list-style:none;padding:0;font-size:.82rem;color:var(--text-secondary);margin:1rem 0 1.25rem;">
+        <li style="padding:.3rem 0;">✅ 100 scans per month</li>
+        <li style="padding:.3rem 0;">✅ Batch URL scanning</li>
+        <li style="padding:.3rem 0;">✅ Full scan history</li>
+        <li style="padding:.3rem 0;">✅ All reports + sub-techniques</li>
+      </ul>
+      {% if user.subscription_plan != 'pro' %}
+      <button onclick="openPayModal('pro','25,000')" style="width:100%;padding:.8rem;background:linear-gradient(135deg,var(--accent-blue),var(--accent-purple));color:#fff;border:none;border-radius:9px;font-weight:700;font-size:.9rem;cursor:pointer;">Upgrade to Pro</button>
+      {% else %}
+      <div style="text-align:center;padding:.7rem;background:rgba(59,130,246,.1);border-radius:8px;font-size:.82rem;color:var(--accent-blue);font-weight:600;">Active Plan</div>
+      {% endif %}
+    </div>
 
-    <p style="text-align:center;font-size:0.75rem;color:#475569;margin-top:1rem;">
-      Your plan will be activated within 24 hours after verification.
-    </p>
+    <!-- Enterprise -->
+    <div style="background:var(--bg-card);border:1px solid {% if user.subscription_plan=='enterprise' %}var(--accent-orange){% else %}var(--border-color){% endif %};border-radius:var(--radius-lg);padding:1.75rem;position:relative;">
+      {% if user.subscription_plan == 'enterprise' %}<span style="position:absolute;top:-.6rem;left:50%;transform:translateX(-50%);background:var(--accent-orange);color:#000;font-size:.65rem;font-weight:700;padding:3px 12px;border-radius:10px;white-space:nowrap;">CURRENT</span>{% endif %}
+      <div style="font-size:1.75rem;margin-bottom:.6rem;">🏢</div>
+      <p style="font-size:.7rem;text-transform:uppercase;letter-spacing:.08em;color:var(--text-muted);margin-bottom:.3rem;">Enterprise</p>
+      <div style="display:flex;align-items:baseline;gap:.3rem;margin:.5rem 0 .25rem;">
+        <span style="font-size:.9rem;color:var(--text-secondary);">TZS</span>
+        <span style="font-size:2.25rem;font-weight:900;">75,000</span>
+        <span style="font-size:.82rem;color:var(--text-muted);">/month</span>
+      </div>
+      <ul style="list-style:none;padding:0;font-size:.82rem;color:var(--text-secondary);margin:1rem 0 1.25rem;">
+        <li style="padding:.3rem 0;">✅ Unlimited scans</li>
+        <li style="padding:.3rem 0;">✅ Everything in Pro</li>
+        <li style="padding:.3rem 0;">✅ Team/Institution management</li>
+        <li style="padding:.3rem 0;">✅ Priority support + SLA</li>
+      </ul>
+      {% if user.subscription_plan != 'enterprise' %}
+      <button onclick="openPayModal('enterprise','75,000')" style="width:100%;padding:.8rem;background:linear-gradient(135deg,#f59e0b,#ef4444);color:#fff;border:none;border-radius:9px;font-weight:700;font-size:.9rem;cursor:pointer;">Get Enterprise</button>
+      {% else %}
+      <div style="text-align:center;padding:.7rem;background:rgba(245,158,11,.1);border-radius:8px;font-size:.82rem;color:var(--accent-orange);font-weight:600;">Active Plan</div>
+      {% endif %}
+    </div>
   </div>
+
+  <!-- Payment History -->
+  {% if payments %}
+  <div style="background:var(--bg-card);border:1px solid var(--border-color);border-radius:var(--radius-lg);padding:1.5rem;">
+    <h3 style="font-size:1rem;margin-bottom:1rem;">📋 Payment History</h3>
+    <table class="history-table">
+      <thead><tr><th>Plan</th><th>Amount (TZS)</th><th>Reference</th><th>Status</th><th>Date</th></tr></thead>
+      <tbody>
+        {% for p in payments %}
+        <tr>
+          <td>{{ p.plan | capitalize }}</td>
+          <td>{{ "{:,}".format(p.amount_tzs) }}</td>
+          <td><code style="font-size:.8rem;">{{ p.reference or '—' }}</code></td>
+          <td><span class="badge {% if p.status=='confirmed' %}badge-medium{% else %}badge-warning{% endif %}" style="background:{% if p.status=='confirmed' %}rgba(16,185,129,.15){% else %}rgba(245,158,11,.15){% endif %};color:{% if p.status=='confirmed' %}#6ee7b7{% else %}#fcd34d{% endif %};">{{ p.status | upper }}</span></td>
+          <td style="font-size:.8rem;color:var(--text-muted);">{{ p.created_at.strftime('%Y-%m-%d') }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% endif %}
 </div>
 
+<!-- Payment Modal -->
+<div id="payModal" style="display:none;position:fixed;inset:0;background:rgba(10,14,26,.85);backdrop-filter:blur(10px);z-index:9999;align-items:center;justify-content:center;">
+  <div style="background:var(--bg-card);border:1px solid var(--border-color);border-radius:var(--radius-xl);padding:2.5rem;max-width:460px;width:90%;box-shadow:0 30px 80px rgba(0,0,0,.5);">
+    <div style="text-align:center;margin-bottom:1.5rem;">
+      <div style="font-size:2.5rem;margin-bottom:.75rem;">📱</div>
+      <h2 style="font-size:1.3rem;margin-bottom:.4rem;">Pay via M-Pesa</h2>
+      <p style="color:var(--text-secondary);font-size:.875rem;">Complete your payment in 3 simple steps</p>
+    </div>
+    <div style="background:var(--bg-secondary);border-radius:var(--radius-md);padding:1.25rem;margin-bottom:1.5rem;">
+      <div style="display:flex;justify-content:space-between;margin-bottom:.75rem;font-size:.85rem;">
+        <span style="color:var(--text-muted);">Send to</span>
+        <strong>+255 712 345 678</strong>
+      </div>
+      <div style="display:flex;justify-content:space-between;margin-bottom:.75rem;font-size:.85rem;">
+        <span style="color:var(--text-muted);">Name</span>
+        <span>SecScan JS</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;margin-bottom:.75rem;font-size:.85rem;">
+        <span style="color:var(--text-muted);">Amount</span>
+        <strong style="color:var(--accent-green);">TZS <span id="modalAmount"></span></strong>
+      </div>
+      <div style="display:flex;justify-content:space-between;font-size:.85rem;">
+        <span style="color:var(--text-muted);">Reference</span>
+        <code style="color:var(--accent-cyan);">{{ current_user.username }}</code>
+      </div>
+    </div>
+    <form method="POST" action="/subscription/pay/placeholder" id="payForm">
+      <div style="margin-bottom:1rem;">
+        <label style="display:block;font-size:.8rem;color:var(--text-secondary);margin-bottom:.4rem;">M-Pesa Transaction ID / Reference</label>
+        <input name="reference" required placeholder="e.g. ABC123XYZ" style="width:100%;padding:.7rem 1rem;background:var(--bg-secondary);border:1px solid var(--border-color);border-radius:var(--radius-sm);color:var(--text-primary);font-size:.9rem;" oninput="this.value=this.value.toUpperCase()">
+        <p style="font-size:.75rem;color:var(--text-muted);margin-top:.35rem;">Enter the confirmation code from your M-Pesa message</p>
+      </div>
+      <div style="display:flex;gap:.75rem;">
+        <button type="button" onclick="closePayModal()" style="flex:1;padding:.75rem;background:var(--bg-secondary);border:1px solid var(--border-color);border-radius:var(--radius-sm);color:var(--text-secondary);font-size:.875rem;cursor:pointer;font-weight:500;">Cancel</button>
+        <button type="submit" style="flex:2;padding:.75rem;background:linear-gradient(135deg,var(--accent-blue),var(--accent-purple));color:#fff;border:none;border-radius:var(--radius-sm);font-weight:700;font-size:.9rem;cursor:pointer;">Confirm Payment</button>
+      </div>
+    </form>
+  </div>
+</div>
 {% endblock %}
 
 {% block scripts %}
 <script>
-function openModal(plan, planName, amount) {
-  document.getElementById('modalTitle').textContent = 'Upgrade to ' + planName;
-  document.getElementById('modalAmount').textContent = amount.toLocaleString() + ' TZS';
-  document.getElementById('payForm').action = '/subscription/pay/' + plan;
-  document.getElementById('payModal').classList.add('open');
-  document.body.style.overflow = 'hidden';
+function openPayModal(plan, amount) {
+    document.getElementById('modalAmount').textContent = amount;
+    document.getElementById('payForm').action = '/subscription/pay/' + plan;
+    document.getElementById('payModal').style.display = 'flex';
 }
-
-function closeModal() {
-  document.getElementById('payModal').classList.remove('open');
-  document.body.style.overflow = '';
+function closePayModal() {
+    document.getElementById('payModal').style.display = 'none';
 }
-
 document.getElementById('payModal').addEventListener('click', function(e) {
-  if (e.target === this) closeModal();
-});
-
-document.addEventListener('keydown', function(e) {
-  if (e.key === 'Escape') closeModal();
+    if (e.target === this) closePayModal();
 });
 </script>
 {% endblock %}

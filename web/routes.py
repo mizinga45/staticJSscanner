@@ -387,14 +387,25 @@ def admin_panel():
 
     all_payments = Payment.query.order_by(Payment.created_at.desc()).all()
 
+    # Count roles and plans for new template
+    role_counts = {}
+    plan_counts = {}
+    for u in User.query.all():
+        role_counts[u.role] = role_counts.get(u.role, 0) + 1
+        plan_counts[u.subscription_plan] = plan_counts.get(u.subscription_plan, 0) + 1
+    paid_users = sum(v for k, v in plan_counts.items() if k != 'free')
+    recent_payments = Payment.query.order_by(Payment.created_at.desc()).limit(20).all()
+    all_users = User.query.order_by(User.created_at.desc()).all()
+
     return render_template('admin_panel.html',
                            total_users=total_users,
                            total_scans=total_scans,
                            total_vulns=total_vulns,
-                           revenue=revenue,
-                           active_subs=active_subs,
-                           user_stats=user_stats,
-                           all_payments=all_payments)
+                           paid_users=paid_users,
+                           role_counts=role_counts,
+                           plan_counts=plan_counts,
+                           all_users=all_users,
+                           recent_payments=recent_payments)
 
 
 @main_bp.route('/admin/create-manager', methods=['POST'])
@@ -488,11 +499,17 @@ def manager_panel():
         })
     dev_stats.sort(key=lambda x: x['critical'], reverse=True)
 
+    total_high = sum(s.high_count for s in all_scans)
+    total_medium = sum(s.medium_count for s in all_scans)
+    total_low = sum(s.low_count for s in all_scans)
+
     return render_template('manager_panel.html',
                            scans=all_scans, developers=developers,
                            total_scans=total_scans, total_vulns=total_vulns,
                            total_critical=total_critical,
-                           top_vulns=top_vulns, dev_stats=dev_stats, links=links)
+                           total_high=total_high, total_medium=total_medium,
+                           total_low=total_low,
+                           top_vulns=top_vulns, dev_stats=dev_stats)
 
 
 @main_bp.route('/manager/create-developer', methods=['POST'])
@@ -773,8 +790,10 @@ def institution_add_developer():
 @main_bp.route('/subscription')
 @login_required
 def subscription():
+    from models import TRIAL_SCANS
     payments = current_user.payments if hasattr(current_user, 'payments') else []
-    return render_template('subscription.html', plans=PLANS, user=current_user, payments=payments)
+    return render_template('subscription.html', plans=PLANS, user=current_user,
+                           payments=payments, trial_scans=TRIAL_SCANS)
 
 
 @main_bp.route('/subscription/pay/<plan>', methods=['POST'])

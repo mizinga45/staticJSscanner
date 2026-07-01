@@ -1,617 +1,175 @@
 {% extends "base.html" %}
-{% block title %}Admin Control Panel{% endblock %}
+{% block title %}Admin Panel{% endblock %}
 {% block content %}
-<style>
-  /* ── Admin panel — dark system control aesthetic ── */
-  .admin-layout {
-    display: flex;
-    gap: 0;
-    min-height: calc(100vh - 64px - 80px);
-    width: 100%;
-    max-width: 1300px;
-    background: #080c14;
-    border: 1px solid rgba(255,255,255,0.05);
-    border-radius: 16px;
-    overflow: hidden;
-  }
+<div style="display:grid;grid-template-columns:220px 1fr;gap:1.5rem;max-width:1100px;width:100%;align-items:start;">
 
-  /* ── LEFT SIDEBAR ── */
-  .admin-sidebar {
-    width: 220px;
-    flex-shrink: 0;
-    background: #0d111c;
-    border-right: 1px solid rgba(255,255,255,0.05);
-    padding: 1.5rem 0;
-    display: flex;
-    flex-direction: column;
-    gap: 0.25rem;
-  }
-
-  .sidebar-logo {
-    display: flex;
-    align-items: center;
-    gap: 0.6rem;
-    padding: 0 1.25rem 1.25rem;
-    border-bottom: 1px solid rgba(255,255,255,0.05);
-    margin-bottom: 0.5rem;
-    font-weight: 800;
-    font-size: 0.95rem;
-    color: #f1f5f9;
-    letter-spacing: -0.01em;
-  }
-
-  .sidebar-logo-icon {
-    width: 30px;
-    height: 30px;
-    background: linear-gradient(135deg, #ef4444, #dc2626);
-    border-radius: 8px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 0.85rem;
-    flex-shrink: 0;
-  }
-
-  .sidebar-section-label {
-    padding: 0.85rem 1.25rem 0.3rem;
-    font-size: 0.65rem;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
-    color: #374151;
-  }
-
-  .sidebar-link {
-    display: flex;
-    align-items: center;
-    gap: 0.65rem;
-    padding: 0.55rem 1.25rem;
-    font-size: 0.85rem;
-    font-weight: 500;
-    color: #9ca3af;
-    cursor: pointer;
-    border: none;
-    background: none;
-    width: 100%;
-    text-align: left;
-    border-radius: 0;
-    transition: all 0.15s;
-    text-decoration: none;
-  }
-
-  .sidebar-link:hover {
-    background: rgba(255,255,255,0.04);
-    color: #f1f5f9;
-  }
-
-  .sidebar-link.active {
-    background: rgba(239,68,68,0.12);
-    color: #f87171;
-    border-right: 2px solid #ef4444;
-  }
-
-  .sidebar-link .sicon { font-size: 1rem; opacity: 0.8; }
-
-  /* ── MAIN CONTENT ── */
-  .admin-main {
-    flex: 1;
-    overflow-x: auto;
-    padding: 2rem;
-    background: #080c14;
-  }
-
-  .admin-section {
-    display: none;
-  }
-
-  .admin-section.active {
-    display: block;
-  }
-
-  /* Section header */
-  .section-header {
-    display: flex;
-    align-items: flex-start;
-    justify-content: space-between;
-    margin-bottom: 2rem;
-    flex-wrap: wrap;
-    gap: 1rem;
-  }
-
-  .section-header h2 {
-    font-size: 1.35rem;
-    font-weight: 800;
-    letter-spacing: -0.02em;
-    color: #f1f5f9;
-  }
-
-  .section-header p {
-    font-size: 0.82rem;
-    color: #6b7280;
-    margin-top: 0.2rem;
-  }
-
-  /* Stats grid */
-  .admin-stats {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 1rem;
-    margin-bottom: 2rem;
-  }
-
-  @media (max-width: 900px) { .admin-stats { grid-template-columns: repeat(2, 1fr); } }
-
-  .admin-stat {
-    background: #0d111c;
-    border: 1px solid rgba(255,255,255,0.05);
-    border-radius: 12px;
-    padding: 1.25rem 1.5rem;
-    transition: transform 0.2s;
-  }
-
-  .admin-stat:hover { transform: translateY(-2px); }
-
-  .admin-stat .as-icon { font-size: 1.5rem; margin-bottom: 0.65rem; }
-
-  .admin-stat .as-value {
-    font-size: 1.75rem;
-    font-weight: 900;
-    letter-spacing: -0.03em;
-    line-height: 1;
-    margin-bottom: 0.3rem;
-  }
-
-  .admin-stat .as-label {
-    font-size: 0.78rem;
-    color: #6b7280;
-    font-weight: 500;
-  }
-
-  /* Tables */
-  .admin-table-wrap {
-    background: #0d111c;
-    border: 1px solid rgba(255,255,255,0.05);
-    border-radius: 12px;
-    overflow: hidden;
-    margin-bottom: 1.5rem;
-  }
-
-  .admin-table-title {
-    padding: 1rem 1.25rem;
-    font-size: 0.85rem;
-    font-weight: 700;
-    color: #9ca3af;
-    border-bottom: 1px solid rgba(255,255,255,0.05);
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-  }
-
-  .admin-table {
-    width: 100%;
-    border-collapse: collapse;
-    font-size: 0.84rem;
-  }
-
-  .admin-table th {
-    text-align: left;
-    padding: 0.6rem 1rem;
-    font-size: 0.7rem;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.07em;
-    color: #374151;
-    border-bottom: 1px solid rgba(255,255,255,0.04);
-    white-space: nowrap;
-    background: #080c14;
-  }
-
-  .admin-table td {
-    padding: 0.8rem 1rem;
-    color: #9ca3af;
-    border-bottom: 1px solid rgba(255,255,255,0.03);
-    vertical-align: middle;
-  }
-
-  .admin-table tbody tr:last-child td { border-bottom: none; }
-  .admin-table tbody tr:hover td { background: rgba(255,255,255,0.015); }
-
-  /* Role badges */
-  .role-admin   { background: rgba(239,68,68,0.15);  color: #f87171; border: 1px solid rgba(239,68,68,0.3);  }
-  .role-manager { background: rgba(249,115,22,0.15); color: #fb923c; border: 1px solid rgba(249,115,22,0.3); }
-  .role-dev     { background: rgba(59,130,246,0.12); color: #60a5fa; border: 1px solid rgba(59,130,246,0.25); }
-  .role-inst    { background: rgba(139,92,246,0.12); color: #a78bfa; border: 1px solid rgba(139,92,246,0.25); }
-
-  .plan-free { color: #6b7280; font-size: 0.78rem; }
-  .plan-pro   { color: #fb923c; font-weight: 600; font-size: 0.78rem; }
-  .plan-ent   { color: #a78bfa; font-weight: 700; font-size: 0.78rem; }
-
-  .rb { display: inline-flex; align-items: center; padding: 0.15rem 0.55rem; border-radius: 100px; font-size: 0.72rem; font-weight: 600; }
-
-  /* Create manager side panel */
-  .create-panel {
-    background: #0d111c;
-    border: 1px solid rgba(255,255,255,0.05);
-    border-radius: 12px;
-    padding: 1.5rem;
-    margin-bottom: 1.5rem;
-  }
-
-  .create-panel h3 {
-    font-size: 0.9rem;
-    font-weight: 700;
-    color: #f1f5f9;
-    margin-bottom: 0.3rem;
-  }
-
-  .create-panel p {
-    font-size: 0.78rem;
-    color: #6b7280;
-    margin-bottom: 1.25rem;
-  }
-
-  .cp-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 0.75rem;
-  }
-
-  @media (max-width: 600px) { .cp-grid { grid-template-columns: 1fr; } }
-
-  .cp-field {
-    display: flex;
-    flex-direction: column;
-    gap: 0.3rem;
-  }
-
-  .cp-field label {
-    font-size: 0.73rem;
-    font-weight: 600;
-    color: #6b7280;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-  }
-
-  .cp-field input {
-    padding: 0.55rem 0.8rem;
-    background: rgba(255,255,255,0.03);
-    border: 1px solid rgba(255,255,255,0.08);
-    border-radius: 7px;
-    color: #f1f5f9;
-    font-size: 0.85rem;
-    outline: none;
-    transition: border-color 0.2s;
-  }
-
-  .cp-field input:focus {
-    border-color: #ef4444;
-    background: rgba(239,68,68,0.05);
-  }
-
-  /* Revenue section */
-  .revenue-card {
-    background: linear-gradient(135deg, rgba(16,185,129,0.08), rgba(5,150,105,0.04));
-    border: 1px solid rgba(16,185,129,0.2);
-    border-radius: 12px;
-    padding: 1.5rem;
-    margin-bottom: 1.5rem;
-  }
-
-  .revenue-card h3 { font-size: 0.85rem; font-weight: 700; color: #10b981; margin-bottom: 0.5rem; }
-
-  .revenue-card .rv { font-size: 2.5rem; font-weight: 900; color: #f1f5f9; letter-spacing: -0.03em; }
-
-  .revenue-card .rv-label { font-size: 0.78rem; color: #6b7280; margin-top: 0.25rem; }
-
-  /* Empty state */
-  .empty-state { text-align: center; padding: 3rem; color: #374151; font-size: 0.875rem; }
-
-  @media (max-width: 700px) {
-    .admin-layout { flex-direction: column; }
-    .admin-sidebar { width: 100%; flex-direction: row; flex-wrap: wrap; padding: 0.75rem; border-right: none; border-bottom: 1px solid rgba(255,255,255,0.05); }
-    .sidebar-section-label { display: none; }
-    .admin-sidebar .sidebar-logo { width: 100%; }
-  }
-</style>
-
-<div class="admin-layout">
-
-  <!-- ── SIDEBAR ── -->
-  <aside class="admin-sidebar">
-    <div class="sidebar-logo">
-      <div class="sidebar-logo-icon">🛡️</div>
-      Admin
-    </div>
-
-    <div class="sidebar-section-label">Navigation</div>
-    <button class="sidebar-link active" onclick="switchTab('overview', this)">
-      <span class="sicon">📊</span> Overview
-    </button>
-    <button class="sidebar-link" onclick="switchTab('users', this)">
-      <span class="sicon">👥</span> Users
-    </button>
-    <button class="sidebar-link" onclick="switchTab('subscriptions', this)">
-      <span class="sicon">💳</span> Subscriptions
-    </button>
-    <button class="sidebar-link" onclick="switchTab('system', this)">
-      <span class="sicon">⚙️</span> System
-    </button>
-
-    <div style="flex:1;"></div>
-    <div style="padding: 1rem 1.25rem; font-size: 0.75rem; color: #1f2937; border-top: 1px solid rgba(255,255,255,0.04);">
-      <div style="color:#374151;">Logged in as</div>
-      <div style="color:#6b7280;font-weight:600;margin-top:0.2rem;">{{ current_user.username }}</div>
-    </div>
-  </aside>
-
-  <!-- ── MAIN CONTENT ── -->
-  <main class="admin-main">
-
-    <!-- ─ OVERVIEW ─ -->
-    <section class="admin-section active" id="tab-overview">
-      <div class="section-header">
+  <!-- Sidebar -->
+  <div class="card" style="max-width:none;padding:1.25rem;position:sticky;top:90px;">
+    <p style="font-size:.65rem;text-transform:uppercase;letter-spacing:.1em;color:var(--text-muted);margin-bottom:.75rem;">Admin Menu</p>
+    <nav style="display:flex;flex-direction:column;gap:.2rem;">
+      <a href="#overview" onclick="showSection('overview')" class="admin-nav active" id="nav-overview">📊 Overview</a>
+      <a href="#users" onclick="showSection('users')" class="admin-nav" id="nav-users">👤 Users</a>
+      <a href="#create" onclick="showSection('create')" class="admin-nav" id="nav-create">➕ Create Manager</a>
+      <a href="#subs" onclick="showSection('subs')" class="admin-nav" id="nav-subs">💳 Subscriptions</a>
+    </nav>
+    <div style="margin-top:1.5rem;padding-top:1rem;border-top:1px solid var(--border-color);">
+      <div style="display:flex;align-items:center;gap:.6rem;">
+        <div style="width:30px;height:30px;border-radius:50%;background:linear-gradient(135deg,var(--accent-red),var(--accent-orange));display:flex;align-items:center;justify-content:center;font-size:.75rem;font-weight:700;">{{ current_user.full_name[0] }}</div>
         <div>
-          <h2>Platform Overview</h2>
-          <p>Real-time statistics across the SecScan JS platform.</p>
+          <p style="font-size:.78rem;font-weight:600;">{{ current_user.full_name }}</p>
+          <p style="font-size:.68rem;color:var(--text-muted);">System Admin</p>
         </div>
       </div>
+    </div>
+  </div>
 
-      <div class="admin-stats">
-        <div class="admin-stat">
-          <div class="as-icon">👥</div>
-          <div class="as-value" style="color:#60a5fa;">{{ total_users }}</div>
-          <div class="as-label">Total Users</div>
-        </div>
-        <div class="admin-stat">
-          <div class="as-icon">💳</div>
-          <div class="as-value" style="color:#fb923c;">{{ active_subs }}</div>
-          <div class="as-label">Active Subscriptions</div>
-        </div>
-        <div class="admin-stat">
-          <div class="as-icon">💰</div>
-          <div class="as-value" style="color:#10b981;font-size:1.35rem;">{{ "{:,}".format(revenue) }}</div>
-          <div class="as-label">Revenue (TZS confirmed)</div>
-        </div>
-        <div class="admin-stat">
-          <div class="as-icon">🔍</div>
-          <div class="as-value" style="color:#a78bfa;">{{ total_scans }}</div>
-          <div class="as-label">Total Scans</div>
+  <!-- Main Content -->
+  <div>
+
+    <!-- Overview Section -->
+    <div id="section-overview">
+      <h2 style="font-size:1.3rem;margin-bottom:1.25rem;">📊 Platform Overview</h2>
+      <div class="results-summary" style="margin-bottom:1.5rem;">
+        <div class="summary-card total"><div class="count">{{ total_users }}</div><div class="label">Total Users</div></div>
+        <div class="summary-card critical"><div class="count">{{ total_scans }}</div><div class="label">Total Scans</div></div>
+        <div class="summary-card high"><div class="count">{{ total_vulns }}</div><div class="label">Vulns Found</div></div>
+        <div class="summary-card medium"><div class="count">{{ paid_users }}</div><div class="label">Paid Subscribers</div></div>
+      </div>
+      <!-- Role breakdown -->
+      <div class="card" style="max-width:none;">
+        <h3 style="font-size:.9rem;margin-bottom:1rem;color:var(--text-secondary);">Role Breakdown</h3>
+        <div style="display:flex;gap:1.5rem;flex-wrap:wrap;">
+          {% for role, count in role_counts.items() %}
+          <div style="text-align:center;padding:.75rem 1.25rem;background:var(--bg-secondary);border-radius:8px;">
+            <div style="font-size:1.5rem;font-weight:800;">{{ count }}</div>
+            <div style="font-size:.72rem;color:var(--text-muted);text-transform:capitalize;">{{ role }}s</div>
+          </div>
+          {% endfor %}
         </div>
       </div>
+    </div>
 
-      <!-- Revenue highlight -->
-      <div class="revenue-card">
-        <h3>💰 Total Confirmed Revenue</h3>
-        <div class="rv">TZS {{ "{:,}".format(revenue) }}</div>
-        <div class="rv-label">From confirmed M-Pesa payments</div>
+    <!-- Users Section -->
+    <div id="section-users" style="display:none;">
+      <h2 style="font-size:1.3rem;margin-bottom:1.25rem;">👤 All Users</h2>
+      <div class="card" style="max-width:none;">
+        <div style="overflow-x:auto;">
+          <table class="history-table">
+            <thead>
+              <tr><th>Name</th><th>Username</th><th>Role</th><th>Plan</th><th>Scans</th><th>Joined</th></tr>
+            </thead>
+            <tbody>
+              {% for user in all_users %}
+              <tr>
+                <td style="font-weight:500;">{{ user.full_name }}</td>
+                <td style="color:var(--text-muted);">@{{ user.username }}</td>
+                <td>
+                  <span style="padding:2px 8px;border-radius:4px;font-size:.72rem;font-weight:700;
+                    background:{% if user.role=='admin' %}rgba(239,68,68,.15){% elif user.role=='manager' %}rgba(139,92,246,.15){% elif user.role=='institution' %}rgba(245,158,11,.15){% else %}rgba(59,130,246,.15){% endif %};
+                    color:{% if user.role=='admin' %}var(--accent-red){% elif user.role=='manager' %}var(--accent-purple){% elif user.role=='institution' %}var(--accent-orange){% else %}var(--accent-blue){% endif %};">
+                    {{ user.role | upper }}
+                  </span>
+                </td>
+                <td>
+                  <span style="padding:2px 8px;border-radius:4px;font-size:.72rem;font-weight:600;
+                    background:{% if user.subscription_plan=='enterprise' %}rgba(245,158,11,.15){% elif user.subscription_plan=='pro' %}rgba(59,130,246,.15){% else %}rgba(100,116,139,.15){% endif %};
+                    color:{% if user.subscription_plan=='enterprise' %}var(--accent-orange){% elif user.subscription_plan=='pro' %}var(--accent-blue){% else %}var(--text-muted){% endif %};">
+                    {{ user.subscription_plan | upper }}
+                  </span>
+                </td>
+                <td>{{ user.scans|length }}</td>
+                <td style="font-size:.78rem;color:var(--text-muted);">{{ user.created_at.strftime('%Y-%m-%d') }}</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
       </div>
+    </div>
 
-      <!-- Recent users snippet -->
-      <div class="admin-table-wrap">
-        <div class="admin-table-title">Recent Registrations <span style="color:#374151;">Last 5</span></div>
-        <table class="admin-table">
-          <thead>
-            <tr>
-              <th>Name</th><th>Username</th><th>Role</th><th>Plan</th><th>Joined</th>
-            </tr>
-          </thead>
+    <!-- Create Manager Section -->
+    <div id="section-create" style="display:none;">
+      <h2 style="font-size:1.3rem;margin-bottom:1.25rem;">➕ Create Manager Account</h2>
+      <div class="card" style="max-width:500px;">
+        <p style="color:var(--text-secondary);font-size:.875rem;margin-bottom:1.5rem;">Managers can create developer accounts and view their team's reports.</p>
+        <form method="POST" action="{{ url_for('main.admin_create_manager') }}">
+          <div class="mb-3">
+            <label class="form-label">Full Name</label>
+            <input type="text" name="full_name" class="form-control" placeholder="John Manager" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Username</label>
+            <input type="text" name="username" class="form-control" placeholder="jmanager" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Email</label>
+            <input type="email" name="email" class="form-control" placeholder="manager@company.com" required>
+          </div>
+          <div class="mb-4">
+            <label class="form-label">Password</label>
+            <input type="password" name="password" class="form-control" placeholder="Minimum 6 characters" required minlength="6">
+          </div>
+          <button type="submit" class="btn btn-primary w-100">Create Manager</button>
+        </form>
+      </div>
+    </div>
+
+    <!-- Subscriptions Section -->
+    <div id="section-subs" style="display:none;">
+      <h2 style="font-size:1.3rem;margin-bottom:1.25rem;">💳 Subscriptions</h2>
+      <div style="display:flex;gap:1rem;margin-bottom:1.5rem;flex-wrap:wrap;">
+        {% for plan in ['free','pro','enterprise'] %}
+        <div class="card" style="max-width:200px;padding:1.25rem;text-align:center;">
+          <div style="font-size:1.5rem;font-weight:900;color:{% if plan=='enterprise' %}var(--accent-orange){% elif plan=='pro' %}var(--accent-blue){% else %}var(--text-muted){% endif %};">
+            {{ plan_counts.get(plan, 0) }}
+          </div>
+          <div style="font-size:.75rem;color:var(--text-muted);text-transform:capitalize;margin-top:.25rem;">{{ plan }} users</div>
+        </div>
+        {% endfor %}
+      </div>
+      <div class="card" style="max-width:none;">
+        <h3 style="font-size:.9rem;margin-bottom:1rem;color:var(--text-secondary);">Recent Payments</h3>
+        {% if recent_payments %}
+        <table class="history-table">
+          <thead><tr><th>User</th><th>Plan</th><th>Amount (TZS)</th><th>Reference</th><th>Status</th><th>Date</th></tr></thead>
           <tbody>
-            {% for item in user_stats[:5] %}
-            {% set u = item.user %}
+            {% for p in recent_payments %}
             <tr>
-              <td style="color:#f1f5f9;font-weight:600;">{{ u.full_name }}</td>
-              <td style="font-family:monospace;font-size:0.8rem;">@{{ u.username }}</td>
-              <td>
-                <span class="rb
-                  {% if u.role == 'admin' %}role-admin
-                  {% elif u.role == 'manager' %}role-manager
-                  {% elif u.role == 'institution' %}role-inst
-                  {% else %}role-dev{% endif %}">
-                  {{ u.role }}
-                </span>
-              </td>
-              <td class="
-                {% if u.subscription_plan == 'enterprise' %}plan-ent
-                {% elif u.subscription_plan == 'pro' %}plan-pro
-                {% else %}plan-free{% endif %}">
-                {{ u.subscription_plan }}
-              </td>
-              <td style="font-size:0.75rem;color:#374151;">{{ u.created_at.strftime('%Y-%m-%d') }}</td>
+              <td>{{ p.user.full_name }}</td>
+              <td>{{ p.plan | capitalize }}</td>
+              <td>{{ "{:,}".format(p.amount_tzs) }}</td>
+              <td><code style="font-size:.78rem;">{{ p.reference or '—' }}</code></td>
+              <td><span class="badge" style="background:{% if p.status=='confirmed' %}rgba(16,185,129,.15){% else %}rgba(245,158,11,.15){% endif %};color:{% if p.status=='confirmed' %}#6ee7b7{% else %}#fcd34d{% endif %};">{{ p.status|upper }}</span></td>
+              <td style="font-size:.78rem;color:var(--text-muted);">{{ p.created_at.strftime('%Y-%m-%d') }}</td>
             </tr>
             {% endfor %}
           </tbody>
         </table>
+        {% else %}
+        <p style="color:var(--text-muted);text-align:center;padding:1.5rem;">No payments yet.</p>
+        {% endif %}
       </div>
-    </section>
+    </div>
 
-    <!-- ─ USERS ─ -->
-    <section class="admin-section" id="tab-users">
-      <div class="section-header">
-        <div>
-          <h2>All Users</h2>
-          <p>{{ total_users }} registered accounts on the platform.</p>
-        </div>
-      </div>
-
-      <div class="admin-table-wrap">
-        <div class="admin-table-title">User Registry <span style="color:#374151;">{{ total_users }} total</span></div>
-        <div style="overflow-x:auto;">
-          <table class="admin-table">
-            <thead>
-              <tr>
-                <th>#</th><th>Name</th><th>Username</th><th>Email</th>
-                <th>Role</th><th>Plan</th><th>Scans</th><th>Joined</th>
-              </tr>
-            </thead>
-            <tbody>
-              {% for item in user_stats %}
-              {% set u = item.user %}
-              <tr>
-                <td style="color:#1f2937;font-size:0.72rem;">{{ u.id }}</td>
-                <td style="color:#f1f5f9;font-weight:600;">{{ u.full_name }}</td>
-                <td style="font-family:monospace;font-size:0.8rem;color:#9ca3af;">@{{ u.username }}</td>
-                <td style="font-size:0.78rem;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ u.email }}</td>
-                <td>
-                  <span class="rb
-                    {% if u.role == 'admin' %}role-admin
-                    {% elif u.role == 'manager' %}role-manager
-                    {% elif u.role == 'institution' %}role-inst
-                    {% else %}role-dev{% endif %}">
-                    {{ u.role }}
-                  </span>
-                </td>
-                <td>
-                  <span class="
-                    {% if u.subscription_plan == 'enterprise' %}plan-ent
-                    {% elif u.subscription_plan == 'pro' %}plan-pro
-                    {% else %}plan-free{% endif %}">
-                    {{ u.subscription_plan }}
-                  </span>
-                </td>
-                <td style="font-weight:700;color:#f1f5f9;">{{ item.scan_count }}</td>
-                <td style="font-size:0.72rem;color:#374151;white-space:nowrap;">{{ u.created_at.strftime('%Y-%m-%d') }}</td>
-              </tr>
-              {% endfor %}
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </section>
-
-    <!-- ─ SUBSCRIPTIONS ─ -->
-    <section class="admin-section" id="tab-subscriptions">
-      <div class="section-header">
-        <div>
-          <h2>Subscriptions</h2>
-          <p>Active paid plans and payment history.</p>
-        </div>
-      </div>
-
-      <div class="admin-stats" style="grid-template-columns: repeat(3,1fr);">
-        <div class="admin-stat">
-          <div class="as-icon">🆓</div>
-          <div class="as-value" style="color:#6b7280;">{{ user_stats | selectattr('user.subscription_plan', 'equalto', 'free') | list | length }}</div>
-          <div class="as-label">Free Accounts</div>
-        </div>
-        <div class="admin-stat">
-          <div class="as-icon">⭐</div>
-          <div class="as-value" style="color:#fb923c;">{{ user_stats | selectattr('user.subscription_plan', 'equalto', 'pro') | list | length }}</div>
-          <div class="as-label">Pro Subscribers</div>
-        </div>
-        <div class="admin-stat">
-          <div class="as-icon">🏢</div>
-          <div class="as-value" style="color:#a78bfa;">{{ user_stats | selectattr('user.subscription_plan', 'equalto', 'enterprise') | list | length }}</div>
-          <div class="as-label">Enterprise Accounts</div>
-        </div>
-      </div>
-
-      {% if all_payments %}
-      <div class="admin-table-wrap">
-        <div class="admin-table-title">All Payments</div>
-        <div style="overflow-x:auto;">
-          <table class="admin-table">
-            <thead>
-              <tr><th>#</th><th>User</th><th>Plan</th><th>Amount (TZS)</th><th>Reference</th><th>Status</th><th>Date</th></tr>
-            </thead>
-            <tbody>
-              {% for p in all_payments %}
-              <tr>
-                <td style="color:#1f2937;">{{ p.id }}</td>
-                <td style="font-weight:600;color:#f1f5f9;">{{ p.user.full_name }}</td>
-                <td style="text-transform:capitalize;">{{ p.plan }}</td>
-                <td style="font-weight:700;color:#10b981;">{{ "{:,}".format(p.amount_tzs) }}</td>
-                <td style="font-family:monospace;font-size:0.78rem;">{{ p.reference or '—' }}</td>
-                <td>
-                  {% if p.status == 'confirmed' %}
-                    <span style="color:#10b981;font-weight:600;">✓ Confirmed</span>
-                  {% else %}
-                    <span style="color:#f59e0b;font-weight:600;">⏳ Pending</span>
-                  {% endif %}
-                </td>
-                <td style="font-size:0.72rem;white-space:nowrap;color:#374151;">{{ p.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
-              </tr>
-              {% endfor %}
-            </tbody>
-          </table>
-        </div>
-      </div>
-      {% else %}
-      <div class="empty-state">
-        <div style="font-size:2.5rem;margin-bottom:0.75rem;">💳</div>
-        <p>No payment records yet.</p>
-      </div>
-      {% endif %}
-    </section>
-
-    <!-- ─ SYSTEM / CREATE MANAGER ─ -->
-    <section class="admin-section" id="tab-system">
-      <div class="section-header">
-        <div>
-          <h2>System Management</h2>
-          <p>Manage accounts and platform configuration.</p>
-        </div>
-      </div>
-
-      <div class="create-panel">
-        <h3>➕ Create Manager Account</h3>
-        <p>Managers can create developer accounts and view their security reports.</p>
-        <form method="POST" action="{{ url_for('main.admin_create_manager') }}">
-          <div class="cp-grid">
-            <div class="cp-field">
-              <label>Full Name</label>
-              <input type="text" name="full_name" placeholder="John Smith" required>
-            </div>
-            <div class="cp-field">
-              <label>Username</label>
-              <input type="text" name="username" placeholder="johnsmith" required>
-            </div>
-            <div class="cp-field">
-              <label>Email</label>
-              <input type="email" name="email" placeholder="john@example.com" required>
-            </div>
-            <div class="cp-field">
-              <label>Password</label>
-              <input type="password" name="password" placeholder="min 6 chars" required minlength="6">
-            </div>
-          </div>
-          <button type="submit" class="btn btn-primary btn-sm" style="margin-top:1rem;">
-            👔 Create Manager
-          </button>
-        </form>
-      </div>
-
-      <!-- System info -->
-      <div class="create-panel">
-        <h3>ℹ️ System Info</h3>
-        <p>Platform statistics snapshot.</p>
-        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:0.75rem;margin-top:0.5rem;">
-          <div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.05);border-radius:8px;padding:0.9rem;">
-            <div style="font-size:1.4rem;font-weight:900;color:#60a5fa;">{{ total_users }}</div>
-            <div style="font-size:0.75rem;color:#374151;margin-top:0.2rem;">Total Users</div>
-          </div>
-          <div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.05);border-radius:8px;padding:0.9rem;">
-            <div style="font-size:1.4rem;font-weight:900;color:#a78bfa;">{{ total_scans }}</div>
-            <div style="font-size:0.75rem;color:#374151;margin-top:0.2rem;">Total Scans</div>
-          </div>
-          <div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.05);border-radius:8px;padding:0.9rem;">
-            <div style="font-size:1.4rem;font-weight:900;color:#f87171;">{{ total_vulns }}</div>
-            <div style="font-size:0.75rem;color:#374151;margin-top:0.2rem;">Vulns Detected</div>
-          </div>
-        </div>
-      </div>
-    </section>
-
-  </main>
+  </div><!-- end main -->
 </div>
+
+<style>
+.admin-nav{display:flex;align-items:center;gap:.5rem;padding:.5rem .75rem;border-radius:8px;font-size:.83rem;font-weight:500;color:var(--text-secondary);text-decoration:none;transition:.2s;cursor:pointer;}
+.admin-nav:hover,.admin-nav.active{background:rgba(59,130,246,.1);color:var(--accent-blue);}
+</style>
 {% endblock %}
 
 {% block scripts %}
 <script>
-function switchTab(tabName, btn) {
-  document.querySelectorAll('.admin-section').forEach(s => s.classList.remove('active'));
-  document.querySelectorAll('.sidebar-link').forEach(b => b.classList.remove('active'));
-  document.getElementById('tab-' + tabName).classList.add('active');
-  btn.classList.add('active');
+function showSection(name) {
+    ['overview','users','create','subs'].forEach(s => {
+        document.getElementById('section-' + s).style.display = s === name ? 'block' : 'none';
+        document.getElementById('nav-' + s).classList.toggle('active', s === name);
+    });
 }
+// activate from hash
+const hash = location.hash.replace('#','') || 'overview';
+showSection(hash);
 </script>
 {% endblock %}

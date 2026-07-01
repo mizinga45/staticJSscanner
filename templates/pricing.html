@@ -1,603 +1,211 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pricing — SecScan JS | Static Security Scanner</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-    <style>
-        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
-        :root {
-            --bg: #0a0e1a;
-            --bg-card: #1a1f35;
-            --bg-card-hover: #1f2540;
-            --border: rgba(255,255,255,0.07);
-            --border-active: rgba(59,130,246,0.5);
-            --text: #f1f5f9;
-            --text-secondary: #94a3b8;
-            --text-muted: #64748b;
-            --blue: #3b82f6;
-            --blue-dim: rgba(59,130,246,0.15);
-            --green: #10b981;
-            --green-dim: rgba(16,185,129,0.15);
-            --purple: #8b5cf6;
-            --purple-dim: rgba(139,92,246,0.15);
-            --orange: #f59e0b;
-        }
-
-        html { scroll-behavior: smooth; }
-
-        body {
-            font-family: 'Inter', sans-serif;
-            background: var(--bg);
-            color: var(--text);
-            min-height: 100vh;
-            -webkit-font-smoothing: antialiased;
-        }
-
-        /* ── NAVBAR ── */
-        .navbar {
-            position: sticky;
-            top: 0;
-            z-index: 100;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 0 2rem;
-            height: 64px;
-            background: rgba(10,14,26,0.85);
-            backdrop-filter: blur(20px);
-            border-bottom: 1px solid var(--border);
-        }
-
-        .navbar-brand {
-            display: flex;
-            align-items: center;
-            gap: 0.6rem;
-            text-decoration: none;
-            font-weight: 700;
-            font-size: 1.1rem;
-            color: var(--text);
-            letter-spacing: -0.01em;
-        }
-
-        .logo-icon {
-            width: 32px;
-            height: 32px;
-            background: linear-gradient(135deg, var(--blue), var(--purple));
-            border-radius: 8px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 0.9rem;
-        }
-
-        .navbar-nav {
-            display: flex;
-            align-items: center;
-            gap: 1.5rem;
-        }
-
-        .nav-link {
-            color: var(--text-secondary);
-            text-decoration: none;
-            font-size: 0.9rem;
-            font-weight: 500;
-            transition: color 0.2s;
-        }
-
-        .nav-link:hover { color: var(--text); }
-
-        .nav-link.active { color: var(--text); }
-
-        .btn {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            gap: 0.4rem;
-            padding: 0.5rem 1.25rem;
-            border-radius: 8px;
-            font-weight: 600;
-            font-size: 0.875rem;
-            cursor: pointer;
-            text-decoration: none;
-            transition: all 0.2s;
-            border: none;
-            white-space: nowrap;
-        }
-
-        .btn-ghost {
-            background: transparent;
-            color: var(--text-secondary);
-            border: 1px solid var(--border);
-        }
-
-        .btn-ghost:hover {
-            background: var(--bg-card);
-            color: var(--text);
-            border-color: rgba(255,255,255,0.15);
-        }
-
-        .btn-primary {
-            background: var(--blue);
-            color: #fff;
-        }
-
-        .btn-primary:hover {
-            background: #2563eb;
-            transform: translateY(-1px);
-            box-shadow: 0 4px 20px rgba(59,130,246,0.35);
-        }
-
-        .btn-green {
-            background: var(--green);
-            color: #fff;
-        }
-
-        .btn-green:hover {
-            background: #059669;
-            transform: translateY(-1px);
-            box-shadow: 0 4px 20px rgba(16,185,129,0.35);
-        }
-
-        .btn-outline-blue {
-            background: var(--blue-dim);
-            color: var(--blue);
-            border: 1px solid rgba(59,130,246,0.35);
-        }
-
-        .btn-outline-blue:hover {
-            background: rgba(59,130,246,0.25);
-            border-color: var(--blue);
-        }
-
-        .btn-outline-purple {
-            background: var(--purple-dim);
-            color: var(--purple);
-            border: 1px solid rgba(139,92,246,0.35);
-        }
-
-        .btn-outline-purple:hover {
-            background: rgba(139,92,246,0.25);
-            border-color: var(--purple);
-        }
-
-        .btn-lg {
-            padding: 0.75rem 1.75rem;
-            font-size: 1rem;
-        }
-
-        .btn-full { width: 100%; }
-
-        /* ── HERO ── */
-        .hero {
-            text-align: center;
-            padding: 6rem 2rem 4rem;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .hero::before {
-            content: '';
-            position: absolute;
-            top: -100px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 600px;
-            height: 600px;
-            background: radial-gradient(ellipse at center, rgba(59,130,246,0.08) 0%, transparent 70%);
-            pointer-events: none;
-        }
-
-        .hero-badge {
-            display: inline-flex;
-            align-items: center;
-            gap: 0.4rem;
-            padding: 0.35rem 0.9rem;
-            background: var(--blue-dim);
-            border: 1px solid rgba(59,130,246,0.3);
-            border-radius: 100px;
-            font-size: 0.8rem;
-            font-weight: 600;
-            color: var(--blue);
-            margin-bottom: 1.5rem;
-        }
-
-        .hero h1 {
-            font-size: clamp(2rem, 5vw, 3.25rem);
-            font-weight: 900;
-            letter-spacing: -0.03em;
-            line-height: 1.1;
-            margin-bottom: 1.25rem;
-        }
-
-        .hero h1 span {
-            background: linear-gradient(135deg, var(--blue) 0%, var(--purple) 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-        }
-
-        .hero-subtitle {
-            font-size: 1.15rem;
-            color: var(--text-secondary);
-            max-width: 540px;
-            margin: 0 auto 2.5rem;
-            line-height: 1.6;
-        }
-
-        /* ── PRICING SECTION ── */
-        .pricing-section {
-            max-width: 1100px;
-            margin: 0 auto;
-            padding: 2rem 2rem 6rem;
-        }
-
-        .pricing-toggle {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 0.75rem;
-            margin-bottom: 3rem;
-            font-size: 0.9rem;
-            color: var(--text-secondary);
-        }
-
-        .pricing-grid {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 1.5rem;
-            align-items: start;
-        }
-
-        @media (max-width: 900px) {
-            .pricing-grid { grid-template-columns: 1fr; max-width: 420px; margin: 0 auto; }
-        }
-
-        .plan-card {
-            background: var(--bg-card);
-            border: 1px solid var(--border);
-            border-radius: 16px;
-            padding: 2rem;
-            position: relative;
-            transition: all 0.25s;
-        }
-
-        .plan-card:hover {
-            background: var(--bg-card-hover);
-            transform: translateY(-4px);
-            box-shadow: 0 20px 60px rgba(0,0,0,0.4);
-        }
-
-        .plan-card.featured {
-            border-color: var(--blue);
-            background: linear-gradient(180deg, rgba(59,130,246,0.08) 0%, var(--bg-card) 50%);
-        }
-
-        .plan-card.featured:hover {
-            box-shadow: 0 20px 60px rgba(59,130,246,0.2);
-        }
-
-        .plan-card.enterprise {
-            border-color: rgba(139,92,246,0.4);
-            background: linear-gradient(180deg, rgba(139,92,246,0.06) 0%, var(--bg-card) 50%);
-        }
-
-        .plan-badge {
-            position: absolute;
-            top: -13px;
-            left: 50%;
-            transform: translateX(-50%);
-            padding: 0.2rem 0.9rem;
-            border-radius: 100px;
-            font-size: 0.7rem;
-            font-weight: 700;
-            letter-spacing: 0.05em;
-            text-transform: uppercase;
-            white-space: nowrap;
-        }
-
-        .plan-badge-blue {
-            background: var(--blue);
-            color: #fff;
-        }
-
-        .plan-badge-purple {
-            background: var(--purple);
-            color: #fff;
-        }
-
-        .plan-name {
-            font-size: 0.8rem;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.08em;
-            color: var(--text-secondary);
-            margin-bottom: 0.5rem;
-        }
-
-        .plan-price {
-            font-size: 2.5rem;
-            font-weight: 900;
-            letter-spacing: -0.03em;
-            line-height: 1;
-            margin-bottom: 0.25rem;
-        }
-
-        .plan-price .currency {
-            font-size: 1rem;
-            font-weight: 600;
-            vertical-align: super;
-            margin-right: 2px;
-            color: var(--text-secondary);
-        }
-
-        .plan-period {
-            font-size: 0.8rem;
-            color: var(--text-muted);
-            margin-bottom: 1.5rem;
-        }
-
-        .plan-desc {
-            font-size: 0.875rem;
-            color: var(--text-secondary);
-            margin-bottom: 1.75rem;
-            line-height: 1.5;
-        }
-
-        .plan-divider {
-            height: 1px;
-            background: var(--border);
-            margin-bottom: 1.5rem;
-        }
-
-        .feature-list {
-            list-style: none;
-            margin-bottom: 2rem;
-        }
-
-        .feature-list li {
-            display: flex;
-            align-items: flex-start;
-            gap: 0.6rem;
-            font-size: 0.875rem;
-            color: var(--text-secondary);
-            padding: 0.45rem 0;
-        }
-
-        .feature-list li.included {
-            color: var(--text);
-        }
-
-        .feature-list li .fi {
-            flex-shrink: 0;
-            width: 18px;
-            height: 18px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 0.7rem;
-            margin-top: 1px;
-        }
-
-        .fi-yes {
-            background: var(--green-dim);
-            color: var(--green);
-        }
-
-        .fi-no {
-            background: rgba(100,116,139,0.15);
-            color: var(--text-muted);
-        }
-
-        /* ── FAQ / TRUST SECTION ── */
-        .trust-section {
-            max-width: 900px;
-            margin: 0 auto;
-            padding: 0 2rem 5rem;
-        }
-
-        .trust-section h2 {
-            text-align: center;
-            font-size: 1.5rem;
-            font-weight: 700;
-            margin-bottom: 2.5rem;
-            letter-spacing: -0.02em;
-        }
-
-        .faq-grid {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 1.5rem;
-        }
-
-        @media (max-width: 700px) { .faq-grid { grid-template-columns: 1fr; } }
-
-        .faq-item {
-            background: var(--bg-card);
-            border: 1px solid var(--border);
-            border-radius: 12px;
-            padding: 1.5rem;
-        }
-
-        .faq-item h4 {
-            font-size: 0.9rem;
-            font-weight: 600;
-            margin-bottom: 0.5rem;
-        }
-
-        .faq-item p {
-            font-size: 0.85rem;
-            color: var(--text-secondary);
-            line-height: 1.55;
-        }
-
-        /* ── FOOTER ── */
-        footer {
-            border-top: 1px solid var(--border);
-            padding: 2rem;
-            text-align: center;
-            font-size: 0.82rem;
-            color: var(--text-muted);
-        }
-
-        footer a {
-            color: var(--text-secondary);
-            text-decoration: none;
-        }
-
-        footer a:hover { color: var(--text); }
-
-        .footer-links {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 1.5rem;
-            margin-bottom: 1rem;
-            flex-wrap: wrap;
-        }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pricing — SecScan JS</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{--bg:#0a0e1a;--bg2:#111827;--card:#1a1f35;--card2:#1f2544;--blue:#3b82f6;--purple:#8b5cf6;--green:#10b981;--orange:#f59e0b;--red:#ef4444;--text:#f1f5f9;--text2:#94a3b8;--text3:#64748b;--border:#1e293b;--radius:12px}
+body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+
+/* ── Navbar ── */
+nav{position:sticky;top:0;z-index:100;display:flex;align-items:center;justify-content:space-between;padding:1rem 2.5rem;background:rgba(10,14,26,.9);backdrop-filter:blur(20px);border-bottom:1px solid var(--border)}
+.nav-logo{display:flex;align-items:center;gap:.6rem;font-weight:800;font-size:1.1rem;color:var(--text);text-decoration:none}
+.nav-logo .icon{width:32px;height:32px;background:linear-gradient(135deg,var(--blue),var(--purple));border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:.95rem}
+.nav-links{display:flex;align-items:center;gap:.5rem}
+.nav-links a{padding:.45rem 1rem;border-radius:8px;font-size:.875rem;font-weight:500;color:var(--text2);text-decoration:none;transition:.2s}
+.nav-links a:hover{color:var(--text);background:rgba(255,255,255,.06)}
+.btn-primary{background:linear-gradient(135deg,var(--blue),var(--purple))!important;color:#fff!important;font-weight:600!important;box-shadow:0 4px 15px rgba(59,130,246,.3)}
+.btn-primary:hover{transform:translateY(-1px);box-shadow:0 6px 20px rgba(59,130,246,.4)!important}
+
+/* ── Hero ── */
+.hero{text-align:center;padding:5rem 2rem 3rem;max-width:760px;margin:0 auto}
+.hero-badge{display:inline-flex;align-items:center;gap:.4rem;padding:.35rem .9rem;background:rgba(59,130,246,.1);border:1px solid rgba(59,130,246,.25);border-radius:20px;font-size:.75rem;font-weight:600;color:var(--blue);margin-bottom:1.5rem;letter-spacing:.03em;text-transform:uppercase}
+.hero h1{font-size:clamp(2rem,5vw,3.25rem);font-weight:900;line-height:1.15;letter-spacing:-.03em;margin-bottom:1.25rem}
+.hero h1 span{background:linear-gradient(135deg,var(--blue),var(--purple));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.hero p{font-size:1.1rem;color:var(--text2);max-width:520px;margin:0 auto 2rem}
+.hero-toggle{display:inline-flex;background:var(--card);border:1px solid var(--border);border-radius:10px;padding:4px;gap:4px;margin-bottom:3rem}
+.hero-toggle button{padding:.4rem 1.1rem;border:none;border-radius:7px;font-size:.82rem;font-weight:600;cursor:pointer;transition:.2s;background:none;color:var(--text2)}
+.hero-toggle button.active{background:var(--blue);color:#fff}
+
+/* ── Plans Grid ── */
+.plans{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:1.5rem;max-width:1000px;margin:0 auto;padding:0 2rem 5rem}
+.plan-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:2rem;position:relative;transition:.3s;display:flex;flex-direction:column}
+.plan-card:hover{border-color:rgba(59,130,246,.35);transform:translateY(-4px);box-shadow:0 20px 50px rgba(0,0,0,.4)}
+.plan-card.popular{border-color:var(--blue);box-shadow:0 0 0 1px var(--blue), 0 20px 50px rgba(59,130,246,.15)}
+.popular-badge{position:absolute;top:-1px;left:50%;transform:translateX(-50%);background:linear-gradient(135deg,var(--blue),var(--purple));color:#fff;font-size:.7rem;font-weight:700;padding:4px 14px;border-radius:0 0 8px 8px;letter-spacing:.05em;text-transform:uppercase}
+.plan-icon{font-size:2rem;margin-bottom:1rem}
+.plan-name{font-size:.8rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--text2);margin-bottom:.4rem}
+.plan-price{display:flex;align-items:baseline;gap:.35rem;margin:.75rem 0 .25rem}
+.plan-price .amount{font-size:2.5rem;font-weight:900;color:var(--text)}
+.plan-price .currency{font-size:1rem;font-weight:600;color:var(--text2);margin-right:.1rem}
+.plan-price .period{font-size:.85rem;color:var(--text3)}
+.plan-desc{font-size:.82rem;color:var(--text3);margin-bottom:1.5rem;min-height:36px}
+.divider{height:1px;background:var(--border);margin:1.25rem 0}
+.features{list-style:none;margin-bottom:1.75rem;flex:1}
+.features li{display:flex;align-items:flex-start;gap:.65rem;padding:.4rem 0;font-size:.84rem;color:var(--text2)}
+.features li .icon{font-size:.85rem;flex-shrink:0;margin-top:2px}
+.features li.no{color:var(--text3);text-decoration:line-through;opacity:.55}
+.plan-btn{width:100%;padding:.8rem;border-radius:9px;font-size:.9rem;font-weight:700;cursor:pointer;border:none;text-align:center;text-decoration:none;display:block;transition:.25s}
+.plan-btn.free{background:rgba(255,255,255,.07);color:var(--text);border:1px solid var(--border)}
+.plan-btn.free:hover{background:rgba(255,255,255,.12)}
+.plan-btn.pro{background:linear-gradient(135deg,var(--blue),var(--purple));color:#fff;box-shadow:0 4px 15px rgba(59,130,246,.3)}
+.plan-btn.pro:hover{transform:translateY(-2px);box-shadow:0 8px 25px rgba(59,130,246,.4)}
+.plan-btn.ent{background:linear-gradient(135deg,#f59e0b,#ef4444);color:#fff;box-shadow:0 4px 15px rgba(245,158,11,.3)}
+.plan-btn.ent:hover{transform:translateY(-2px);box-shadow:0 8px 25px rgba(245,158,11,.4)}
+
+/* ── FAQ / Comparison ── */
+.section{max-width:760px;margin:0 auto;padding:0 2rem 5rem;text-align:center}
+.section h2{font-size:1.75rem;font-weight:800;margin-bottom:.75rem}
+.section p{color:var(--text2);font-size:.95rem;margin-bottom:2rem}
+.comp-table{width:100%;border-collapse:collapse;text-align:left}
+.comp-table th,.comp-table td{padding:.75rem 1rem;border-bottom:1px solid var(--border);font-size:.85rem}
+.comp-table th{color:var(--text3);font-weight:600;font-size:.75rem;text-transform:uppercase;letter-spacing:.06em}
+.comp-table td:not(:first-child){text-align:center}
+.check{color:var(--green);font-size:1rem}
+.cross{color:var(--text3);font-size:.9rem}
+
+/* ── Footer ── */
+footer{text-align:center;padding:2.5rem;border-top:1px solid var(--border);color:var(--text3);font-size:.82rem}
+footer a{color:var(--text2);text-decoration:none}
+footer a:hover{color:var(--text)}
+
+@media(max-width:700px){.plans{grid-template-columns:1fr}nav{padding:.75rem 1rem}.hero{padding:3rem 1rem 2rem}}
+</style>
 </head>
 <body>
 
-<!-- ── NAVBAR ── -->
-<nav class="navbar">
-    <a href="/" class="navbar-brand">
-        <div class="logo-icon">🛡️</div>
-        SecScan JS
-    </a>
-    <div class="navbar-nav">
-        <a href="/" class="nav-link">Home</a>
-        <a href="/pricing" class="nav-link active">Pricing</a>
-        <a href="/auth/login" class="btn btn-ghost">Login</a>
-        <a href="/auth/register" class="btn btn-primary">Get Started →</a>
-    </div>
+<!-- Navbar -->
+<nav>
+  <a href="/" class="nav-logo">
+    <div class="icon">🛡️</div>
+    SecScan JS
+  </a>
+  <div class="nav-links">
+    <a href="/pricing">Pricing</a>
+    <a href="/auth/login">Login</a>
+    <a href="/auth/register" class="btn-primary" style="padding:.45rem 1rem;border-radius:8px;">Get Started</a>
+  </div>
 </nav>
 
-<!-- ── HERO ── -->
-<section class="hero">
-    <div class="hero-badge">
-        ✦ Simple, transparent pricing
+<!-- Hero -->
+<div class="hero">
+  <div class="hero-badge">💳 Simple, transparent pricing</div>
+  <h1>Choose the plan that<br><span>fits your team</span></h1>
+  <p>Start for free with 3 scans. Upgrade anytime. All plans include 13 vulnerability detectors, CWE mapping, and detailed reports.</p>
+</div>
+
+<!-- Plans -->
+<div class="plans">
+
+  <!-- Free -->
+  <div class="plan-card">
+    <div class="plan-icon">🆓</div>
+    <div class="plan-name">Free Trial</div>
+    <div class="plan-price">
+      <span class="currency">TZS</span>
+      <span class="amount">0</span>
+      <span class="period">forever</span>
     </div>
-    <h1>Secure Your JavaScript.<br><span>Before It Ships.</span></h1>
-    <p class="hero-subtitle">
-        Start free. Upgrade when you're ready. No hidden fees, no credit card required for the trial.
-    </p>
-</section>
+    <p class="plan-desc">Perfect for trying SecScan JS. No credit card required.</p>
+    <div class="divider"></div>
+    <ul class="features">
+      <li><span class="icon">✓</span> 3 scans total (one-time trial)</li>
+      <li><span class="icon">✓</span> All 13 vulnerability types</li>
+      <li><span class="icon">✓</span> HTML, JSON, PDF reports</li>
+      <li><span class="icon">✓</span> CWE mapping &amp; sub-techniques</li>
+      <li class="no"><span class="icon">✗</span> Batch URL scanning</li>
+      <li class="no"><span class="icon">✗</span> History after trial</li>
+    </ul>
+    <a href="/auth/register" class="plan-btn free">Get Started Free</a>
+  </div>
 
-<!-- ── PRICING CARDS ── -->
-<section class="pricing-section">
-    <div class="pricing-grid">
-
-        <!-- FREE PLAN -->
-        <div class="plan-card">
-            <div class="plan-name">Free</div>
-            <div class="plan-price">
-                <span class="currency">TZS</span>0
-            </div>
-            <div class="plan-period">Trial — no credit card needed</div>
-            <p class="plan-desc">Everything you need to get started and evaluate the scanner.</p>
-            <div class="plan-divider"></div>
-            <ul class="feature-list">
-                <li class="included"><span class="fi fi-yes">✓</span> 3 scans trial</li>
-                <li class="included"><span class="fi fi-yes">✓</span> All vulnerability types (11+)</li>
-                <li class="included"><span class="fi fi-yes">✓</span> JSON / HTML / PDF reports</li>
-                <li class="included"><span class="fi fi-yes">✓</span> CWE mapping &amp; severity</li>
-                <li class="included"><span class="fi fi-yes">✓</span> AST-based taint analysis</li>
-                <li><span class="fi fi-no">✗</span> Batch URL scanning</li>
-                <li><span class="fi fi-no">✗</span> Priority support</li>
-                <li><span class="fi fi-no">✗</span> Team management</li>
-            </ul>
-            <a href="/auth/register" class="btn btn-ghost btn-full" style="justify-content:center;">Get Started Free</a>
-        </div>
-
-        <!-- PRO PLAN -->
-        <div class="plan-card featured">
-            <div class="plan-badge plan-badge-blue">Most Popular</div>
-            <div class="plan-name" style="color: var(--blue);">Pro</div>
-            <div class="plan-price" style="color: var(--blue);">
-                <span class="currency">TZS</span>25,000
-            </div>
-            <div class="plan-period">per month</div>
-            <p class="plan-desc">For professional developers who need unlimited access and advanced features.</p>
-            <div class="plan-divider"></div>
-            <ul class="feature-list">
-                <li class="included"><span class="fi fi-yes" style="background:var(--blue-dim);color:var(--blue);">✓</span> 100 scans / month</li>
-                <li class="included"><span class="fi fi-yes" style="background:var(--blue-dim);color:var(--blue);">✓</span> All vulnerability types (11+)</li>
-                <li class="included"><span class="fi fi-yes" style="background:var(--blue-dim);color:var(--blue);">✓</span> JSON / HTML / PDF reports</li>
-                <li class="included"><span class="fi fi-yes" style="background:var(--blue-dim);color:var(--blue);">✓</span> CWE mapping &amp; severity</li>
-                <li class="included"><span class="fi fi-yes" style="background:var(--blue-dim);color:var(--blue);">✓</span> AST-based taint analysis</li>
-                <li class="included"><span class="fi fi-yes" style="background:var(--blue-dim);color:var(--blue);">✓</span> Batch URL scanning</li>
-                <li class="included"><span class="fi fi-yes" style="background:var(--blue-dim);color:var(--blue);">✓</span> Priority support</li>
-                <li><span class="fi fi-no">✗</span> Team management</li>
-            </ul>
-            <a href="/auth/register" class="btn btn-primary btn-full" style="justify-content:center;">Subscribe Pro →</a>
-            <p style="text-align:center;font-size:0.75rem;color:var(--text-muted);margin-top:0.75rem;">Pay via M-Pesa · 0712 345 678</p>
-        </div>
-
-        <!-- ENTERPRISE PLAN -->
-        <div class="plan-card enterprise">
-            <div class="plan-badge plan-badge-purple">Enterprise</div>
-            <div class="plan-name" style="color: var(--purple);">Enterprise</div>
-            <div class="plan-price" style="color: var(--purple);">
-                <span class="currency">TZS</span>75,000
-            </div>
-            <div class="plan-period">per month</div>
-            <p class="plan-desc">For teams and institutions with security workflows and SLA requirements.</p>
-            <div class="plan-divider"></div>
-            <ul class="feature-list">
-                <li class="included"><span class="fi fi-yes" style="background:var(--purple-dim);color:var(--purple);">✓</span> Unlimited scans</li>
-                <li class="included"><span class="fi fi-yes" style="background:var(--purple-dim);color:var(--purple);">✓</span> All vulnerability types (11+)</li>
-                <li class="included"><span class="fi fi-yes" style="background:var(--purple-dim);color:var(--purple);">✓</span> JSON / HTML / PDF reports</li>
-                <li class="included"><span class="fi fi-yes" style="background:var(--purple-dim);color:var(--purple);">✓</span> CWE mapping &amp; severity</li>
-                <li class="included"><span class="fi fi-yes" style="background:var(--purple-dim);color:var(--purple);">✓</span> AST-based taint analysis</li>
-                <li class="included"><span class="fi fi-yes" style="background:var(--purple-dim);color:var(--purple);">✓</span> Batch URL scanning</li>
-                <li class="included"><span class="fi fi-yes" style="background:var(--purple-dim);color:var(--purple);">✓</span> Priority support &amp; SLA</li>
-                <li class="included"><span class="fi fi-yes" style="background:var(--purple-dim);color:var(--purple);">✓</span> Team management dashboard</li>
-            </ul>
-            <a href="/auth/register" class="btn btn-outline-purple btn-full" style="justify-content:center;">Contact Sales →</a>
-            <p style="text-align:center;font-size:0.75rem;color:var(--text-muted);margin-top:0.75rem;">Custom onboarding available</p>
-        </div>
-
+  <!-- Pro -->
+  <div class="plan-card popular">
+    <div class="popular-badge">Most Popular</div>
+    <div class="plan-icon">⚡</div>
+    <div class="plan-name">Pro</div>
+    <div class="plan-price">
+      <span class="currency">TZS</span>
+      <span class="amount">25,000</span>
+      <span class="period">/ month</span>
     </div>
-</section>
+    <p class="plan-desc">For developers and small teams who scan regularly.</p>
+    <div class="divider"></div>
+    <ul class="features">
+      <li><span class="icon">✓</span> 100 scans per month</li>
+      <li><span class="icon">✓</span> All 13 vulnerability types</li>
+      <li><span class="icon">✓</span> Batch URL scanning</li>
+      <li><span class="icon">✓</span> Full scan history</li>
+      <li><span class="icon">✓</span> HTML, JSON, PDF reports</li>
+      <li><span class="icon">✓</span> Sub-technique analysis</li>
+    </ul>
+    <a href="/auth/register" class="plan-btn pro">Subscribe — 25,000 TZS/mo</a>
+  </div>
 
-<!-- ── FAQ ── -->
-<section class="trust-section">
-    <h2>Frequently Asked Questions</h2>
-    <div class="faq-grid">
-        <div class="faq-item">
-            <h4>How do I pay?</h4>
-            <p>Send payment via M-Pesa to <strong style="color:var(--text);">+255 712 345 678</strong> (SecScan JS). Use your username as the reference. Your plan will be activated within 24 hours after confirmation.</p>
-        </div>
-        <div class="faq-item">
-            <h4>Can I start without paying?</h4>
-            <p>Yes! The Free plan gives you 3 full scans — no credit card, no commitment. Upgrade anytime when you need more capacity.</p>
-        </div>
-        <div class="faq-item">
-            <h4>What vulnerability types are detected?</h4>
-            <p>SQL Injection, XSS, Command Injection, eval() injection, Hardcoded Secrets, Path Traversal, SSRF, ReDoS, Insecure Randomness, Prototype Pollution, Open Redirect, and more.</p>
-        </div>
-        <div class="faq-item">
-            <h4>Can I cancel my subscription?</h4>
-            <p>Yes, simply stop payment. Your plan remains active until the end of the billing period. Contact support to request a refund within 7 days.</p>
-        </div>
+  <!-- Enterprise -->
+  <div class="plan-card">
+    <div class="plan-icon">🏢</div>
+    <div class="plan-name">Enterprise</div>
+    <div class="plan-price">
+      <span class="currency">TZS</span>
+      <span class="amount">75,000</span>
+      <span class="period">/ month</span>
     </div>
-</section>
+    <p class="plan-desc">For teams, institutions, and organizations with high scan volume.</p>
+    <div class="divider"></div>
+    <ul class="features">
+      <li><span class="icon">✓</span> Unlimited scans</li>
+      <li><span class="icon">✓</span> Everything in Pro</li>
+      <li><span class="icon">✓</span> Institution/Team management</li>
+      <li><span class="icon">✓</span> Manager dashboard</li>
+      <li><span class="icon">✓</span> Organization-wide reports</li>
+      <li><span class="icon">✓</span> Priority support</li>
+    </ul>
+    <a href="/auth/register" class="plan-btn ent">Get Enterprise</a>
+  </div>
 
-<!-- ── FOOTER ── -->
+</div>
+
+<!-- Feature Comparison -->
+<div class="section">
+  <h2>Full Comparison</h2>
+  <p>Everything you need to choose the right plan.</p>
+  <table class="comp-table">
+    <thead>
+      <tr>
+        <th>Feature</th>
+        <th>Free</th>
+        <th>Pro</th>
+        <th>Enterprise</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td>Monthly scans</td><td>3 total</td><td>100</td><td>Unlimited</td></tr>
+      <tr><td>Vulnerability types</td><td>All 13</td><td>All 13</td><td>All 13</td></tr>
+      <tr><td>CWE mapping</td><td class="check">✓</td><td class="check">✓</td><td class="check">✓</td></tr>
+      <tr><td>Sub-technique analysis</td><td class="check">✓</td><td class="check">✓</td><td class="check">✓</td></tr>
+      <tr><td>PDF/HTML/JSON reports</td><td class="check">✓</td><td class="check">✓</td><td class="check">✓</td></tr>
+      <tr><td>Batch URL scanning</td><td class="cross">—</td><td class="check">✓</td><td class="check">✓</td></tr>
+      <tr><td>Scan history</td><td class="cross">—</td><td class="check">✓</td><td class="check">✓</td></tr>
+      <tr><td>Manager dashboard</td><td class="cross">—</td><td class="cross">—</td><td class="check">✓</td></tr>
+      <tr><td>Institution management</td><td class="cross">—</td><td class="cross">—</td><td class="check">✓</td></tr>
+      <tr><td>Merged org reports</td><td class="cross">—</td><td class="cross">—</td><td class="check">✓</td></tr>
+      <tr><td>Priority support</td><td class="cross">—</td><td class="cross">—</td><td class="check">✓</td></tr>
+      <tr><td>Price (TZS/month)</td><td>0</td><td>25,000</td><td>75,000</td></tr>
+    </tbody>
+  </table>
+</div>
+
 <footer>
-    <div class="footer-links">
-        <a href="/">Home</a>
-        <a href="/pricing">Pricing</a>
-        <a href="/auth/login">Login</a>
-        <a href="/auth/register">Register</a>
-    </div>
-    &copy; 2026 SecScan JS — University of Dodoma, Group 16. All rights reserved.
+  © 2026 SecScan JS &mdash; Static Security Vulnerability Scanner for JavaScript Source Code<br>
+  University of Dodoma | Group 16 &nbsp;·&nbsp;
+  <a href="/">Home</a> &nbsp;·&nbsp;
+  <a href="/auth/login">Login</a> &nbsp;·&nbsp;
+  <a href="/auth/register">Register</a>
 </footer>
 
 </body>

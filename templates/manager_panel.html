@@ -1,429 +1,190 @@
 {% extends "base.html" %}
 {% block title %}Manager Dashboard{% endblock %}
 {% block content %}
-<style>
-.mgr-layout {
-  display: flex;
-  gap: 0;
-  min-height: calc(100vh - 64px - 80px);
-  width: 100%;
-  max-width: 1300px;
-  background: #0f1623;
-  border: 1px solid rgba(255,255,255,0.05);
-  border-radius: 16px;
-  overflow: hidden;
-}
-.mgr-sidebar {
-  width: 220px;
-  flex-shrink: 0;
-  background: #1a2435;
-  border-right: 1px solid rgba(255,255,255,0.06);
-  padding: 1.5rem 0;
-  display: flex;
-  flex-direction: column;
-}
-.mgr-sidebar-logo {
-  display: flex;
-  align-items: center;
-  gap: 0.6rem;
-  padding: 0 1.25rem 1.25rem;
-  border-bottom: 1px solid rgba(255,255,255,0.06);
-  margin-bottom: 0.5rem;
-  font-weight: 800;
-  font-size: 0.95rem;
-  color: #f1f5f9;
-}
-.mgr-logo-icon {
-  width: 30px; height: 30px;
-  background: linear-gradient(135deg, #3b82f6, #2563eb);
-  border-radius: 8px;
-  display: flex; align-items: center; justify-content: center;
-  font-size: 0.85rem; flex-shrink: 0;
-}
-.mgr-section-label {
-  padding: 0.85rem 1.25rem 0.3rem;
-  font-size: 0.65rem; font-weight: 700;
-  text-transform: uppercase; letter-spacing: 0.08em;
-  color: #2d3748;
-}
-.mgr-link {
-  display: flex; align-items: center; gap: 0.65rem;
-  padding: 0.55rem 1.25rem;
-  font-size: 0.85rem; font-weight: 500;
-  color: #718096; cursor: pointer;
-  border: none; background: none; width: 100%;
-  text-align: left; transition: all 0.15s;
-  text-decoration: none;
-}
-.mgr-link:hover { background: rgba(255,255,255,0.04); color: #f1f5f9; }
-.mgr-link.active { background: rgba(59,130,246,0.12); color: #60a5fa; border-right: 2px solid #3b82f6; }
-.mgr-link .si { font-size: 1rem; opacity: 0.8; }
-.mgr-main { flex: 1; overflow-x: auto; padding: 2rem; background: #0f1623; }
-.mgr-section { display: none; }
-.mgr-section.active { display: block; }
-.sec-hdr { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 1.75rem; flex-wrap: wrap; gap: 1rem; }
-.sec-hdr h2 { font-size: 1.3rem; font-weight: 800; letter-spacing: -0.02em; color: #f1f5f9; }
-.sec-hdr p { font-size: 0.82rem; color: #4a5568; margin-top: 0.2rem; }
-/* Stats */
-.mgr-stats { display: grid; grid-template-columns: repeat(4,1fr); gap: 1rem; margin-bottom: 2rem; }
-@media (max-width:900px){ .mgr-stats { grid-template-columns: repeat(2,1fr); } }
-.mgr-stat {
-  background: #1a2435; border: 1px solid rgba(255,255,255,0.05);
-  border-radius: 12px; padding: 1.25rem 1.5rem; transition: transform 0.2s;
-}
-.mgr-stat:hover { transform: translateY(-2px); }
-.mgr-stat .st-icon { font-size: 1.4rem; margin-bottom: 0.6rem; }
-.mgr-stat .st-val { font-size: 1.75rem; font-weight: 900; letter-spacing: -0.03em; line-height: 1; margin-bottom: 0.25rem; }
-.mgr-stat .st-lbl { font-size: 0.78rem; color: #4a5568; font-weight: 500; }
-/* Developer cards */
-.dev-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 1rem; margin-bottom: 1.5rem; }
-.dev-card {
-  background: #1a2435; border: 1px solid rgba(255,255,255,0.06);
-  border-radius: 14px; padding: 1.5rem; transition: all 0.2s; text-align: center;
-}
-.dev-card:hover { transform: translateY(-3px); box-shadow: 0 12px 36px rgba(0,0,0,0.35); border-color: rgba(59,130,246,0.25); }
-.dev-avatar {
-  width: 52px; height: 52px; border-radius: 50%;
-  background: linear-gradient(135deg, #3b82f6, #8b5cf6);
-  display: inline-flex; align-items: center; justify-content: center;
-  font-size: 1rem; font-weight: 700; color: #fff;
-  margin: 0 auto 0.85rem;
-}
-.dev-card-name { font-size: 0.9rem; font-weight: 700; color: #f1f5f9; margin-bottom: 0.2rem; }
-.dev-card-user { font-size: 0.75rem; color: #4a5568; margin-bottom: 1rem; font-family: monospace; }
-.dev-card-stats { display: flex; gap: 0.5rem; justify-content: center; flex-wrap: wrap; }
-.dev-chip {
-  display: inline-flex; align-items: center; gap: 0.3rem;
-  padding: 0.2rem 0.55rem;
-  border-radius: 100px; font-size: 0.72rem; font-weight: 600;
-}
-.chip-scan  { background: rgba(59,130,246,0.12); color: #60a5fa; }
-.chip-vuln  { background: rgba(245,158,11,0.12); color: #fbbf24; }
-.chip-crit  { background: rgba(239,68,68,0.12);  color: #f87171; }
-/* Tables */
-.mgr-table-wrap {
-  background: #1a2435; border: 1px solid rgba(255,255,255,0.05);
-  border-radius: 12px; overflow: hidden; margin-bottom: 1.5rem;
-}
-.mgr-table-title {
-  padding: 1rem 1.25rem; font-size: 0.85rem; font-weight: 700;
-  color: #718096; border-bottom: 1px solid rgba(255,255,255,0.05);
-  display: flex; align-items: center; justify-content: space-between;
-}
-.mgr-table { width: 100%; border-collapse: collapse; font-size: 0.84rem; }
-.mgr-table th {
-  text-align: left; padding: 0.6rem 1rem;
-  font-size: 0.7rem; font-weight: 700; text-transform: uppercase;
-  letter-spacing: 0.07em; color: #2d3748;
-  border-bottom: 1px solid rgba(255,255,255,0.04);
-  background: #0f1623; white-space: nowrap;
-}
-.mgr-table td { padding: 0.8rem 1rem; color: #718096; border-bottom: 1px solid rgba(255,255,255,0.03); vertical-align: middle; }
-.mgr-table tbody tr:last-child td { border-bottom: none; }
-.mgr-table tbody tr:hover td { background: rgba(255,255,255,0.015); }
-/* Vuln bar chart */
-.vbar-row { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.65rem; font-size: 0.82rem; }
-.vbar-label { min-width: 200px; color: #718096; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.vbar-track { flex: 1; height: 7px; background: rgba(255,255,255,0.05); border-radius: 100px; overflow: hidden; }
-.vbar-fill  { height: 100%; border-radius: 100px; background: linear-gradient(90deg,#3b82f6,#8b5cf6); }
-.vbar-count { min-width: 36px; text-align: right; font-weight: 700; color: #f1f5f9; }
-/* Modal */
-.mgr-modal-backdrop {
-  display: none; position: fixed; inset: 0;
-  background: rgba(0,0,0,0.75); backdrop-filter: blur(6px);
-  z-index: 1000; align-items: center; justify-content: center; padding: 1rem;
-}
-.mgr-modal-backdrop.open { display: flex; }
-.mgr-modal {
-  background: #1a2435; border: 1px solid rgba(255,255,255,0.1);
-  border-radius: 18px; padding: 2rem; max-width: 460px; width: 100%;
-  position: relative; animation: mIn 0.22s ease;
-}
-@keyframes mIn { from{opacity:0;transform:scale(0.95)} to{opacity:1;transform:scale(1)} }
-.mgr-modal-close { position: absolute; top:1rem; right:1rem; background:none; border:none; color:#4a5568; font-size:1.2rem; cursor:pointer; }
-.mgr-modal-close:hover { color:#f1f5f9; }
-.mgr-modal h3 { font-size:1.1rem; font-weight:700; margin-bottom:1.25rem; }
-.mf-grid { display:grid; grid-template-columns:1fr 1fr; gap:0.75rem; }
-.mf-field { display:flex; flex-direction:column; gap:0.3rem; }
-.mf-field label { font-size:0.73rem; font-weight:600; color:#4a5568; text-transform:uppercase; letter-spacing:0.05em; }
-.mf-field input { padding:0.6rem 0.85rem; background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.1); border-radius:8px; color:#f1f5f9; font-size:0.875rem; outline:none; transition:border-color 0.2s; }
-.mf-field input:focus { border-color:#3b82f6; background:rgba(59,130,246,0.05); }
-.empty-st { text-align:center; padding:3rem; color:#2d3748; font-size:0.875rem; }
-@media(max-width:700px){ .mgr-layout{flex-direction:column;} .mgr-sidebar{width:100%;} }
-</style>
+<div style="display:grid;grid-template-columns:220px 1fr;gap:1.5rem;max-width:1100px;width:100%;align-items:start;">
 
-<div class="mgr-layout">
-
-  <!-- SIDEBAR -->
-  <aside class="mgr-sidebar">
-    <div class="mgr-sidebar-logo">
-      <div class="mgr-logo-icon">👔</div>
-      Manager
-    </div>
-    <div class="mgr-section-label">Navigation</div>
-    <button class="mgr-link active" onclick="mgrTab('team',this)">
-      <span class="si">👥</span> Team
-    </button>
-    <button class="mgr-link" onclick="mgrTab('reports',this)">
-      <span class="si">📋</span> Reports
-    </button>
-    <button class="mgr-link" onclick="mgrTab('analytics',this)">
-      <span class="si">📊</span> Analytics
-    </button>
-    <div style="flex:1;"></div>
-    <div style="padding:1rem 1.25rem;font-size:0.75rem;border-top:1px solid rgba(255,255,255,0.05);">
-      <div style="color:#2d3748;">Logged in as</div>
-      <div style="color:#4a5568;font-weight:600;margin-top:0.2rem;">{{ current_user.username }}</div>
-    </div>
-  </aside>
-
-  <!-- MAIN -->
-  <main class="mgr-main">
-
-    <!-- STATS ALWAYS VISIBLE -->
-    <div class="mgr-stats">
-      <div class="mgr-stat">
-        <div class="st-icon">👥</div>
-        <div class="st-val" style="color:#60a5fa;">{{ developers|length }}</div>
-        <div class="st-lbl">Developers</div>
-      </div>
-      <div class="mgr-stat">
-        <div class="st-icon">🔍</div>
-        <div class="st-val" style="color:#10b981;">{{ total_scans }}</div>
-        <div class="st-lbl">Total Scans</div>
-      </div>
-      <div class="mgr-stat">
-        <div class="st-icon">🔴</div>
-        <div class="st-val" style="color:#f87171;">{{ total_critical }}</div>
-        <div class="st-lbl">Critical Issues</div>
-      </div>
-      <div class="mgr-stat">
-        <div class="st-icon">⚠️</div>
-        <div class="st-val" style="color:#fbbf24;">{{ total_vulns }}</div>
-        <div class="st-lbl">Total Vulns</div>
-      </div>
-    </div>
-
-
-    <!-- TEAM TAB -->
-    <section class="mgr-section active" id="tab-team">
-      <div class="sec-hdr">
+  <!-- Sidebar -->
+  <div class="card" style="max-width:none;padding:1.25rem;position:sticky;top:90px;">
+    <p style="font-size:.65rem;text-transform:uppercase;letter-spacing:.1em;color:var(--text-muted);margin-bottom:.75rem;">Manager Menu</p>
+    <nav style="display:flex;flex-direction:column;gap:.2rem;">
+      <a onclick="showSection('team')" class="mgr-nav active" id="nav-team">👥 My Team</a>
+      <a onclick="showSection('reports')" class="mgr-nav" id="nav-reports">📋 Reports</a>
+      <a onclick="showSection('analytics')" class="mgr-nav" id="nav-analytics">📊 Analytics</a>
+      <a onclick="showSection('add')" class="mgr-nav" id="nav-add">➕ Add Developer</a>
+    </nav>
+    <div style="margin-top:1.5rem;padding-top:1rem;border-top:1px solid var(--border-color);">
+      <div style="display:flex;align-items:center;gap:.6rem;">
+        <div style="width:30px;height:30px;border-radius:50%;background:linear-gradient(135deg,var(--accent-purple),var(--accent-blue));display:flex;align-items:center;justify-content:center;font-size:.75rem;font-weight:700;">{{ current_user.full_name[0] }}</div>
         <div>
-          <h2>Team Overview</h2>
-          <p>Developer accounts linked to your manager dashboard.</p>
+          <p style="font-size:.78rem;font-weight:600;">{{ current_user.full_name }}</p>
+          <p style="font-size:.68rem;color:var(--text-muted);">Team Manager</p>
         </div>
-        <button class="btn btn-primary btn-sm" onclick="document.getElementById('addDevModal').classList.add('open');document.body.style.overflow='hidden';">
-          + Add Developer
-        </button>
+      </div>
+      <a href="{{ url_for('auth.logout') }}" style="display:block;margin-top:.75rem;font-size:.78rem;color:var(--text-muted);text-decoration:none;">→ Logout</a>
+    </div>
+  </div>
+
+  <!-- Main -->
+  <div>
+
+    <!-- Team Section -->
+    <div id="section-team">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.25rem;flex-wrap:wrap;gap:.75rem;">
+        <h2 style="font-size:1.3rem;">👥 My Team ({{ developers|length }})</h2>
+        <button onclick="showSection('add')" class="btn btn-primary btn-sm">+ Add Developer</button>
       </div>
 
-      {% if dev_stats %}
-      <div class="dev-cards">
-        {% for dev in dev_stats %}
-        <div class="dev-card">
-          <div class="dev-avatar">{{ dev.name[:2].upper() }}</div>
-          <div class="dev-card-name">{{ dev.name }}</div>
-          <div class="dev-card-user">@{{ dev.username }}</div>
-          <div class="dev-card-stats">
-            <span class="dev-chip chip-scan">🔍 {{ dev.scan_count }} scans</span>
-            <span class="dev-chip chip-vuln">⚠️ {{ dev.total }} vulns</span>
-            {% if dev.critical > 0 %}
-            <span class="dev-chip chip-crit">🔴 {{ dev.critical }} crit</span>
-            {% endif %}
+      <!-- Summary Row -->
+      <div class="results-summary" style="margin-bottom:1.5rem;">
+        <div class="summary-card total"><div class="count">{{ total_scans }}</div><div class="label">Team Scans</div></div>
+        <div class="summary-card critical"><div class="count">{{ total_critical }}</div><div class="label">Critical</div></div>
+        <div class="summary-card high"><div class="count">{{ total_vulns }}</div><div class="label">Total Vulns</div></div>
+        <div class="summary-card medium"><div class="count">{{ developers|length }}</div><div class="label">Developers</div></div>
+      </div>
+
+      <!-- Developer Cards -->
+      {% if developers %}
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:1rem;">
+        {% for dev in developers %}
+        {% set dev_vulns = dev.scans|sum(attribute='total_vulns') %}
+        {% set dev_crit = dev.scans|sum(attribute='critical_count') %}
+        <div class="card" style="max-width:none;padding:1.25rem;cursor:pointer;" onclick="showSection('reports')">
+          <div style="display:flex;align-items:center;gap:.75rem;margin-bottom:1rem;">
+            <div style="width:40px;height:40px;border-radius:50%;background:linear-gradient(135deg,var(--accent-blue),var(--accent-purple));display:flex;align-items:center;justify-content:center;font-weight:700;flex-shrink:0;">{{ dev.full_name[0] }}</div>
+            <div>
+              <p style="font-weight:600;font-size:.9rem;">{{ dev.full_name }}</p>
+              <p style="font-size:.72rem;color:var(--text-muted);">@{{ dev.username }}</p>
+            </div>
+          </div>
+          <div style="display:flex;justify-content:space-between;font-size:.8rem;color:var(--text-secondary);">
+            <span>{{ dev.scans|length }} scans</span>
+            <span>
+              {% if dev_crit > 0 %}<span style="color:var(--accent-red);font-weight:600;">{{ dev_crit }} critical</span>
+              {% elif dev_vulns > 0 %}<span style="color:var(--accent-orange);">{{ dev_vulns }} issues</span>
+              {% else %}<span style="color:var(--accent-green);">✓ Clean</span>{% endif %}
+            </span>
           </div>
         </div>
         {% endfor %}
       </div>
       {% else %}
-      <div class="empty-st">
-        <div style="font-size:2.5rem;margin-bottom:0.75rem;">👥</div>
-        <p>No developers yet. Use <strong>Add Developer</strong> to create one.</p>
+      <div style="text-align:center;padding:3rem;color:var(--text-muted);">
+        <div style="font-size:3rem;margin-bottom:1rem;">👥</div>
+        <p>No developers yet. <a href="#" onclick="showSection('add')">Add your first developer →</a></p>
       </div>
       {% endif %}
-    </section>
+    </div>
 
-
-    <!-- REPORTS TAB -->
-    <section class="mgr-section" id="tab-reports">
-      <div class="sec-hdr">
-        <div>
-          <h2>Scan Reports</h2>
-          <p>All scans from your linked developers.</p>
+    <!-- Reports Section -->
+    <div id="section-reports" style="display:none;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.25rem;flex-wrap:wrap;gap:.75rem;">
+        <h2 style="font-size:1.3rem;">📋 Team Reports</h2>
+        <div style="display:flex;gap:.5rem;">
+          <a href="{{ url_for('main.manager_report_pdf') }}" class="btn btn-outline btn-sm">📥 Org Report</a>
+          <a href="{{ url_for('main.manager_merged_report') }}" class="btn btn-primary btn-sm">📥 Merged PDF</a>
         </div>
-        <a href="{{ url_for('main.manager_merged_report') }}" class="btn btn-primary btn-sm">📥 Merged PDF</a>
       </div>
-
-      {% if scans %}
-      <div class="mgr-table-wrap">
-        <div class="mgr-table-title">
-          All Reports
-          {% if developers %}
-          <select id="devFilter" onchange="filterDev(this.value)"
-            style="padding:0.3rem 0.7rem;background:#0f1623;border:1px solid rgba(255,255,255,0.08);border-radius:6px;color:#718096;font-size:0.8rem;">
-            <option value="all">All Developers</option>
-            {% for dev in developers %}
-            <option value="{{ dev.username }}">{{ dev.full_name }}</option>
-            {% endfor %}
-          </select>
-          {% endif %}
-        </div>
+      <div class="card" style="max-width:none;">
+        {% if scans %}
         <div style="overflow-x:auto;">
-          <table class="mgr-table" id="scansTable">
+          <table class="history-table">
             <thead>
-              <tr>
-                <th>Developer</th><th>Source</th><th>Method</th>
-                <th>Critical</th><th>High</th><th>Total</th><th>Date</th><th>Actions</th>
-              </tr>
+              <tr><th>Developer</th><th>Source</th><th>Method</th><th>Critical</th><th>High</th><th>Total</th><th>Date</th><th></th></tr>
             </thead>
             <tbody>
               {% for scan in scans %}
-              <tr data-dev="{{ scan.user.username }}">
+              <tr>
+                <td style="font-weight:500;">{{ scan.user.full_name }}</td>
+                <td style="max-width:180px;word-break:break-all;font-size:.78rem;color:var(--text-muted);">{{ scan.source|truncate(40) }}</td>
+                <td><span class="badge badge-medium" style="font-size:.65rem;">{{ scan.input_method or 'file' }}</span></td>
+                <td>{% if scan.critical_count %}<span class="badge badge-critical">{{ scan.critical_count }}</span>{% else %}<span style="color:var(--text-muted)">0</span>{% endif %}</td>
+                <td>{% if scan.high_count %}<span class="badge badge-high">{{ scan.high_count }}</span>{% else %}<span style="color:var(--text-muted)">0</span>{% endif %}</td>
+                <td><strong>{{ scan.total_vulns }}</strong></td>
+                <td style="font-size:.78rem;color:var(--text-muted);white-space:nowrap;">{{ scan.scanned_at.strftime('%Y-%m-%d %H:%M') }}</td>
                 <td>
-                  <div style="font-weight:600;color:#f1f5f9;">{{ scan.user.full_name }}</div>
-                  <div style="font-size:0.72rem;color:#2d3748;font-family:monospace;">@{{ scan.user.username }}</div>
-                </td>
-                <td style="max-width:180px;word-break:break-all;font-size:0.78rem;">{{ scan.source|truncate(45) }}</td>
-                <td><span class="badge badge-medium" style="font-size:0.7rem;">{{ scan.input_method or 'file' }}</span></td>
-                <td>{% if scan.critical_count %}<span class="badge badge-critical">{{ scan.critical_count }}</span>{% else %}<span style="color:#2d3748;">0</span>{% endif %}</td>
-                <td>{% if scan.high_count %}<span class="badge badge-high">{{ scan.high_count }}</span>{% else %}<span style="color:#2d3748;">0</span>{% endif %}</td>
-                <td style="font-weight:700;color:#f1f5f9;">{{ scan.total_vulns }}</td>
-                <td style="font-size:0.75rem;white-space:nowrap;color:#4a5568;">{{ scan.scanned_at.strftime('%Y-%m-%d %H:%M') }}</td>
-                <td style="white-space:nowrap;">
-                  <a href="{{ url_for('main.view_scan', scan_id=scan.id) }}" class="btn btn-outline btn-sm" style="font-size:0.75rem;padding:0.3rem 0.65rem;">View</a>
-                  <a href="{{ url_for('main.manager_scan_pdf', scan_id=scan.id) }}" class="btn btn-outline btn-sm" style="font-size:0.75rem;padding:0.3rem 0.65rem;margin-left:0.3rem;">PDF</a>
+                  <a href="{{ url_for('main.view_scan', scan_id=scan.id) }}" class="btn btn-outline btn-sm">View</a>
                 </td>
               </tr>
               {% endfor %}
             </tbody>
           </table>
         </div>
-      </div>
-      {% else %}
-      <div class="empty-st">
-        <div style="font-size:2.5rem;margin-bottom:0.75rem;">📋</div>
-        <p>No scan reports yet from your developers.</p>
-      </div>
-      {% endif %}
-    </section>
-
-    <!-- ANALYTICS TAB -->
-    <section class="mgr-section" id="tab-analytics">
-      <div class="sec-hdr">
-        <div>
-          <h2>Analytics</h2>
-          <p>Vulnerability trends across your team.</p>
-        </div>
-      </div>
-
-      <!-- Developer breakdown table -->
-      <div class="mgr-table-wrap" style="margin-bottom:1.5rem;">
-        <div class="mgr-table-title">Developer Breakdown</div>
-        {% if dev_stats %}
-        <table class="mgr-table">
-          <thead>
-            <tr><th>Developer</th><th>Scans</th><th>Critical</th><th>High</th><th>Medium</th><th>Total</th></tr>
-          </thead>
-          <tbody>
-            {% for dev in dev_stats %}
-            <tr>
-              <td>
-                <div style="font-weight:600;color:#f1f5f9;">{{ dev.name }}</div>
-                <div style="font-size:0.72rem;color:#2d3748;font-family:monospace;">@{{ dev.username }}</div>
-              </td>
-              <td>{{ dev.scan_count }}</td>
-              <td>{% if dev.critical %}<span class="badge badge-critical">{{ dev.critical }}</span>{% else %}<span style="color:#2d3748;">0</span>{% endif %}</td>
-              <td>{% if dev.high %}<span class="badge badge-high">{{ dev.high }}</span>{% else %}<span style="color:#2d3748;">0</span>{% endif %}</td>
-              <td>{% if dev.medium %}<span class="badge badge-medium">{{ dev.medium }}</span>{% else %}<span style="color:#2d3748;">0</span>{% endif %}</td>
-              <td style="font-weight:700;color:#f1f5f9;">{{ dev.total }}</td>
-            </tr>
-            {% endfor %}
-          </tbody>
-        </table>
         {% else %}
-        <div class="empty-st">No developer data yet.</div>
+        <p style="text-align:center;color:var(--text-muted);padding:2rem;">No scans from your team yet.</p>
         {% endif %}
       </div>
+    </div>
 
-      <!-- Top vuln chart -->
-      <div class="mgr-table-wrap">
-        <div class="mgr-table-title">Top Vulnerability Types</div>
-        <div style="padding:1.25rem;">
-          {% if top_vulns %}
-          {% set max_c = top_vulns[0][1] %}
-          {% for name, count, severity in top_vulns %}
-          <div class="vbar-row">
-            <div class="vbar-label" title="{{ name }}">{{ name }}</div>
-            <div class="vbar-track">
-              <div class="vbar-fill" style="width:{{ [((count/max_c)*100)|int,100]|min }}%;
-                background:{% if severity=='Critical' %}linear-gradient(90deg,#ef4444,#dc2626)
-                           {% elif severity=='High' %}linear-gradient(90deg,#f97316,#ea580c)
-                           {% else %}linear-gradient(90deg,#3b82f6,#8b5cf6){% endif %};"></div>
-            </div>
-            <div class="vbar-count">{{ count }}</div>
+    <!-- Analytics Section -->
+    <div id="section-analytics" style="display:none;">
+      <h2 style="font-size:1.3rem;margin-bottom:1.25rem;">📊 Team Analytics</h2>
+      {% if top_vulns %}
+      <div class="card" style="max-width:none;margin-bottom:1.25rem;">
+        <h3 style="font-size:.9rem;color:var(--text-secondary);margin-bottom:1rem;">Top Vulnerability Types</h3>
+        {% for vname, count, sev in top_vulns %}
+        <div style="display:flex;align-items:center;gap:1rem;margin-bottom:.75rem;">
+          <span style="width:140px;font-size:.8rem;color:var(--text-secondary);">{{ vname|truncate(20) }}</span>
+          <div style="flex:1;height:8px;background:var(--bg-secondary);border-radius:4px;overflow:hidden;">
+            <div style="height:100%;width:{{ [count * 15, 100]|min }}%;background:{% if sev=='Critical' %}var(--accent-red){% elif sev=='High' %}var(--accent-orange){% else %}var(--accent-blue){% endif %};border-radius:4px;"></div>
           </div>
-          {% endfor %}
-          {% else %}
-          <div class="empty-st">No vulnerability data yet.</div>
-          {% endif %}
+          <span style="font-size:.8rem;font-weight:700;min-width:30px;text-align:right;color:{% if sev=='Critical' %}var(--accent-red){% elif sev=='High' %}var(--accent-orange){% else %}var(--accent-blue){% endif %};">{{ count }}</span>
         </div>
+        {% endfor %}
       </div>
-    </section>
-
-  </main>
-</div>
-
-
-<!-- ADD DEVELOPER MODAL -->
-<div class="mgr-modal-backdrop" id="addDevModal">
-  <div class="mgr-modal">
-    <button class="mgr-modal-close" onclick="document.getElementById('addDevModal').classList.remove('open');document.body.style.overflow='';">✕</button>
-    <h3>➕ Add Developer</h3>
-    <form method="POST" action="{{ url_for('main.manager_create_developer') }}">
-      <div class="mf-grid">
-        <div class="mf-field">
-          <label>Full Name</label>
-          <input type="text" name="full_name" placeholder="Jane Doe" required>
-        </div>
-        <div class="mf-field">
-          <label>Username</label>
-          <input type="text" name="username" placeholder="janedoe" required>
-        </div>
-        <div class="mf-field">
-          <label>Email</label>
-          <input type="email" name="email" placeholder="jane@example.com" required>
-        </div>
-        <div class="mf-field">
-          <label>Password</label>
-          <input type="password" name="password" placeholder="min 6 chars" required minlength="6">
-        </div>
+      {% endif %}
+      <div class="results-summary">
+        <div class="summary-card critical"><div class="count">{{ total_critical }}</div><div class="label">Critical</div></div>
+        <div class="summary-card high"><div class="count">{{ total_high }}</div><div class="label">High</div></div>
+        <div class="summary-card medium"><div class="count">{{ total_medium }}</div><div class="label">Medium</div></div>
+        <div class="summary-card low"><div class="count">{{ total_low }}</div><div class="label">Low</div></div>
       </div>
-      <button type="submit" class="btn btn-primary" style="width:100%;margin-top:1rem;">
-        👤 Create Developer Account
-      </button>
-    </form>
+    </div>
+
+    <!-- Add Developer Section -->
+    <div id="section-add" style="display:none;">
+      <h2 style="font-size:1.3rem;margin-bottom:1.25rem;">➕ Create Developer Account</h2>
+      <div class="card" style="max-width:480px;">
+        <p style="color:var(--text-secondary);font-size:.875rem;margin-bottom:1.5rem;">This developer will be linked to your team and you can view their scan reports.</p>
+        <form method="POST" action="{{ url_for('main.manager_create_developer') }}">
+          <div class="mb-3">
+            <label class="form-label">Full Name</label>
+            <input type="text" name="full_name" class="form-control" placeholder="Brian Kilawe" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Username</label>
+            <input type="text" name="username" class="form-control" placeholder="briankilawe" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Email</label>
+            <input type="email" name="email" class="form-control" placeholder="brian@company.com" required>
+          </div>
+          <div class="mb-4">
+            <label class="form-label">Temporary Password</label>
+            <input type="password" name="password" class="form-control" placeholder="Min 6 characters" required minlength="6">
+          </div>
+          <button type="submit" class="btn btn-primary w-100">Create Developer Account</button>
+        </form>
+      </div>
+    </div>
+
   </div>
 </div>
 
+<style>
+.mgr-nav{display:flex;align-items:center;gap:.5rem;padding:.5rem .75rem;border-radius:8px;font-size:.83rem;font-weight:500;color:var(--text-secondary);text-decoration:none;transition:.2s;cursor:pointer;}
+.mgr-nav:hover,.mgr-nav.active{background:rgba(139,92,246,.12);color:var(--accent-purple);}
+</style>
 {% endblock %}
 
 {% block scripts %}
 <script>
-function mgrTab(name, btn) {
-  document.querySelectorAll('.mgr-section').forEach(s => s.classList.remove('active'));
-  document.querySelectorAll('.mgr-link').forEach(b => b.classList.remove('active'));
-  document.getElementById('tab-' + name).classList.add('active');
-  btn.classList.add('active');
+function showSection(name) {
+    ['team','reports','analytics','add'].forEach(s => {
+        document.getElementById('section-' + s).style.display = s === name ? 'block' : 'none';
+        document.getElementById('nav-' + s).classList.toggle('active', s === name);
+    });
 }
-function filterDev(username) {
-  document.querySelectorAll('#scansTable tbody tr').forEach(row => {
-    row.style.display = (username === 'all' || row.dataset.dev === username) ? '' : 'none';
-  });
-}
-document.getElementById('addDevModal').addEventListener('click', function(e) {
-  if (e.target === this) { this.classList.remove('open'); document.body.style.overflow = ''; }
-});
-document.addEventListener('keydown', function(e) {
-  if (e.key === 'Escape') { document.getElementById('addDevModal').classList.remove('open'); document.body.style.overflow = ''; }
-});
+const hash = location.hash.replace('#','') || 'team';
+showSection(hash);
 </script>
 {% endblock %}
