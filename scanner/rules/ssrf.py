@@ -65,7 +65,8 @@ class SSRFRule(VulnerabilityRule):
                         file_path=file_path, line_number=line, code_snippet=snippet,
                         description="User-controlled URL passed to server-side HTTP request. Attacker can access internal services.",
                         remediation="Validate and whitelist allowed URLs/domains. Block internal IP ranges (127.0.0.1, 10.x, 192.168.x).",
-                        confidence_score=85, severity='High'
+                        confidence_score=85, severity='High',
+                    subtechnique=f"{self._callee_name(callee)}() with User-Controlled URL"
                     ))
 
         for key, value in node.items():

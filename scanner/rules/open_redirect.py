@@ -74,6 +74,7 @@ class OpenRedirectRule(VulnerabilityRule):
                             description="User-controlled input assigned to location/redirect. Attacker can redirect users to malicious sites.",
                             remediation="Validate redirect URLs against a whitelist of allowed domains. Use relative paths only.",
                             confidence_score=85,
+                            subtechnique="location.href Assignment",
                             severity='Medium'
                         ))
 
@@ -101,7 +102,8 @@ class OpenRedirectRule(VulnerabilityRule):
                         description=f"User input passed to {func_name}(). Attacker can redirect users to phishing or malware sites.",
                         remediation="Validate the URL against a whitelist. Never redirect to user-supplied URLs directly.",
                         confidence_score=85,
-                        severity='Medium'
+                        severity='Medium',
+                        subtechnique=f"res.{func_name}() with User Input"
                     ))
 
         # Recurse

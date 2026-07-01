@@ -86,7 +86,8 @@ class CommandInjectionRule(VulnerabilityRule):
                         code_snippet=snippet,
                         description=f"User input passed to '{func_name}()' which executes system commands.",
                         remediation=f"Do not pass user input to '{func_name}'. Use allowlists or safe APIs.",
-                        confidence_score=score
+                        confidence_score=score,
+                        subtechnique=f"{func_name}() with User Input"
                     ))
 
         # Recurse - accumulate taint across siblings

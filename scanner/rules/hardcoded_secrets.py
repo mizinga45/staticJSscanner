@@ -78,7 +78,8 @@ class HardcodedSecretRule(VulnerabilityRule):
                             description=f"Hardcoded {secret_type} detected in source code. This is a critical security risk if deployed.",
                             remediation=f"Remove this {secret_type} from source code. Use environment variables (process.env.{secret_type.upper().replace(' ','_')}) or a secrets manager instead.",
                             confidence_score=score,
-                            severity='Critical' if secret_type in ('AWS Access Key', 'Stripe Live Key', 'GitHub Personal Access Token') else 'Medium'
+                            severity='Critical' if secret_type in ('AWS Access Key', 'Stripe Live Key', 'GitHub Personal Access Token') else 'Medium',
+                            subtechnique=f"{secret_type} Exposed"
                         ))
                     break  # One match per line
         return vulns

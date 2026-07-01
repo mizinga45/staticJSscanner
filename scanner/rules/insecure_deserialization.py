@@ -66,7 +66,8 @@ class InsecureDeserializationRule(VulnerabilityRule):
                         file_path=file_path, line_number=line, code_snippet=snippet,
                         description="User input passed to deserialization function. Attacker can inject objects that execute code.",
                         remediation="Never deserialize untrusted data. Use JSON.parse() with schema validation instead.",
-                        confidence_score=90, severity='Critical'
+                        confidence_score=90, severity='Critical',
+                    subtechnique=f"{self._callee_name(callee)}() with User Input"
                     ))
 
         for key, value in node.items():

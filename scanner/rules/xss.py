@@ -85,7 +85,8 @@ class XSSRule(VulnerabilityRule):
                             code_snippet=snippet,
                             description="User-controlled input assigned to innerHTML.",
                             remediation="Use textContent instead of innerHTML, or sanitize with DOMPurify.",
-                            confidence_score=score
+                            confidence_score=score,
+                            subtechnique="Reflected XSS via innerHTML"
                         ))
 
         # document.write() detection

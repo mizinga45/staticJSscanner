@@ -72,6 +72,7 @@ class InsecureRandomRule(VulnerabilityRule):
                             description=f"Math.random() used to generate '{var_id.get('name')}'. Math.random() is predictable and not cryptographically secure.",
                             remediation="Use crypto.randomBytes() (Node.js) or crypto.getRandomValues() (browser) instead of Math.random() for security-sensitive values.",
                             confidence_score=85,
+                            subtechnique=f"Math.random() for {var_id.get('name', 'security variable') if var_id else 'security value'}",
                             severity='Medium'
                         ))
                         return  # One finding per declaration

@@ -117,6 +117,7 @@ class SQLInjectionRule(VulnerabilityRule):
                         remediation="Use parameterized queries or prepared statements instead of string concatenation.",
                         confidence_score=score,
                         sqli_subtype=sqli_subtype,
+                        subtechnique=sqli_subtype,
                     ))
 
         # SQL template literal injection: `SELECT ... ${tainted}`
@@ -142,6 +143,7 @@ class SQLInjectionRule(VulnerabilityRule):
                             remediation="Use parameterized queries. Replace template literals with prepared statement placeholders (?).",
                             confidence_score=90,
                             sqli_subtype=sqli_subtype,
+                        subtechnique=sqli_subtype,
                         ))
                         break
 

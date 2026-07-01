@@ -77,7 +77,8 @@ class EvalInjectionRule(VulnerabilityRule):
                             code_snippet=snippet,
                             description="eval() called with user-controlled input.",
                             remediation="Avoid eval(). Use JSON.parse() or a safe parser instead.",
-                            confidence_score=95
+                            confidence_score=95,
+                            subtechnique="Direct eval() of User Input"
                         ))
 
         # Recurse - accumulate taint across siblings

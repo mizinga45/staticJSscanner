@@ -265,7 +265,8 @@ def view_scan(scan_id):
 
     _scan_jobs.pop(current_user.id, None)
 
-    vulnerabilities = scan_result.get_vulnerabilities()
+    _sev = {'Critical': 0, 'High': 1, 'Medium': 2, 'Low': 3, 'Info': 4}
+    vulnerabilities = sorted(scan_result.get_vulnerabilities(), key=lambda v: _sev.get(v.get('severity','Medium'), 2))
     summary = scan_result.get_summary()
     extracted_urls = scan_result.get_extracted_urls()
     testing_report = scan_result.get_testing_report()

@@ -67,5 +67,6 @@ class RegexDosRule(VulnerabilityRule):
             description=f"Regex pattern contains nested quantifiers or overlapping alternation that can cause catastrophic backtracking (ReDoS).",
             remediation="Rewrite the regex to avoid nested quantifiers. Use atomic groups or possessive quantifiers. Consider using a regex timeout or the 're2' library.",
             confidence_score=75,
-            severity='Medium'
+            severity='Medium',
+            subtechnique='Nested Quantifier / Catastrophic Backtracking'
         )

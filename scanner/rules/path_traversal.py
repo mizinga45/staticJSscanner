@@ -87,6 +87,7 @@ class PathTraversalRule(VulnerabilityRule):
                             description=f"User input passed to fs.{func_name}() without path validation. Attacker can use '../' to access arbitrary files.",
                             remediation=f"Use path.resolve() or path.basename() to normalize the path. Validate it stays within the intended directory.",
                             confidence_score=90,
+                            subtechnique=f"{func_name}() Traversal",
                             severity='Critical'
                         ))
 

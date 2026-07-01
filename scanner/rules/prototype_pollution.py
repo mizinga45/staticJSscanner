@@ -71,7 +71,8 @@ class PrototypePollutionRule(VulnerabilityRule):
                         description="User-controlled key used in object property assignment. An attacker can set __proto__ to pollute all objects.",
                         remediation="Validate property keys against a whitelist. Reject '__proto__', 'constructor', 'prototype'. Use Map instead of plain objects.",
                         confidence_score=85,
-                        severity='High'
+                        severity='High',
+                            subtechnique="obj[userKey] Property Injection"
                     ))
 
         # Recurse
