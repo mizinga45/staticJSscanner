@@ -1,6 +1,7 @@
 import os
 import json
 import threading
+import secrets
 from flask import Blueprint, render_template, flash, redirect, url_for, session, current_app, Response, jsonify, request
 from werkzeug.utils import secure_filename
 from flask_login import login_required, current_user
@@ -9,15 +10,19 @@ from scanner.input_handler import InputHandler
 from scanner.code_extractor import CodeExtractor
 from scanner.core_engine import CoreAnalysisEngine
 from scanner.report_generator import ReportGenerator
-from models import db, ScanResult, User, ManagerLink
+from models import db, ScanResult, User, ManagerDeveloperLink, Institution, Payment, PLANS
 
 main_bp = Blueprint('main', __name__)
 
 _scan_jobs = {}
 
 
+# ─────────────────────────────────────────────
+# Background scan helper
+# ─────────────────────────────────────────────
+
 def _run_scan_background(app, user_id, source, input_method, js_only=False):
-    """Run scan in background thread."""
+    """Run scan in background thread. Supports single and batch (input_method='batch') modes."""
     with app.app_context():
         try:
             input_handler = InputHandler()
@@ -25,7 +30,30 @@ def _run_scan_background(app, user_id, source, input_method, js_only=False):
             engine = CoreAnalysisEngine()
             all_extracted_urls = []
 
-            if os.path.isdir(source):
+            if input_method == 'batch':
+                # source is newline-separated URLs; scan each and combine results
+                urls = [u.strip() for u in source.splitlines() if u.strip()]
+                all_vulnerabilities = []
+                all_parts_combined = []
+                for url in urls:
+                    try:
+                        input_data = input_handler.accept_input(url)
+                        if input_data is None:
+                            continue
+                        parts = extractor.extract_with_origins(input_data['html'], external_js=input_data['external_js'])
+                        if parts:
+                            all_parts_combined.extend(parts)
+                            all_extracted_urls.append(url)
+                    except Exception:
+                        continue
+                if not all_parts_combined:
+                    _scan_jobs[user_id] = {'status': 'error', 'message': 'No JavaScript found in any of the provided URLs.'}
+                    return
+                vulnerabilities, extracted_urls, testing_report, code_info = engine.scan(all_parts_combined, ', '.join(urls))
+                all_extracted_urls.extend(extracted_urls)
+                source_label = f"Batch: {len(urls)} URLs"
+
+            elif os.path.isdir(source):
                 file_paths = input_handler.get_files_from_folder(source, js_only=js_only)
                 if not file_paths:
                     _scan_jobs[user_id] = {'status': 'error', 'message': 'No supported files found.'}
@@ -48,6 +76,8 @@ def _run_scan_background(app, user_id, source, input_method, js_only=False):
                     return
                 vulnerabilities, extracted_urls, testing_report, code_info = engine.scan(all_parts, source)
                 all_extracted_urls = extracted_urls + scanned_files
+                source_label = source
+
             else:
                 input_data = input_handler.accept_input(source)
                 if input_data is None:
@@ -59,13 +89,14 @@ def _run_scan_background(app, user_id, source, input_method, js_only=False):
                     return
                 vulnerabilities, extracted_urls, testing_report, code_info = engine.scan(parts, source)
                 all_extracted_urls = extracted_urls
+                source_label = source
 
             summary = ReportGenerator.generate_summary(vulnerabilities)
             vuln_dicts = ReportGenerator.to_dict_list(vulnerabilities)
 
             scan_result = ScanResult(
                 user_id=user_id,
-                source=source,
+                source=source_label,
                 input_method=input_method,
                 total_vulns=len(vulnerabilities),
                 critical_count=summary['severity_counts']['Critical'],
@@ -82,6 +113,12 @@ def _run_scan_background(app, user_id, source, input_method, js_only=False):
                 deobfuscation_method=code_info.get('deobfuscation_method'),
             )
             db.session.add(scan_result)
+
+            # Increment trial scan counter for free users
+            user = db.session.get(User, user_id)
+            if user and user.subscription_plan == 'free':
+                user.trial_scans_used = (user.trial_scans_used or 0) + 1
+
             db.session.commit()
 
             _scan_jobs[user_id] = {'status': 'done', 'scan_id': scan_result.id, 'total': len(vulnerabilities)}
@@ -90,9 +127,15 @@ def _run_scan_background(app, user_id, source, input_method, js_only=False):
             _scan_jobs[user_id] = {'status': 'error', 'message': str(e)}
 
 
+# ─────────────────────────────────────────────
+# Dashboard / Scanner
+# ─────────────────────────────────────────────
+
 @main_bp.route('/dashboard', methods=['GET', 'POST'])
 @login_required
 def dashboard():
+    if current_user.is_admin:
+        return redirect(url_for('main.admin_panel'))
     if current_user.is_manager:
         return redirect(url_for('main.manager_panel'))
 
@@ -101,9 +144,21 @@ def dashboard():
         .order_by(ScanResult.scanned_at.desc()).limit(10).all()
 
     if form.validate_on_submit():
+        # Check scan quota before doing anything
+        if not current_user.can_scan:
+            flash('Trial ended. Please subscribe to continue scanning.', 'warning')
+            return redirect(url_for('main.subscription'))
+
         source = None
         input_method = 'file'
-        if form.file_upload.data:
+
+        # Batch URLs take priority over other inputs
+        batch_raw = form.batch_urls.data.strip() if form.batch_urls.data else ''
+        if batch_raw:
+            source = batch_raw
+            input_method = 'batch'
+
+        elif form.file_upload.data:
             file = form.file_upload.data
             filename = secure_filename(file.filename)
             upload_folder = current_app.config['UPLOAD_FOLDER']
@@ -112,9 +167,11 @@ def dashboard():
             file.save(filepath)
             source = filepath
             input_method = 'file'
+
         elif form.url_input.data:
             source = form.url_input.data.strip()
             input_method = 'url'
+
         elif form.folder_path.data:
             folder = form.folder_path.data.strip()
             if os.path.isdir(folder):
@@ -139,14 +196,12 @@ def dashboard():
                 saved = 0
                 for f in folder_files:
                     fname = f.filename or ''
-                    # Check extension from the actual filename (last part of path)
                     basename = fname.rsplit('/', 1)[-1] if '/' in fname else fname
                     if basename and basename.lower().endswith(supported):
                         safe_name = secure_filename(basename)
                         if not safe_name:
                             continue
                         dest = os.path.join(folder_dir, safe_name)
-                        # Avoid overwriting files with same name
                         if os.path.exists(dest):
                             name, ext = os.path.splitext(safe_name)
                             dest = os.path.join(folder_dir, f"{name}_{saved}{ext}")
@@ -159,18 +214,20 @@ def dashboard():
                     flash('No supported files found in the selected folder.', 'warning')
                     return render_template('index.html', form=form, recent_scans=recent_scans)
 
-        # Determine js_only for server path scan
         js_only_flag = request.form.get('js_only') == 'on'
 
         if source:
             _scan_jobs[current_user.id] = {'status': 'running'}
             app = current_app._get_current_object()
-            t = threading.Thread(target=_run_scan_background, args=(app, current_user.id, source, input_method, js_only_flag))
+            t = threading.Thread(
+                target=_run_scan_background,
+                args=(app, current_user.id, source, input_method, js_only_flag)
+            )
             t.daemon = True
             t.start()
             return render_template('index.html', form=form, recent_scans=recent_scans, scan_started=True)
         else:
-            flash('Please provide a file, URL, or folder path.', 'warning')
+            flash('Please provide a file, URL, folder path, or batch URLs.', 'warning')
 
     return render_template('index.html', form=form, recent_scans=recent_scans)
 
@@ -184,19 +241,27 @@ def scan_status():
     return jsonify(job)
 
 
+# ─────────────────────────────────────────────
+# Scan view / download / history / delete
+# ─────────────────────────────────────────────
+
 @main_bp.route('/scan/<int:scan_id>')
 @login_required
 def view_scan(scan_id):
     scan_result = ScanResult.query.get_or_404(scan_id)
-    if not current_user.is_manager and scan_result.user_id != current_user.id:
-        flash('Access denied.', 'danger')
-        return redirect(url_for('main.dashboard'))
-    # Manager can only view linked developers' scans
-    if current_user.is_manager:
-        link = ManagerLink.query.filter_by(manager_id=current_user.id, developer_id=scan_result.user_id).first()
-        if not link:
-            flash('Access denied. Developer not linked.', 'danger')
-            return redirect(url_for('main.manager_panel'))
+
+    # Access control
+    if not current_user.is_admin:
+        if not current_user.is_manager and scan_result.user_id != current_user.id:
+            flash('Access denied.', 'danger')
+            return redirect(url_for('main.dashboard'))
+        if current_user.is_manager:
+            link = ManagerDeveloperLink.query.filter_by(
+                manager_id=current_user.id, developer_id=scan_result.user_id
+            ).first()
+            if not link:
+                flash('Access denied. Developer not linked to you.', 'danger')
+                return redirect(url_for('main.manager_panel'))
 
     _scan_jobs.pop(current_user.id, None)
 
@@ -205,7 +270,6 @@ def view_scan(scan_id):
     extracted_urls = scan_result.get_extracted_urls()
     testing_report = scan_result.get_testing_report()
 
-    # Manager sees general/summary view, developer sees full technical detail
     if current_user.is_manager:
         return render_template('manager_scan_view.html',
                                vulnerabilities=vulnerabilities,
@@ -231,228 +295,11 @@ def view_scan(scan_id):
                            developer=scan_result.user.full_name)
 
 
-@main_bp.route('/manager', methods=['GET', 'POST'])
-@login_required
-def manager_panel():
-    if not current_user.is_manager:
-        flash('Access denied. Manager role required.', 'danger')
-        return redirect(url_for('main.dashboard'))
-
-    # Handle adding developer by invite code
-    if request.method == 'POST':
-        code = request.form.get('invite_code', '').strip().upper()
-        if code:
-            dev = User.query.filter_by(invite_code=code, role='developer').first()
-            if not dev:
-                flash('Invalid invite code.', 'danger')
-            elif ManagerLink.query.filter_by(manager_id=current_user.id, developer_id=dev.id).first():
-                flash(f'{dev.full_name} is already linked.', 'warning')
-            else:
-                link = ManagerLink(manager_id=current_user.id, developer_id=dev.id)
-                db.session.add(link)
-                db.session.commit()
-                flash(f'✓ {dev.full_name} linked successfully!', 'success')
-
-    # Get only linked developers
-    links = ManagerLink.query.filter_by(manager_id=current_user.id).all()
-    linked_dev_ids = [l.developer_id for l in links]
-    developers = User.query.filter(User.id.in_(linked_dev_ids)).all() if linked_dev_ids else []
-
-    # Get scans only from linked developers
-    all_scans = ScanResult.query.filter(ScanResult.user_id.in_(linked_dev_ids))\
-        .order_by(ScanResult.scanned_at.desc()).all() if linked_dev_ids else []
-
-    total_scans = len(all_scans)
-    total_vulns = sum(s.total_vulns for s in all_scans)
-    total_critical = sum(s.critical_count for s in all_scans)
-
-    vuln_counts = {}
-    for scan in all_scans:
-        for v in scan.get_vulnerabilities():
-            vtype = v.get('type', 'Unknown')
-            sev = v.get('severity', 'Medium')
-            if vtype not in vuln_counts:
-                vuln_counts[vtype] = {'count': 0, 'severity': sev}
-            vuln_counts[vtype]['count'] += 1
-    top_vulns = sorted([(k, v['count'], v['severity']) for k, v in vuln_counts.items()],
-                       key=lambda x: x[1], reverse=True)[:10]
-
-    dev_stats = []
-    for dev in developers:
-        dev_scans = [s for s in all_scans if s.user_id == dev.id]
-        dev_stats.append({
-            'name': dev.full_name, 'username': dev.username,
-            'scan_count': len(dev_scans),
-            'critical': sum(s.critical_count for s in dev_scans),
-            'high': sum(s.high_count for s in dev_scans),
-            'medium': sum(s.medium_count for s in dev_scans),
-            'total': sum(s.total_vulns for s in dev_scans),
-        })
-    dev_stats.sort(key=lambda x: x['critical'], reverse=True)
-
-    return render_template('manager_panel.html',
-                           scans=all_scans, developers=developers,
-                           total_scans=total_scans, total_vulns=total_vulns,
-                           total_critical=total_critical,
-                           top_vulns=top_vulns, dev_stats=dev_stats, links=links)
-
-
-@main_bp.route('/manager/unlink/<int:dev_id>', methods=['POST'])
-@login_required
-def unlink_developer(dev_id):
-    if not current_user.is_manager:
-        return redirect(url_for('main.dashboard'))
-    link = ManagerLink.query.filter_by(manager_id=current_user.id, developer_id=dev_id).first()
-    if link:
-        db.session.delete(link)
-        db.session.commit()
-        flash('Developer unlinked.', 'success')
-    return redirect(url_for('main.manager_panel'))
-
-
-@main_bp.route('/manager/scan/<int:scan_id>/pdf')
-@login_required
-def manager_scan_pdf(scan_id):
-    """Download individual scan report named by domain."""
-    if not current_user.is_manager:
-        return redirect(url_for('main.dashboard'))
-    scan = ScanResult.query.get_or_404(scan_id)
-    link = ManagerLink.query.filter_by(manager_id=current_user.id, developer_id=scan.user_id).first()
-    if not link:
-        flash('Access denied.', 'danger')
-        return redirect(url_for('main.manager_panel'))
-
-    vulns = scan.get_vulnerabilities()
-    summary = scan.get_summary()
-    # Extract domain for filename
-    from urllib.parse import urlparse
-    source = scan.source
-    if source.startswith('http'):
-        domain = urlparse(source).netloc.replace('www.', '')
-    else:
-        domain = source.split('/')[-1].replace('.js', '').replace('.html', '')
-    filename = f"{domain}-REPORT.pdf"
-
-    html = render_template('manager_general_report_pdf.html',
-                           source=scan.source, summary=summary,
-                           vulnerabilities=vulns, developer=scan.user.full_name,
-                           scanned_at=scan.scanned_at, domain=domain,
-                           manager_name=current_user.full_name)
-    try:
-        from weasyprint import HTML
-        pdf = HTML(string=html).write_pdf()
-        return Response(pdf, mimetype='application/pdf',
-                        headers={'Content-Disposition': f'attachment;filename={filename}'})
-    except Exception as e:
-        flash(f'PDF failed: {e}', 'danger')
-        return redirect(url_for('main.manager_panel'))
-
-
-@main_bp.route('/manager/merged-report')
-@login_required
-def manager_merged_report():
-    """Download ALL-PROJECT-MERGED-REPORT.pdf combining all linked developers' scans."""
-    if not current_user.is_manager:
-        return redirect(url_for('main.dashboard'))
-
-    links = ManagerLink.query.filter_by(manager_id=current_user.id).all()
-    linked_dev_ids = [l.developer_id for l in links]
-    if not linked_dev_ids:
-        flash('No developers linked.', 'warning')
-        return redirect(url_for('main.manager_panel'))
-
-    all_scans = ScanResult.query.filter(ScanResult.user_id.in_(linked_dev_ids))\
-        .order_by(ScanResult.scanned_at.desc()).all()
-    developers = User.query.filter(User.id.in_(linked_dev_ids)).all()
-
-    html = render_template('manager_report_pdf.html',
-                           total_scans=len(all_scans),
-                           total_vulns=sum(s.total_vulns for s in all_scans),
-                           total_critical=sum(s.critical_count for s in all_scans),
-                           total_high=sum(s.high_count for s in all_scans),
-                           total_medium=sum(s.medium_count for s in all_scans),
-                           dev_stats=[{
-                               'name': d.full_name, 'username': d.username,
-                               'scan_count': len([s for s in all_scans if s.user_id == d.id]),
-                               'critical': sum(s.critical_count for s in all_scans if s.user_id == d.id),
-                               'high': sum(s.high_count for s in all_scans if s.user_id == d.id),
-                               'medium': sum(s.medium_count for s in all_scans if s.user_id == d.id),
-                               'total': sum(s.total_vulns for s in all_scans if s.user_id == d.id),
-                           } for d in developers],
-                           top_vulns=[], scans=all_scans,
-                           generated_by=current_user.full_name)
-    try:
-        from weasyprint import HTML
-        pdf = HTML(string=html).write_pdf()
-        return Response(pdf, mimetype='application/pdf',
-                        headers={'Content-Disposition': 'attachment;filename=ALL-PROJECT-MERGED-REPORT.pdf'})
-    except Exception as e:
-        flash(f'PDF failed: {e}', 'danger')
-        return redirect(url_for('main.manager_panel'))
-
-
-@main_bp.route('/manager/report')
-@login_required
-def manager_report_pdf():
-    if not current_user.is_manager:
-        flash('Access denied.', 'danger')
-        return redirect(url_for('main.dashboard'))
-
-    all_scans = ScanResult.query.order_by(ScanResult.scanned_at.desc()).all()
-    developers = User.query.filter_by(role='developer').all()
-    total_scans = len(all_scans)
-    total_vulns = sum(s.total_vulns for s in all_scans)
-    total_critical = sum(s.critical_count for s in all_scans)
-    total_high = sum(s.high_count for s in all_scans)
-    total_medium = sum(s.medium_count for s in all_scans)
-
-    # Per-developer stats
-    dev_stats = []
-    for dev in developers:
-        dev_scans = [s for s in all_scans if s.user_id == dev.id]
-        dev_stats.append({
-            'name': dev.full_name, 'username': dev.username,
-            'scan_count': len(dev_scans),
-            'critical': sum(s.critical_count for s in dev_scans),
-            'high': sum(s.high_count for s in dev_scans),
-            'medium': sum(s.medium_count for s in dev_scans),
-            'total': sum(s.total_vulns for s in dev_scans),
-        })
-
-    # Top vulns
-    vuln_counts = {}
-    for scan in all_scans:
-        for v in scan.get_vulnerabilities():
-            vtype = v.get('type', 'Unknown')
-            sev = v.get('severity', 'Medium')
-            if vtype not in vuln_counts:
-                vuln_counts[vtype] = {'count': 0, 'severity': sev}
-            vuln_counts[vtype]['count'] += 1
-    top_vulns = sorted([(k, v['count'], v['severity']) for k, v in vuln_counts.items()],
-                       key=lambda x: x[1], reverse=True)[:10]
-
-    html = render_template('manager_report_pdf.html',
-                           total_scans=total_scans, total_vulns=total_vulns,
-                           total_critical=total_critical, total_high=total_high,
-                           total_medium=total_medium, dev_stats=dev_stats,
-                           top_vulns=top_vulns, scans=all_scans,
-                           generated_by=current_user.full_name)
-    try:
-        from weasyprint import HTML
-        pdf = HTML(string=html).write_pdf()
-        return Response(pdf, mimetype='application/pdf',
-                        headers={'Content-Disposition': 'attachment;filename=organization_security_report.pdf'})
-    except Exception as e:
-        flash(f'PDF generation failed: {e}', 'danger')
-        return redirect(url_for('main.manager_panel'))
-
-
 @main_bp.route('/download/<int:scan_id>/<format>')
 @login_required
 def download_report(scan_id, format):
-    """Download report directly from database — no session size limit."""
     scan = ScanResult.query.get_or_404(scan_id)
-    if scan.user_id != current_user.id and not current_user.is_manager:
+    if scan.user_id != current_user.id and not current_user.is_manager and not current_user.is_admin:
         flash('Access denied.', 'danger')
         return redirect(url_for('main.dashboard'))
 
@@ -501,10 +348,366 @@ def history():
 @login_required
 def delete_scan(scan_id):
     scan_result = ScanResult.query.get_or_404(scan_id)
-    if scan_result.user_id != current_user.id and not current_user.is_manager:
+    if scan_result.user_id != current_user.id and not current_user.is_manager and not current_user.is_admin:
         flash('Access denied.', 'danger')
         return redirect(url_for('main.dashboard'))
     db.session.delete(scan_result)
     db.session.commit()
     flash('Scan deleted.', 'success')
     return redirect(url_for('main.history'))
+
+
+# ─────────────────────────────────────────────
+# Admin Panel
+# ─────────────────────────────────────────────
+
+@main_bp.route('/admin')
+@login_required
+def admin_panel():
+    if not current_user.is_admin:
+        flash('Access denied. Admin role required.', 'danger')
+        return redirect(url_for('main.dashboard'))
+
+    total_users = User.query.count()
+    total_scans = ScanResult.query.count()
+    total_vulns = db.session.query(db.func.sum(ScanResult.total_vulns)).scalar() or 0
+    revenue = db.session.query(db.func.sum(Payment.amount_tzs))\
+        .filter(Payment.status == 'confirmed').scalar() or 0
+
+    users = User.query.order_by(User.created_at.desc()).all()
+    user_stats = []
+    for u in users:
+        scan_count = ScanResult.query.filter_by(user_id=u.id).count()
+        user_stats.append({
+            'user': u,
+            'scan_count': scan_count,
+        })
+
+    return render_template('admin_panel.html',
+                           total_users=total_users,
+                           total_scans=total_scans,
+                           total_vulns=total_vulns,
+                           revenue=revenue,
+                           user_stats=user_stats)
+
+
+@main_bp.route('/admin/create-manager', methods=['POST'])
+@login_required
+def admin_create_manager():
+    if not current_user.is_admin:
+        flash('Access denied.', 'danger')
+        return redirect(url_for('main.dashboard'))
+
+    from flask_bcrypt import Bcrypt
+    from auth.routes import bcrypt as auth_bcrypt
+
+    full_name = request.form.get('full_name', '').strip()
+    username = request.form.get('username', '').strip()
+    email = request.form.get('email', '').strip()
+    password = request.form.get('password', '').strip()
+
+    if not all([full_name, username, email, password]):
+        flash('All fields are required to create a manager.', 'danger')
+        return redirect(url_for('main.admin_panel'))
+
+    if User.query.filter_by(username=username).first():
+        flash(f'Username "{username}" is already taken.', 'danger')
+        return redirect(url_for('main.admin_panel'))
+    if User.query.filter_by(email=email).first():
+        flash(f'Email "{email}" is already registered.', 'danger')
+        return redirect(url_for('main.admin_panel'))
+
+    hashed = auth_bcrypt.generate_password_hash(password).decode('utf-8')
+    manager = User(
+        full_name=full_name,
+        username=username,
+        email=email,
+        role='manager',
+        password_hash=hashed,
+        subscription_plan='enterprise',  # managers get full access
+    )
+    db.session.add(manager)
+    db.session.commit()
+    flash(f'✓ Manager account created for {full_name} (@{username}).', 'success')
+    return redirect(url_for('main.admin_panel'))
+
+
+# ─────────────────────────────────────────────
+# Manager Panel
+# ─────────────────────────────────────────────
+
+@main_bp.route('/manager', methods=['GET'])
+@login_required
+def manager_panel():
+    if not current_user.is_manager:
+        flash('Access denied. Manager role required.', 'danger')
+        return redirect(url_for('main.dashboard'))
+
+    # Get only developers created by this manager
+    links = ManagerDeveloperLink.query.filter_by(manager_id=current_user.id).all()
+    linked_dev_ids = [l.developer_id for l in links]
+    developers = User.query.filter(User.id.in_(linked_dev_ids)).all() if linked_dev_ids else []
+
+    # Get scans only from linked developers
+    all_scans = ScanResult.query.filter(ScanResult.user_id.in_(linked_dev_ids))\
+        .order_by(ScanResult.scanned_at.desc()).all() if linked_dev_ids else []
+
+    total_scans = len(all_scans)
+    total_vulns = sum(s.total_vulns for s in all_scans)
+    total_critical = sum(s.critical_count for s in all_scans)
+
+    vuln_counts = {}
+    for scan in all_scans:
+        for v in scan.get_vulnerabilities():
+            vtype = v.get('type', 'Unknown')
+            sev = v.get('severity', 'Medium')
+            if vtype not in vuln_counts:
+                vuln_counts[vtype] = {'count': 0, 'severity': sev}
+            vuln_counts[vtype]['count'] += 1
+    top_vulns = sorted([(k, v['count'], v['severity']) for k, v in vuln_counts.items()],
+                       key=lambda x: x[1], reverse=True)[:10]
+
+    dev_stats = []
+    for dev in developers:
+        dev_scans = [s for s in all_scans if s.user_id == dev.id]
+        dev_stats.append({
+            'id': dev.id,
+            'name': dev.full_name,
+            'username': dev.username,
+            'scan_count': len(dev_scans),
+            'critical': sum(s.critical_count for s in dev_scans),
+            'high': sum(s.high_count for s in dev_scans),
+            'medium': sum(s.medium_count for s in dev_scans),
+            'total': sum(s.total_vulns for s in dev_scans),
+        })
+    dev_stats.sort(key=lambda x: x['critical'], reverse=True)
+
+    return render_template('manager_panel.html',
+                           scans=all_scans, developers=developers,
+                           total_scans=total_scans, total_vulns=total_vulns,
+                           total_critical=total_critical,
+                           top_vulns=top_vulns, dev_stats=dev_stats, links=links)
+
+
+@main_bp.route('/manager/create-developer', methods=['POST'])
+@login_required
+def manager_create_developer():
+    if not current_user.is_manager:
+        flash('Access denied.', 'danger')
+        return redirect(url_for('main.dashboard'))
+
+    from auth.routes import bcrypt as auth_bcrypt
+
+    full_name = request.form.get('full_name', '').strip()
+    username = request.form.get('username', '').strip()
+    email = request.form.get('email', '').strip()
+    password = request.form.get('password', '').strip()
+
+    if not all([full_name, username, email, password]):
+        flash('All fields are required.', 'danger')
+        return redirect(url_for('main.manager_panel'))
+
+    if User.query.filter_by(username=username).first():
+        flash(f'Username "{username}" is already taken.', 'danger')
+        return redirect(url_for('main.manager_panel'))
+    if User.query.filter_by(email=email).first():
+        flash(f'Email "{email}" is already registered.', 'danger')
+        return redirect(url_for('main.manager_panel'))
+
+    hashed = auth_bcrypt.generate_password_hash(password).decode('utf-8')
+    dev = User(
+        full_name=full_name,
+        username=username,
+        email=email,
+        role='developer',
+        password_hash=hashed,
+        subscription_plan='pro',  # manager-created devs get pro
+    )
+    db.session.add(dev)
+    db.session.flush()
+    link = ManagerDeveloperLink(manager_id=current_user.id, developer_id=dev.id)
+    db.session.add(link)
+    db.session.commit()
+    flash(f'✓ Developer account created for {full_name} (@{username}).', 'success')
+    return redirect(url_for('main.manager_panel'))
+
+
+@main_bp.route('/manager/scan/<int:scan_id>/pdf')
+@login_required
+def manager_scan_pdf(scan_id):
+    if not current_user.is_manager:
+        return redirect(url_for('main.dashboard'))
+    scan = ScanResult.query.get_or_404(scan_id)
+    link = ManagerDeveloperLink.query.filter_by(
+        manager_id=current_user.id, developer_id=scan.user_id
+    ).first()
+    if not link:
+        flash('Access denied.', 'danger')
+        return redirect(url_for('main.manager_panel'))
+
+    vulns = scan.get_vulnerabilities()
+    summary = scan.get_summary()
+    from urllib.parse import urlparse
+    source = scan.source
+    if source.startswith('http'):
+        domain = urlparse(source).netloc.replace('www.', '')
+    else:
+        domain = source.split('/')[-1].replace('.js', '').replace('.html', '')
+    filename = f"{domain}-REPORT.pdf"
+
+    html = render_template('manager_general_report_pdf.html',
+                           source=scan.source, summary=summary,
+                           vulnerabilities=vulns, developer=scan.user.full_name,
+                           scanned_at=scan.scanned_at, domain=domain,
+                           manager_name=current_user.full_name)
+    try:
+        from weasyprint import HTML
+        pdf = HTML(string=html).write_pdf()
+        return Response(pdf, mimetype='application/pdf',
+                        headers={'Content-Disposition': f'attachment;filename={filename}'})
+    except Exception as e:
+        flash(f'PDF failed: {e}', 'danger')
+        return redirect(url_for('main.manager_panel'))
+
+
+@main_bp.route('/manager/merged-report')
+@login_required
+def manager_merged_report():
+    if not current_user.is_manager:
+        return redirect(url_for('main.dashboard'))
+
+    links = ManagerDeveloperLink.query.filter_by(manager_id=current_user.id).all()
+    linked_dev_ids = [l.developer_id for l in links]
+    if not linked_dev_ids:
+        flash('No developers linked.', 'warning')
+        return redirect(url_for('main.manager_panel'))
+
+    all_scans = ScanResult.query.filter(ScanResult.user_id.in_(linked_dev_ids))\
+        .order_by(ScanResult.scanned_at.desc()).all()
+    developers = User.query.filter(User.id.in_(linked_dev_ids)).all()
+
+    html = render_template('manager_report_pdf.html',
+                           total_scans=len(all_scans),
+                           total_vulns=sum(s.total_vulns for s in all_scans),
+                           total_critical=sum(s.critical_count for s in all_scans),
+                           total_high=sum(s.high_count for s in all_scans),
+                           total_medium=sum(s.medium_count for s in all_scans),
+                           dev_stats=[{
+                               'name': d.full_name, 'username': d.username,
+                               'scan_count': len([s for s in all_scans if s.user_id == d.id]),
+                               'critical': sum(s.critical_count for s in all_scans if s.user_id == d.id),
+                               'high': sum(s.high_count for s in all_scans if s.user_id == d.id),
+                               'medium': sum(s.medium_count for s in all_scans if s.user_id == d.id),
+                               'total': sum(s.total_vulns for s in all_scans if s.user_id == d.id),
+                           } for d in developers],
+                           top_vulns=[], scans=all_scans,
+                           generated_by=current_user.full_name)
+    try:
+        from weasyprint import HTML
+        pdf = HTML(string=html).write_pdf()
+        return Response(pdf, mimetype='application/pdf',
+                        headers={'Content-Disposition': 'attachment;filename=ALL-PROJECT-MERGED-REPORT.pdf'})
+    except Exception as e:
+        flash(f'PDF failed: {e}', 'danger')
+        return redirect(url_for('main.manager_panel'))
+
+
+@main_bp.route('/manager/report')
+@login_required
+def manager_report_pdf():
+    if not current_user.is_manager:
+        flash('Access denied.', 'danger')
+        return redirect(url_for('main.dashboard'))
+
+    links = ManagerDeveloperLink.query.filter_by(manager_id=current_user.id).all()
+    linked_dev_ids = [l.developer_id for l in links]
+    all_scans = ScanResult.query.filter(ScanResult.user_id.in_(linked_dev_ids))\
+        .order_by(ScanResult.scanned_at.desc()).all() if linked_dev_ids else []
+    developers = User.query.filter(User.id.in_(linked_dev_ids)).all() if linked_dev_ids else []
+
+    total_scans = len(all_scans)
+    total_vulns = sum(s.total_vulns for s in all_scans)
+    total_critical = sum(s.critical_count for s in all_scans)
+    total_high = sum(s.high_count for s in all_scans)
+    total_medium = sum(s.medium_count for s in all_scans)
+
+    dev_stats = []
+    for dev in developers:
+        dev_scans = [s for s in all_scans if s.user_id == dev.id]
+        dev_stats.append({
+            'name': dev.full_name, 'username': dev.username,
+            'scan_count': len(dev_scans),
+            'critical': sum(s.critical_count for s in dev_scans),
+            'high': sum(s.high_count for s in dev_scans),
+            'medium': sum(s.medium_count for s in dev_scans),
+            'total': sum(s.total_vulns for s in dev_scans),
+        })
+
+    vuln_counts = {}
+    for scan in all_scans:
+        for v in scan.get_vulnerabilities():
+            vtype = v.get('type', 'Unknown')
+            sev = v.get('severity', 'Medium')
+            if vtype not in vuln_counts:
+                vuln_counts[vtype] = {'count': 0, 'severity': sev}
+            vuln_counts[vtype]['count'] += 1
+    top_vulns = sorted([(k, v['count'], v['severity']) for k, v in vuln_counts.items()],
+                       key=lambda x: x[1], reverse=True)[:10]
+
+    html = render_template('manager_report_pdf.html',
+                           total_scans=total_scans, total_vulns=total_vulns,
+                           total_critical=total_critical, total_high=total_high,
+                           total_medium=total_medium, dev_stats=dev_stats,
+                           top_vulns=top_vulns, scans=all_scans,
+                           generated_by=current_user.full_name)
+    try:
+        from weasyprint import HTML
+        pdf = HTML(string=html).write_pdf()
+        return Response(pdf, mimetype='application/pdf',
+                        headers={'Content-Disposition': 'attachment;filename=organization_security_report.pdf'})
+    except Exception as e:
+        flash(f'PDF generation failed: {e}', 'danger')
+        return redirect(url_for('main.manager_panel'))
+
+
+# ─────────────────────────────────────────────
+# Subscription / Payment
+# ─────────────────────────────────────────────
+
+@main_bp.route('/subscription')
+@login_required
+def subscription():
+    return render_template('subscription.html', plans=PLANS, user=current_user)
+
+
+@main_bp.route('/subscription/pay/<plan>', methods=['POST'])
+@login_required
+def pay_subscription(plan):
+    if plan not in PLANS:
+        flash('Invalid plan.', 'danger')
+        return redirect(url_for('main.subscription'))
+
+    if plan == 'free':
+        flash('You are already on the free plan.', 'info')
+        return redirect(url_for('main.subscription'))
+
+    plan_info = PLANS[plan]
+    reference = secrets.token_hex(8).upper()
+
+    payment = Payment(
+        user_id=current_user.id,
+        plan=plan,
+        amount_tzs=plan_info['price_tzs'],
+        reference=reference,
+        status='pending',
+    )
+    db.session.add(payment)
+    db.session.commit()
+
+    flash(
+        f'Payment request created (Ref: {reference}). '
+        f'Send TZS {plan_info["price_tzs"]:,} via M-Pesa to 0712345678 '
+        f'with reference {reference}. Your plan will be activated once confirmed.',
+        'success'
+    )
+    return redirect(url_for('main.subscription'))

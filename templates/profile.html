@@ -12,33 +12,35 @@
     </div>
 
     <div style="display: flex; gap: 1rem; margin-bottom: 2rem; flex-wrap: wrap;">
-        {% if user.is_manager %}
+        {% if user.is_admin %}
+            <a href="{{ url_for('main.admin_panel') }}" class="btn btn-primary btn-sm">🛡️ Admin Panel</a>
+        {% elif user.is_manager %}
             <a href="{{ url_for('main.manager_panel') }}" class="btn btn-primary btn-sm">👔 Dashboard</a>
         {% else %}
             <a href="{{ url_for('main.dashboard') }}" class="btn btn-primary btn-sm">🔍 New Scan</a>
             <a href="{{ url_for('main.history') }}" class="btn btn-outline btn-sm">📋 Scan History</a>
+            <a href="{{ url_for('main.subscription') }}" class="btn btn-outline btn-sm">💳 Subscription</a>
         {% endif %}
         <a href="{{ url_for('auth.logout') }}" class="btn btn-outline btn-sm">Logout</a>
     </div>
 
-    <!-- Invite Code Section (Developer only) -->
-    {% if not user.is_manager %}
+    <!-- Subscription info for developers/institutions -->
+    {% if not user.is_manager and not user.is_admin %}
     <div class="extracted-urls-section" style="margin-bottom:1.5rem;">
-        <h3 style="font-size: 1rem; margin-bottom: 0.75rem;">🔗 Manager Invite Code</h3>
-        <p style="font-size:0.85rem;color:var(--text-secondary);margin-bottom:0.75rem;">Share this code with your manager so they can view your scan reports.</p>
-        {% if user.invite_code %}
-            <div style="display:flex;align-items:center;gap:1rem;">
-                <code id="inviteCode" onclick="copyCode()" style="font-size:1.5rem;font-weight:700;color:var(--accent-cyan);background:var(--bg-secondary);padding:0.5rem 1rem;border-radius:6px;letter-spacing:2px;cursor:pointer;" title="Click to copy">{{ user.invite_code }}</code>
-                <span id="copyMsg" style="font-size:0.75rem;color:var(--accent-green);display:none;">✓ Copied!</span>
-                <form method="POST" style="margin:0;">
-                    <button type="submit" class="btn btn-outline btn-sm">🔄 Regenerate</button>
-                </form>
-            </div>
-            <p style="font-size:0.75rem;color:var(--text-muted);margin-top:0.5rem;">Click the code to copy it</p>
-        {% else %}
-            <form method="POST">
-                <button type="submit" class="btn btn-primary btn-sm">Generate Invite Code</button>
-            </form>
+        <h3 style="font-size: 1rem; margin-bottom: 0.5rem;">💳 Subscription</h3>
+        <p style="font-size:0.85rem;">
+            Plan: <strong style="color:var(--accent-cyan);">{{ user.subscription_plan | capitalize }}</strong>
+            &nbsp;&mdash;&nbsp;
+            {% if user.subscription_plan == 'enterprise' %}
+                <span style="color:var(--accent-green);">Unlimited scans</span>
+            {% elif user.subscription_plan == 'pro' %}
+                <span style="color:var(--accent-orange);">{{ user.scans_remaining }} scans remaining this month</span>
+            {% else %}
+                <span style="color:var(--accent-orange);">{{ user.scans_remaining }} of 3 trial scans remaining</span>
+            {% endif %}
+        </p>
+        {% if not user.can_scan %}
+        <p style="font-size:0.82rem;color:var(--accent-red);margin-top:0.4rem;">⚠️ Trial ended — <a href="{{ url_for('main.subscription') }}">upgrade your plan</a> to continue scanning.</p>
         {% endif %}
     </div>
     {% endif %}
@@ -92,17 +94,4 @@
         <p style="color: var(--text-muted); text-align: center; padding: 2rem;">No scans yet.</p>
     {% endif %}
 </div>
-{% endblock %}
-
-{% block scripts %}
-<script>
-function copyCode() {
-    const code = document.getElementById('inviteCode').textContent;
-    navigator.clipboard.writeText(code).then(() => {
-        const msg = document.getElementById('copyMsg');
-        msg.style.display = 'inline';
-        setTimeout(() => { msg.style.display = 'none'; }, 2000);
-    });
-}
-</script>
 {% endblock %}

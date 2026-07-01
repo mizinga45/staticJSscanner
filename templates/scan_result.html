@@ -154,8 +154,10 @@
 
     <!-- Vulnerabilities grouped by file -->
     {% if vulnerabilities %}
+        {% set sev_order = {'Critical': 0, 'High': 1, 'Medium': 2, 'Low': 3} %}
+        {% set sorted_vulns = vulnerabilities | sort(attribute='severity', key=lambda v: sev_order.get(v.get('severity','Medium'), 2)) %}
         {% set ns = namespace(grouped={}) %}
-        {% for vuln in vulnerabilities %}
+        {% for vuln in vulnerabilities | sort(attribute=lambda v: sev_order.get(v.get('severity','Medium'),2)) %}
             {% if vuln.file_path not in ns.grouped %}
                 {% set _ = ns.grouped.update({vuln.file_path: []}) %}
             {% endif %}
@@ -185,6 +187,9 @@
                         {% endif %}
                         <span class="badge badge-medium">{{ vuln.cwe_id }}</span>
                         <h4>{{ vuln.type }}</h4>
+                        {% if vuln.get('sqli_subtype') %}
+                            <span class="badge" style="background:rgba(139,92,246,0.15);color:#c4b5fd;border:1px solid rgba(139,92,246,0.3);font-size:0.65rem;">{{ vuln.sqli_subtype }}</span>
+                        {% endif %}
                     </div>
                     <div class="vuln-details">
                         <div class="vuln-detail-row">
@@ -208,9 +213,22 @@
                             <span class="value" style="color: var(--accent-green);">{{ vuln.remediation }}</span>
                         </div>
                         <div class="vuln-detail-row">
-                            <span class="label">Confidence</span>
-                            <span class="value">{{ vuln.confidence_score }}% — {% if vuln.confidence_score >= 80 %}Direct taint flow confirmed{% elif vuln.confidence_score >= 50 %}Indirect taint (propagated){% else %}Heuristic match{% endif %}</span>
+                            <span class="label">Vulnerability Level</span>
+                            <span class="value">
+                                {% set vl = vuln.get('vuln_level', vuln.get('confidence_label', 'Medium')) %}
+                                {% if vl == 'Critical' %}<span class="badge badge-critical">Critical</span>
+                                {% elif vl == 'High' %}<span class="badge badge-high">High</span>
+                                {% elif vl == 'Medium' %}<span class="badge badge-medium">Medium</span>
+                                {% else %}<span class="badge badge-low">Low</span>{% endif %}
+                                &nbsp;<span style="color:var(--text-muted);font-size:0.78rem;">({{ vuln.confidence_score }}% confidence)</span>
+                            </span>
                         </div>
+                        {% if vuln.get('sqli_subtype') %}
+                        <div class="vuln-detail-row">
+                            <span class="label">SQLi Sub-type</span>
+                            <span class="value" style="color:var(--accent-cyan);">{{ vuln.sqli_subtype }}</span>
+                        </div>
+                        {% endif %}
                     </div>
                 </div>
                 {% endfor %}

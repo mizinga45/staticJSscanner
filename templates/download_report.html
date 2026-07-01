@@ -24,86 +24,24 @@
             background: white;
         }
 
-        /* Header */
         .report-header {
             border-bottom: 3px solid #3b82f6;
             padding-bottom: 20px;
             margin-bottom: 25px;
         }
+        .report-header h1 { font-size: 22px; color: #0f172a; margin-bottom: 4px; }
+        .report-header .subtitle { font-size: 12px; color: #64748b; }
+        .meta-table { margin-top: 12px; font-size: 10px; }
+        .meta-table td { padding: 3px 12px 3px 0; vertical-align: top; }
+        .meta-table .label { font-weight: 700; color: #475569; min-width: 80px; }
+        .meta-table .value { color: #1e293b; word-break: break-all; }
 
-        .report-header h1 {
-            font-size: 22px;
-            color: #0f172a;
-            margin-bottom: 4px;
-        }
-
-        .report-header .subtitle {
-            font-size: 12px;
-            color: #64748b;
-        }
-
-        .meta-table {
-            margin-top: 12px;
-            font-size: 10px;
-        }
-
-        .meta-table td {
-            padding: 3px 12px 3px 0;
-            vertical-align: top;
-        }
-
-        .meta-table .label {
-            font-weight: 700;
-            color: #475569;
-            min-width: 80px;
-        }
-
-        .meta-table .value {
-            color: #1e293b;
-            word-break: break-all;
-        }
-
-        /* Summary Section */
-        .summary-section {
-            margin-bottom: 25px;
-        }
-
-        .summary-section h2 {
-            font-size: 14px;
-            color: #0f172a;
-            border-bottom: 1px solid #e2e8f0;
-            padding-bottom: 6px;
-            margin-bottom: 12px;
-        }
-
-        .summary-grid {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 15px;
-        }
-
-        .summary-box {
-            flex: 1;
-            border: 1px solid #e2e8f0;
-            border-radius: 6px;
-            padding: 12px;
-            text-align: center;
-        }
-
-        .summary-box .number {
-            font-size: 24px;
-            font-weight: 800;
-            display: block;
-        }
-
-        .summary-box .label {
-            font-size: 9px;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            color: #64748b;
-            margin-top: 2px;
-        }
-
+        .summary-section { margin-bottom: 25px; }
+        .summary-section h2 { font-size: 14px; color: #0f172a; border-bottom: 1px solid #e2e8f0; padding-bottom: 6px; margin-bottom: 12px; }
+        .summary-grid { display: flex; gap: 10px; margin-bottom: 15px; }
+        .summary-box { flex: 1; border: 1px solid #e2e8f0; border-radius: 6px; padding: 12px; text-align: center; }
+        .summary-box .number { font-size: 24px; font-weight: 800; display: block; }
+        .summary-box .label { font-size: 9px; text-transform: uppercase; letter-spacing: 0.5px; color: #64748b; margin-top: 2px; }
         .summary-box.total .number { color: #3b82f6; }
         .summary-box.critical .number { color: #dc2626; }
         .summary-box.critical { border-color: #fecaca; background: #fef2f2; }
@@ -111,169 +49,52 @@
         .summary-box.high { border-color: #fed7aa; background: #fffbeb; }
         .summary-box.medium .number { color: #2563eb; }
         .summary-box.medium { border-color: #bfdbfe; background: #eff6ff; }
+        .summary-box.low .number { color: #6b7280; }
 
-        /* Extracted URLs */
-        .urls-section {
-            margin-bottom: 25px;
-        }
+        .urls-section { margin-bottom: 25px; }
+        .urls-section h2 { font-size: 14px; color: #0f172a; border-bottom: 1px solid #e2e8f0; padding-bottom: 6px; margin-bottom: 10px; }
+        .url-list { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 10px 14px; }
+        .url-list a { display: block; font-size: 9px; color: #2563eb; text-decoration: none; padding: 2px 0; word-break: break-all; }
 
-        .urls-section h2 {
-            font-size: 14px;
-            color: #0f172a;
-            border-bottom: 1px solid #e2e8f0;
-            padding-bottom: 6px;
-            margin-bottom: 10px;
-        }
+        /* All-types coverage table */
+        .coverage-table { width: 100%; border-collapse: collapse; margin-bottom: 25px; font-size: 10px; }
+        .coverage-table th { background: #f1f5f9; padding: 6px 10px; text-align: left; font-weight: 700; color: #475569; border-bottom: 2px solid #e2e8f0; }
+        .coverage-table td { padding: 5px 10px; border-bottom: 1px solid #f1f5f9; vertical-align: top; }
+        .coverage-table tr.found { background: #fffbf0; }
+        .coverage-table tr.not-found td { color: #94a3b8; }
+        .status-found { color: #dc2626; font-weight: 700; }
+        .status-clear { color: #059669; }
 
-        .url-list {
-            background: #f8fafc;
-            border: 1px solid #e2e8f0;
-            border-radius: 6px;
-            padding: 10px 14px;
-        }
-
-        .url-list a {
-            display: block;
-            font-size: 9px;
-            color: #2563eb;
-            text-decoration: none;
-            padding: 2px 0;
-            word-break: break-all;
-        }
-
-        /* Vulnerabilities */
-        .vulns-section h2 {
-            font-size: 14px;
-            color: #0f172a;
-            border-bottom: 1px solid #e2e8f0;
-            padding-bottom: 6px;
-            margin-bottom: 15px;
-        }
-
-        .vuln-card {
-            border: 1px solid #e2e8f0;
-            border-radius: 8px;
-            margin-bottom: 14px;
-            overflow: hidden;
-            page-break-inside: avoid;
-        }
-
-        .vuln-card-header {
-            padding: 10px 14px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            border-bottom: 1px solid #e2e8f0;
-        }
-
+        .vulns-section h2 { font-size: 14px; color: #0f172a; border-bottom: 1px solid #e2e8f0; padding-bottom: 6px; margin-bottom: 15px; }
+        .vuln-card { border: 1px solid #e2e8f0; border-radius: 8px; margin-bottom: 14px; overflow: hidden; page-break-inside: avoid; }
+        .vuln-card-header { padding: 10px 14px; display: flex; align-items: center; gap: 8px; border-bottom: 1px solid #e2e8f0; }
         .vuln-card-header.critical { background: #fef2f2; }
         .vuln-card-header.high { background: #fffbeb; }
         .vuln-card-header.medium { background: #eff6ff; }
+        .vuln-card-header.low { background: #f8fafc; }
 
-        .severity-badge {
-            font-size: 8px;
-            font-weight: 700;
-            text-transform: uppercase;
-            padding: 2px 6px;
-            border-radius: 3px;
-            letter-spacing: 0.3px;
-        }
-
+        .severity-badge { font-size: 8px; font-weight: 700; text-transform: uppercase; padding: 2px 6px; border-radius: 3px; letter-spacing: 0.3px; }
         .severity-badge.critical { background: #dc2626; color: white; }
         .severity-badge.high { background: #d97706; color: white; }
         .severity-badge.medium { background: #2563eb; color: white; }
+        .severity-badge.low { background: #6b7280; color: white; }
 
-        .cwe-badge {
-            font-size: 9px;
-            font-weight: 600;
-            color: #475569;
-            background: #f1f5f9;
-            padding: 2px 6px;
-            border-radius: 3px;
-        }
+        .level-badge { font-size: 8px; font-weight: 700; text-transform: uppercase; padding: 2px 6px; border-radius: 3px; }
+        .level-badge.critical { background: #fecaca; color: #dc2626; }
+        .level-badge.high { background: #fed7aa; color: #d97706; }
+        .level-badge.medium { background: #bfdbfe; color: #2563eb; }
+        .level-badge.low { background: #e2e8f0; color: #6b7280; }
 
-        .vuln-title {
-            font-size: 11px;
-            font-weight: 700;
-            color: #0f172a;
-        }
-
-        .vuln-card-body {
-            padding: 12px 14px;
-        }
-
-        .vuln-row {
-            display: flex;
-            margin-bottom: 8px;
-            font-size: 10px;
-        }
-
-        .vuln-row .row-label {
-            min-width: 85px;
-            font-weight: 600;
-            color: #64748b;
-        }
-
-        .vuln-row .row-value {
-            flex: 1;
-            color: #334155;
-        }
-
-        .vuln-row .row-value.fix {
-            color: #059669;
-        }
-
-        .code-snippet {
-            background: #1e293b;
-            color: #e2e8f0;
-            font-family: 'Courier New', monospace;
-            font-size: 9px;
-            padding: 8px 10px;
-            border-radius: 4px;
-            margin-top: 4px;
-            white-space: pre-wrap;
-            word-break: break-all;
-            line-height: 1.4;
-        }
-
-        .confidence-bar {
-            display: inline-block;
-            width: 60px;
-            height: 6px;
-            background: #e2e8f0;
-            border-radius: 3px;
-            overflow: hidden;
-            vertical-align: middle;
-            margin-right: 4px;
-        }
-
-        .confidence-fill {
-            height: 100%;
-            border-radius: 3px;
-        }
-
-        .confidence-fill.high { background: #dc2626; }
-        .confidence-fill.med { background: #d97706; }
-        .confidence-fill.low { background: #2563eb; }
-
-        /* No vulns */
-        .no-vulns {
-            text-align: center;
-            padding: 30px;
-            color: #059669;
-            font-size: 14px;
-            font-weight: 600;
-        }
-
-        /* Footer */
-        .report-footer {
-            margin-top: 30px;
-            padding-top: 15px;
-            border-top: 1px solid #e2e8f0;
-            text-align: center;
-            font-size: 9px;
-            color: #94a3b8;
-        }
+        .cwe-badge { font-size: 9px; font-weight: 600; color: #475569; background: #f1f5f9; padding: 2px 6px; border-radius: 3px; }
+        .vuln-title { font-size: 11px; font-weight: 700; color: #0f172a; }
+        .vuln-card-body { padding: 12px 14px; }
+        .vuln-row { display: flex; margin-bottom: 8px; font-size: 10px; }
+        .vuln-row .row-label { min-width: 100px; font-weight: 600; color: #64748b; }
+        .vuln-row .row-value { flex: 1; color: #334155; }
+        .vuln-row .row-value.fix { color: #059669; }
+        .code-snippet { background: #1e293b; color: #e2e8f0; font-family: 'Courier New', monospace; font-size: 9px; padding: 8px 10px; border-radius: 4px; margin-top: 4px; white-space: pre-wrap; word-break: break-all; line-height: 1.4; }
+        .no-vulns { text-align: center; padding: 30px; color: #059669; font-size: 14px; font-weight: 600; }
+        .report-footer { margin-top: 30px; padding-top: 15px; border-top: 1px solid #e2e8f0; text-align: center; font-size: 9px; color: #94a3b8; }
     </style>
 </head>
 <body>
@@ -282,18 +103,10 @@
         <h1>🛡️ Security Vulnerability Report</h1>
         <div class="subtitle">Generated by SecScan JS — Static Security Vulnerability Scanner for JavaScript</div>
         <table class="meta-table">
-            <tr>
-                <td class="label">Source:</td>
-                <td class="value">{{ source }}</td>
-            </tr>
-            <tr>
-                <td class="label">Date:</td>
-                <td class="value">{{ now if now else "N/A" }}</td>
-            </tr>
-            <tr>
-                <td class="label">Total Issues:</td>
-                <td class="value">{{ summary.total }}</td>
-            </tr>
+            <tr><td class="label">Source:</td><td class="value">{{ source }}</td></tr>
+            <tr><td class="label">Developer:</td><td class="value">{{ developer }}</td></tr>
+            <tr><td class="label">Date:</td><td class="value">{{ now if now else "N/A" }}</td></tr>
+            <tr><td class="label">Total Issues:</td><td class="value">{{ summary.total }}</td></tr>
         </table>
     </div>
 
@@ -301,22 +114,11 @@
     <div class="summary-section">
         <h2>Executive Summary</h2>
         <div class="summary-grid">
-            <div class="summary-box total">
-                <span class="number">{{ summary.total }}</span>
-                <span class="label">Total</span>
-            </div>
-            <div class="summary-box critical">
-                <span class="number">{{ summary.severity_counts.Critical }}</span>
-                <span class="label">Critical</span>
-            </div>
-            <div class="summary-box high">
-                <span class="number">{{ summary.severity_counts.High }}</span>
-                <span class="label">High</span>
-            </div>
-            <div class="summary-box medium">
-                <span class="number">{{ summary.severity_counts.Medium }}</span>
-                <span class="label">Medium</span>
-            </div>
+            <div class="summary-box total"><span class="number">{{ summary.total }}</span><span class="label">Total</span></div>
+            <div class="summary-box critical"><span class="number">{{ summary.severity_counts.Critical }}</span><span class="label">Critical</span></div>
+            <div class="summary-box high"><span class="number">{{ summary.severity_counts.High }}</span><span class="label">High</span></div>
+            <div class="summary-box medium"><span class="number">{{ summary.severity_counts.Medium }}</span><span class="label">Medium</span></div>
+            <div class="summary-box low"><span class="number">{{ summary.severity_counts.get('Low', 0) }}</span><span class="label">Low</span></div>
         </div>
     </div>
 
@@ -332,20 +134,62 @@
     </div>
     {% endif %}
 
-    <!-- Vulnerabilities -->
+    <!-- All 13 Vulnerability Type Coverage -->
+    {% set ALL_VULN_TYPES = [
+        'SQL Injection', 'Cross-Site Scripting (XSS)', 'Command Injection',
+        'Insecure Use of eval()', 'Hardcoded Secret', 'Prototype Pollution',
+        'Path Traversal', 'Open Redirect', 'Regular Expression DoS (ReDoS)',
+        'Insecure Randomness', 'Angular Security Bypass',
+        'Insecure Deserialization', 'Server-Side Request Forgery (SSRF)'
+    ] %}
+    {% set found_types = vulnerabilities | map(attribute='type') | list %}
+
+    <div class="summary-section">
+        <h2>Vulnerability Coverage — All 13 Types</h2>
+        <table class="coverage-table">
+            <thead>
+                <tr><th>#</th><th>Vulnerability Type</th><th>Status</th><th>Occurrences</th></tr>
+            </thead>
+            <tbody>
+                {% for vtype in ALL_VULN_TYPES %}
+                {% set count = vulnerabilities | selectattr('type', 'equalto', vtype) | list | length %}
+                <tr class="{{ 'found' if count > 0 else 'not-found' }}">
+                    <td>{{ loop.index }}</td>
+                    <td>{{ vtype }}</td>
+                    <td>
+                        {% if count > 0 %}
+                            <span class="status-found">⚠ DETECTED</span>
+                        {% else %}
+                            <span class="status-clear">✓ NOT FOUND</span>
+                        {% endif %}
+                    </td>
+                    <td>{% if count > 0 %}<strong>{{ count }}</strong>{% else %}—{% endif %}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Detailed Findings sorted Critical > High > Medium > Low -->
     <div class="vulns-section">
-        <h2>Detailed Findings</h2>
+        <h2>Detailed Findings (sorted by severity)</h2>
 
         {% if not vulnerabilities %}
         <div class="no-vulns">✅ No vulnerabilities detected. Code appears secure.</div>
         {% endif %}
 
-        {% for vuln in vulnerabilities %}
+        {% set sev_rank = {'Critical': 0, 'High': 1, 'Medium': 2, 'Low': 3} %}
+        {% for vuln in vulnerabilities | sort(attribute='severity', key=lambda v: sev_rank.get(v.get('severity','Medium'), 2)) %}
+        {% set sev = vuln.severity | lower %}
+        {% set vl = vuln.get('vuln_level', vuln.get('confidence_label', 'Medium')) %}
         <div class="vuln-card">
-            <div class="vuln-card-header {{ vuln.severity|lower }}">
-                <span class="severity-badge {{ vuln.severity|lower }}">{{ vuln.severity }}</span>
+            <div class="vuln-card-header {{ sev }}">
+                <span class="severity-badge {{ sev }}">{{ vuln.severity }}</span>
                 <span class="cwe-badge">{{ vuln.cwe_id }}</span>
                 <span class="vuln-title">{{ vuln.type }}</span>
+                {% if vuln.get('sqli_subtype') %}
+                <span style="font-size:8px;background:#ede9fe;color:#7c3aed;padding:2px 5px;border-radius:3px;">{{ vuln.sqli_subtype }}</span>
+                {% endif %}
             </div>
             <div class="vuln-card-body">
                 <div class="vuln-row">
@@ -358,9 +202,7 @@
                 </div>
                 <div class="vuln-row">
                     <span class="row-label">Code:</span>
-                    <span class="row-value">
-                        <div class="code-snippet">{{ vuln.code_snippet[:200] }}</div>
-                    </span>
+                    <span class="row-value"><div class="code-snippet">{{ vuln.code_snippet[:200] }}</div></span>
                 </div>
                 <div class="vuln-row">
                     <span class="row-label">Description:</span>
@@ -371,14 +213,18 @@
                     <span class="row-value fix">{{ vuln.remediation }}</span>
                 </div>
                 <div class="vuln-row">
-                    <span class="row-label">Confidence:</span>
+                    <span class="row-label">Vulnerability Level:</span>
                     <span class="row-value">
-                        <span class="confidence-bar">
-                            <span class="confidence-fill {% if vuln.confidence_score >= 80 %}high{% elif vuln.confidence_score >= 50 %}med{% else %}low{% endif %}" style="width: {{ vuln.confidence_score }}%"></span>
-                        </span>
-                        {{ vuln.confidence_score }}%
+                        <span class="level-badge {{ vl | lower }}">{{ vl }}</span>
+                        &nbsp;({{ vuln.confidence_score }}% confidence)
                     </span>
                 </div>
+                {% if vuln.get('sqli_subtype') %}
+                <div class="vuln-row">
+                    <span class="row-label">SQLi Sub-type:</span>
+                    <span class="row-value">{{ vuln.sqli_subtype }}</span>
+                </div>
+                {% endif %}
             </div>
         </div>
         {% endfor %}

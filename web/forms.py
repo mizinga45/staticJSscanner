@@ -1,7 +1,7 @@
 import os
 from flask_wtf import FlaskForm
 from flask_wtf.file import FileField, FileAllowed
-from wtforms import StringField, SubmitField
+from wtforms import StringField, SubmitField, TextAreaField
 from wtforms.validators import Optional, ValidationError
 from urllib.parse import urlparse
 
@@ -32,4 +32,5 @@ class ScanForm(FlaskForm):
     ])
     url_input = StringField('Or Enter URL', validators=[Optional(), validate_url])
     folder_path = StringField('Or Enter Folder Path', validators=[Optional(), validate_folder_path])
+    batch_urls = TextAreaField('Or Enter Multiple URLs (one per line)', validators=[Optional()])
     submit = SubmitField('Scan Now')

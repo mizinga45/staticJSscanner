@@ -10,13 +10,23 @@
         <a href="{{ url_for('main.manager_merged_report') }}" class="btn btn-primary btn-sm">📥 ALL-PROJECT-MERGED-REPORT</a>
     </div>
 
-    <!-- Add Developer by Invite Code -->
+    <!-- Create Developer Form -->
     <div class="extracted-urls-section" style="margin-bottom:1.5rem;">
-        <h3 style="font-size: 1rem; margin-bottom: 0.75rem;">🔗 Link a Developer</h3>
-        <p style="font-size:0.8rem;color:var(--text-secondary);margin-bottom:0.75rem;">Enter the 8-character invite code from your developer to view their reports.</p>
-        <form method="POST" style="display:flex;gap:0.5rem;align-items:center;">
-            <input type="text" name="invite_code" placeholder="e.g. A3K9X2BF" maxlength="8" style="padding:0.5rem 0.75rem;background:var(--bg-secondary);border:1px solid var(--border-color);border-radius:6px;color:var(--text-primary);font-size:1rem;letter-spacing:2px;text-transform:uppercase;width:160px;" required>
-            <button type="submit" class="btn btn-primary btn-sm">Link Developer</button>
+        <h3 style="font-size: 1rem; margin-bottom: 0.75rem;">➕ Create Developer Account</h3>
+        <p style="font-size:0.8rem;color:var(--text-secondary);margin-bottom:0.75rem;">Create a developer account that will be linked to your manager dashboard.</p>
+        <form method="POST" action="{{ url_for('main.manager_create_developer') }}"
+              style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;max-width:700px;">
+            <input type="text" name="full_name" placeholder="Full Name" required
+                   style="padding:0.5rem 0.75rem;background:var(--bg-secondary);border:1px solid var(--border-color);border-radius:6px;color:var(--text-primary);font-size:0.85rem;">
+            <input type="text" name="username" placeholder="Username" required
+                   style="padding:0.5rem 0.75rem;background:var(--bg-secondary);border:1px solid var(--border-color);border-radius:6px;color:var(--text-primary);font-size:0.85rem;">
+            <input type="email" name="email" placeholder="Email" required
+                   style="padding:0.5rem 0.75rem;background:var(--bg-secondary);border:1px solid var(--border-color);border-radius:6px;color:var(--text-primary);font-size:0.85rem;">
+            <input type="password" name="password" placeholder="Password (min 6 chars)" required minlength="6"
+                   style="padding:0.5rem 0.75rem;background:var(--bg-secondary);border:1px solid var(--border-color);border-radius:6px;color:var(--text-primary);font-size:0.85rem;">
+            <button type="submit" class="btn btn-primary btn-sm" style="grid-column:1/-1;width:fit-content;">
+                👤 Create Developer
+            </button>
         </form>
     </div>
 
@@ -43,6 +53,7 @@
     <!-- Top Vulnerability Types -->
     <div class="extracted-urls-section">
         <h3 style="font-size: 1rem; margin-bottom: 0.75rem;">🔥 Most Common Vulnerability Types</h3>
+        {% if top_vulns %}
         <table class="history-table" style="margin:0;">
             <thead><tr><th>Vulnerability</th><th>Occurrences</th><th>Severity</th></tr></thead>
             <tbody>
@@ -59,13 +70,17 @@
                 {% endfor %}
             </tbody>
         </table>
+        {% else %}
+        <p style="color:var(--text-muted);font-size:0.85rem;">No vulnerability data yet.</p>
+        {% endif %}
     </div>
 
     <!-- Developer Summary -->
     <div class="extracted-urls-section">
         <h3 style="font-size: 1rem; margin-bottom: 0.75rem;">👥 Developer Summary</h3>
+        {% if dev_stats %}
         <table class="history-table" style="margin:0;">
-            <thead><tr><th>Developer</th><th>Scans</th><th>Critical</th><th>High</th><th>Medium</th><th>Total Vulns</th><th></th></tr></thead>
+            <thead><tr><th>Developer</th><th>Scans</th><th>Critical</th><th>High</th><th>Medium</th><th>Total Vulns</th></tr></thead>
             <tbody>
                 {% for dev in dev_stats %}
                 <tr>
@@ -75,27 +90,26 @@
                     <td>{% if dev.high %}<span class="badge badge-high">{{ dev.high }}</span>{% else %}<span style="color:var(--text-muted)">0</span>{% endif %}</td>
                     <td>{% if dev.medium %}<span class="badge badge-medium">{{ dev.medium }}</span>{% else %}<span style="color:var(--text-muted)">0</span>{% endif %}</td>
                     <td><strong>{{ dev.total }}</strong></td>
-                    <td>
-                        {% for d in developers if d.username == dev.username %}
-                        <form method="POST" action="{{ url_for('main.unlink_developer', dev_id=d.id) }}" style="margin:0;" onsubmit="return confirm('Unlink this developer?')">
-                            <button type="submit" class="btn btn-danger btn-sm">Unlink</button>
-                        </form>
-                        {% endfor %}
-                    </td>
                 </tr>
                 {% endfor %}
             </tbody>
         </table>
+        {% else %}
+        <p style="color:var(--text-muted);font-size:0.85rem;">No developers created yet. Use the form above to create your first developer account.</p>
+        {% endif %}
     </div>
 
-    <!-- Filter by Developer -->
+    <!-- Filter + Scan Table -->
     <h3 style="margin: 1.5rem 0 1rem;">📋 All Scan Reports
-        <select id="devFilter" onchange="filterByDev(this.value)" style="margin-left:1rem;padding:0.4rem 0.8rem;background:var(--bg-secondary);border:1px solid var(--border-color);border-radius:6px;color:var(--text-primary);font-size:0.8rem;">
+        {% if developers %}
+        <select id="devFilter" onchange="filterByDev(this.value)"
+                style="margin-left:1rem;padding:0.4rem 0.8rem;background:var(--bg-secondary);border:1px solid var(--border-color);border-radius:6px;color:var(--text-primary);font-size:0.8rem;">
             <option value="all">All Developers</option>
             {% for dev in developers %}
             <option value="{{ dev.username }}">{{ dev.full_name }}</option>
             {% endfor %}
         </select>
+        {% endif %}
     </h3>
 
     {% if scans %}
@@ -132,7 +146,7 @@
         </table>
     </div>
     {% else %}
-    <p style="text-align:center;color:var(--text-muted);padding:2rem;">No scans yet.</p>
+    <p style="text-align:center;color:var(--text-muted);padding:2rem;">No scans yet from your developers.</p>
     {% endif %}
 </div>
 {% endblock %}

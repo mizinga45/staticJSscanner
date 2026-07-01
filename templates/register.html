@@ -78,8 +78,26 @@ function createUser(data) {
         </div>
 
         <div class="mb-3">
-            <label class="form-label">Role</label>
-            {{ form.role(class="form-control") }}
+            <label class="form-label">Account Type</label>
+            {{ form.role(class="form-control", id="roleSelect") }}
+        </div>
+
+        <!-- Institution fields — shown only when institution role selected -->
+        <div id="institutionFields" style="display:none;">
+            <div class="mb-3">
+                <label class="form-label">Institution Name <span style="color:var(--accent-red);">*</span></label>
+                {{ form.institution_name(class="form-control", placeholder="e.g. University of Dodoma", id="institutionName") }}
+                {% if form.institution_name.errors %}
+                    <div class="text-danger">{{ form.institution_name.errors[0] }}</div>
+                {% endif %}
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Phone Number</label>
+                {{ form.phone(class="form-control", placeholder="+255 712 345 678") }}
+                {% if form.phone.errors %}
+                    <div class="text-danger">{{ form.phone.errors[0] }}</div>
+                {% endif %}
+            </div>
         </div>
 
         <div class="mb-3">
@@ -105,4 +123,26 @@ function createUser(data) {
         Already have an account? <a href="{{ url_for('auth.login') }}">Sign in</a>
     </p>
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    const roleSelect = document.getElementById('roleSelect');
+    const institutionFields = document.getElementById('institutionFields');
+    const institutionName = document.getElementById('institutionName');
+
+    function toggleInstitutionFields() {
+        const isInstitution = roleSelect.value === 'institution';
+        institutionFields.style.display = isInstitution ? 'block' : 'none';
+        if (institutionName) {
+            institutionName.required = isInstitution;
+        }
+    }
+
+    if (roleSelect) {
+        roleSelect.addEventListener('change', toggleInstitutionFields);
+        // Run on load in case of form re-render with errors
+        toggleInstitutionFields();
+    }
+</script>
 {% endblock %}

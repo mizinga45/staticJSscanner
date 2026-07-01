@@ -18,6 +18,37 @@ SQL_SANITIZERS = {
     'sqlstring.escape', 'sqlstring.format'
 }
 
+# Patterns for SQL injection sub-type detection
+BOOLEAN_PATTERNS = [
+    r'\bAND\s+1\s*=\s*1\b', r'\bOR\s+1\s*=\s*1\b',
+    r'\bAND\s+\d+\s*=\s*\d+\b', r'\bOR\s+\d+\s*=\s*\d+\b',
+    r'\bAND\s+\'[^\']+\'\s*=\s*\'[^\']+\'', r'\bOR\s+\'[^\']+\'\s*=\s*\'[^\']+\'',
+    r'\bWHERE\b.*\bAND\b', r'\bWHERE\b.*\bOR\b',
+]
+TIME_PATTERNS = [
+    r'\bSLEEP\s*\(', r'\bWAITFOR\s+DELAY\b', r'\bBENCHMARK\s*\(',
+    r'\bpg_sleep\s*\(',
+]
+ERROR_PATTERNS = [
+    r'\bEXTRACTVALUE\s*\(', r'\bUPDATEXML\s*\(', r'\bFLOOR\s*\(.*RAND\b',
+    r'\bCONVERT\s*\(', r'\bCAST\s*\(.*AS\s+INT\b',
+]
+
+
+def _detect_sqli_subtype(snippet, description, node_text=''):
+    """Determine SQLi sub-type from code snippet/description."""
+    combined = (snippet + ' ' + description + ' ' + node_text).upper()
+    for pat in TIME_PATTERNS:
+        if re.search(pat, combined, re.IGNORECASE):
+            return "Time-based"
+    for pat in BOOLEAN_PATTERNS:
+        if re.search(pat, combined, re.IGNORECASE):
+            return "Boolean-based"
+    for pat in ERROR_PATTERNS:
+        if re.search(pat, combined, re.IGNORECASE):
+            return "Error-based"
+    return "SQL Injection (String Concatenation)"
+
 
 class SQLInjectionRule(VulnerabilityRule):
     def __init__(self):
@@ -75,6 +106,7 @@ class SQLInjectionRule(VulnerabilityRule):
                     tainted_side = left if self._references_tainted(left, tainted) else right
                     sanitized = self._is_sanitized(tainted_side)
                     score = 50 if sanitized else 90
+                    sqli_subtype = _detect_sqli_subtype(snippet, "string concatenation")
                     vulns.append(Vulnerability(
                         vuln_type=self.vuln_type,
                         cwe_id=self.cwe_id,
@@ -83,7 +115,8 @@ class SQLInjectionRule(VulnerabilityRule):
                         code_snippet=snippet,
                         description="User input concatenated into SQL query string.",
                         remediation="Use parameterized queries or prepared statements instead of string concatenation.",
-                        confidence_score=score
+                        confidence_score=score,
+                        sqli_subtype=sqli_subtype,
                     ))
 
         # SQL template literal injection: `SELECT ... ${tainted}`
@@ -98,6 +131,7 @@ class SQLInjectionRule(VulnerabilityRule):
                         loc = node.get('loc', {}).get('start', {})
                         line = loc.get('line', 0)
                         snippet = code_lines[line - 1].strip() if 0 < line <= len(code_lines) else ''
+                        sqli_subtype = _detect_sqli_subtype(snippet, full_text)
                         vulns.append(Vulnerability(
                             vuln_type=self.vuln_type,
                             cwe_id=self.cwe_id,
@@ -106,7 +140,8 @@ class SQLInjectionRule(VulnerabilityRule):
                             code_snippet=snippet,
                             description="User input interpolated into SQL query via template literal.",
                             remediation="Use parameterized queries. Replace template literals with prepared statement placeholders (?).",
-                            confidence_score=90
+                            confidence_score=90,
+                            sqli_subtype=sqli_subtype,
                         ))
                         break
 

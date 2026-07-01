@@ -1,0 +1,114 @@
+{% extends "base.html" %}
+{% block title %}Subscription Plans{% endblock %}
+{% block content %}
+<div class="card" style="max-width: 860px; width: 100%;">
+    <div style="text-align:center; margin-bottom: 2rem;">
+        <div style="font-size: 2rem; margin-bottom: 0.5rem;">💳</div>
+        <h1 style="font-size: 1.5rem; margin-bottom: 0.5rem;">Subscription Plans</h1>
+        <p style="color: var(--text-secondary); font-size: 0.9rem;">
+            Current plan: <strong style="color:var(--accent-cyan);">{{ user.subscription_plan | capitalize }}</strong>
+            {% if user.subscription_plan == 'free' %}
+            &mdash; <span style="color:var(--accent-orange);">{{ user.scans_remaining }} trial scan{{ 's' if user.scans_remaining != 1 }} remaining</span>
+            {% endif %}
+        </p>
+    </div>
+
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1.25rem;">
+
+        <!-- Free Plan -->
+        <div class="card {% if user.subscription_plan == 'free' %}plan-active{% endif %}"
+             style="padding: 1.5rem; position: relative; {% if user.subscription_plan == 'free' %}border-color: var(--accent-cyan);{% endif %}">
+            {% if user.subscription_plan == 'free' %}
+            <span style="position:absolute;top:-0.6rem;left:50%;transform:translateX(-50%);background:var(--accent-cyan);color:#000;font-size:0.65rem;font-weight:700;padding:2px 10px;border-radius:10px;white-space:nowrap;">CURRENT PLAN</span>
+            {% endif %}
+            <div style="text-align:center;">
+                <div style="font-size: 1.75rem; margin-bottom: 0.5rem;">🆓</div>
+                <h3 style="font-size: 1rem; margin-bottom: 0.25rem;">Free Trial</h3>
+                <div style="font-size: 1.75rem; font-weight: 800; color: var(--accent-green); margin: 0.75rem 0;">0 TZS</div>
+                <p style="font-size: 0.75rem; color: var(--text-secondary);">One-time trial</p>
+            </div>
+            <ul style="list-style:none;padding:0;margin:1rem 0;font-size:0.82rem;color:var(--text-secondary);">
+                <li style="padding:0.25rem 0;">✅ 3 scans total</li>
+                <li style="padding:0.25rem 0;">✅ All vulnerability types</li>
+                <li style="padding:0.25rem 0;">✅ HTML/JSON/PDF reports</li>
+                <li style="padding:0.25rem 0;">❌ Batch URL scan</li>
+            </ul>
+            {% if user.subscription_plan == 'free' %}
+            <div style="font-size:0.8rem;color:var(--accent-orange);text-align:center;font-weight:600;">
+                {{ user.scans_remaining }} of 3 scans remaining
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Pro Plan -->
+        <div class="card {% if user.subscription_plan == 'pro' %}plan-active{% endif %}"
+             style="padding: 1.5rem; position: relative; {% if user.subscription_plan == 'pro' %}border-color: var(--accent-orange);{% endif %}">
+            {% if user.subscription_plan == 'pro' %}
+            <span style="position:absolute;top:-0.6rem;left:50%;transform:translateX(-50%);background:var(--accent-orange);color:#000;font-size:0.65rem;font-weight:700;padding:2px 10px;border-radius:10px;white-space:nowrap;">CURRENT PLAN</span>
+            {% endif %}
+            <div style="text-align:center;">
+                <div style="font-size: 1.75rem; margin-bottom: 0.5rem;">⭐</div>
+                <h3 style="font-size: 1rem; margin-bottom: 0.25rem;">Pro</h3>
+                <div style="font-size: 1.75rem; font-weight: 800; color: var(--accent-orange); margin: 0.75rem 0;">25,000 TZS</div>
+                <p style="font-size: 0.75rem; color: var(--text-secondary);">per month</p>
+            </div>
+            <ul style="list-style:none;padding:0;margin:1rem 0;font-size:0.82rem;color:var(--text-secondary);">
+                <li style="padding:0.25rem 0;">✅ 100 scans / month</li>
+                <li style="padding:0.25rem 0;">✅ All vulnerability types</li>
+                <li style="padding:0.25rem 0;">✅ HTML/JSON/PDF reports</li>
+                <li style="padding:0.25rem 0;">✅ Batch URL scan</li>
+            </ul>
+            {% if user.subscription_plan != 'pro' %}
+            <form method="POST" action="{{ url_for('main.pay_subscription', plan='pro') }}">
+                <button type="submit" class="btn btn-primary w-100">Subscribe — 25,000 TZS/mo</button>
+            </form>
+            <p style="font-size:0.72rem;color:var(--text-muted);text-align:center;margin-top:0.5rem;">M-Pesa: <strong>0712345678</strong></p>
+            {% else %}
+            <div style="font-size:0.8rem;color:var(--accent-green);text-align:center;font-weight:600;">
+                ✓ Active — {{ user.scans_remaining }} scans left this month
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Enterprise Plan -->
+        <div class="card {% if user.subscription_plan == 'enterprise' %}plan-active{% endif %}"
+             style="padding: 1.5rem; position: relative; {% if user.subscription_plan == 'enterprise' %}border-color: var(--accent-red);{% endif %}">
+            {% if user.subscription_plan == 'enterprise' %}
+            <span style="position:absolute;top:-0.6rem;left:50%;transform:translateX(-50%);background:var(--accent-red);color:#fff;font-size:0.65rem;font-weight:700;padding:2px 10px;border-radius:10px;white-space:nowrap;">CURRENT PLAN</span>
+            {% endif %}
+            <div style="text-align:center;">
+                <div style="font-size: 1.75rem; margin-bottom: 0.5rem;">🏢</div>
+                <h3 style="font-size: 1rem; margin-bottom: 0.25rem;">Enterprise</h3>
+                <div style="font-size: 1.75rem; font-weight: 800; color: var(--accent-red); margin: 0.75rem 0;">75,000 TZS</div>
+                <p style="font-size: 0.75rem; color: var(--text-secondary);">per month</p>
+            </div>
+            <ul style="list-style:none;padding:0;margin:1rem 0;font-size:0.82rem;color:var(--text-secondary);">
+                <li style="padding:0.25rem 0;">✅ Unlimited scans</li>
+                <li style="padding:0.25rem 0;">✅ All vulnerability types</li>
+                <li style="padding:0.25rem 0;">✅ HTML/JSON/PDF reports</li>
+                <li style="padding:0.25rem 0;">✅ Batch URL scan</li>
+                <li style="padding:0.25rem 0;">✅ Priority support</li>
+            </ul>
+            {% if user.subscription_plan != 'enterprise' %}
+            <form method="POST" action="{{ url_for('main.pay_subscription', plan='enterprise') }}">
+                <button type="submit" class="btn btn-primary w-100" style="background: linear-gradient(135deg, #dc2626, #9333ea);">Subscribe — 75,000 TZS/mo</button>
+            </form>
+            <p style="font-size:0.72rem;color:var(--text-muted);text-align:center;margin-top:0.5rem;">M-Pesa: <strong>0712345678</strong></p>
+            {% else %}
+            <div style="font-size:0.8rem;color:var(--accent-green);text-align:center;font-weight:600;">
+                ✓ Active — Unlimited scans
+            </div>
+            {% endif %}
+        </div>
+
+    </div>
+
+    <div style="margin-top: 2rem; padding: 1rem; background: var(--bg-secondary); border-radius: 8px; font-size: 0.82rem; color: var(--text-secondary);">
+        <strong>💡 How to pay:</strong> Send via M-Pesa to <strong style="color:var(--text-primary);">0712345678</strong> with your username as the reference. Contact support after payment to activate your plan.
+    </div>
+
+    <div style="margin-top: 1rem; text-align:center;">
+        <a href="{{ url_for('main.dashboard') }}" class="btn btn-outline btn-sm">← Back to Scanner</a>
+    </div>
+</div>
+{% endblock %}

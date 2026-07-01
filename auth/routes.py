@@ -1,6 +1,6 @@
 from flask import Blueprint, render_template, redirect, url_for, flash, request
 from flask_login import login_user, current_user, logout_user, login_required
-from models import db, User, ScanResult, ManagerLink
+from models import db, User, ScanResult, ManagerDeveloperLink, Institution
 from auth.forms import RegistrationForm, LoginForm
 from flask_bcrypt import Bcrypt
 
@@ -23,6 +23,20 @@ def register():
             password_hash=hashed
         )
         db.session.add(user)
+        db.session.flush()  # get user.id before committing
+
+        # Create Institution record if role=institution
+        if form.role.data == 'institution':
+            inst_name = form.institution_name.data.strip() if form.institution_name.data else user.full_name
+            inst = Institution(
+                name=inst_name or user.full_name,
+                email=user.email,
+                phone=form.phone.data.strip() if form.phone.data else None,
+            )
+            db.session.add(inst)
+            db.session.flush()
+            user.institution_id = inst.id
+
         db.session.commit()
         flash('Account created! Please log in.', 'success')
         return redirect(url_for('auth.login'))
@@ -44,6 +58,8 @@ def login():
             if next_page:
                 return redirect(next_page)
             # Redirect based on role
+            if user.is_admin:
+                return redirect(url_for('main.admin_panel'))
             if user.is_manager:
                 return redirect(url_for('main.manager_panel'))
             return redirect(url_for('main.dashboard'))
@@ -61,15 +77,9 @@ def logout():
 @auth_bp.route('/profile', methods=['GET', 'POST'])
 @login_required
 def profile():
-    # Generate invite code for developer
-    if request.method == 'POST' and not current_user.is_manager:
-        current_user.generate_invite_code()
-        db.session.commit()
-        flash(f'New invite code generated: {current_user.invite_code}', 'success')
-
     if current_user.is_manager:
-        # Manager stats: from linked developers
-        links = ManagerLink.query.filter_by(manager_id=current_user.id).all()
+        # Manager stats: from created developers
+        links = ManagerDeveloperLink.query.filter_by(manager_id=current_user.id).all()
         linked_ids = [l.developer_id for l in links]
         scans = ScanResult.query.filter(ScanResult.user_id.in_(linked_ids))\
             .order_by(ScanResult.scanned_at.desc()).all() if linked_ids else []

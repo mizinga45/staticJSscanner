@@ -1,0 +1,104 @@
+{% extends "base.html" %}
+{% block title %}Admin Panel{% endblock %}
+{% block content %}
+<div class="card card-full">
+    <div class="results-header">
+        <div>
+            <h1 style="font-size: 1.5rem;">🛡️ Admin Panel</h1>
+            <p style="color: var(--text-secondary); font-size: 0.85rem;">Platform-wide overview & management</p>
+        </div>
+    </div>
+
+    <!-- Summary Stats -->
+    <div class="results-summary" style="margin-bottom: 2rem;">
+        <div class="summary-card total">
+            <div class="count">{{ total_users }}</div>
+            <div class="label">Total Users</div>
+        </div>
+        <div class="summary-card high">
+            <div class="count">{{ total_scans }}</div>
+            <div class="label">Total Scans</div>
+        </div>
+        <div class="summary-card critical">
+            <div class="count">{{ total_vulns }}</div>
+            <div class="label">Total Vulns</div>
+        </div>
+        <div class="summary-card medium">
+            <div class="count">TZS {{ "{:,}".format(revenue) }}</div>
+            <div class="label">Revenue (confirmed)</div>
+        </div>
+    </div>
+
+    <!-- Create Manager Form -->
+    <div class="extracted-urls-section" style="margin-bottom: 2rem;">
+        <h3 style="font-size: 1rem; margin-bottom: 0.75rem;">➕ Create Manager Account</h3>
+        <form method="POST" action="{{ url_for('main.admin_create_manager') }}" style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;max-width:700px;">
+            <input type="text" name="full_name" placeholder="Full Name" required
+                   style="padding:0.5rem 0.75rem;background:var(--bg-secondary);border:1px solid var(--border-color);border-radius:6px;color:var(--text-primary);font-size:0.85rem;">
+            <input type="text" name="username" placeholder="Username" required
+                   style="padding:0.5rem 0.75rem;background:var(--bg-secondary);border:1px solid var(--border-color);border-radius:6px;color:var(--text-primary);font-size:0.85rem;">
+            <input type="email" name="email" placeholder="Email" required
+                   style="padding:0.5rem 0.75rem;background:var(--bg-secondary);border:1px solid var(--border-color);border-radius:6px;color:var(--text-primary);font-size:0.85rem;">
+            <input type="password" name="password" placeholder="Password (min 6 chars)" required minlength="6"
+                   style="padding:0.5rem 0.75rem;background:var(--bg-secondary);border:1px solid var(--border-color);border-radius:6px;color:var(--text-primary);font-size:0.85rem;">
+            <button type="submit" class="btn btn-primary btn-sm" style="grid-column:1/-1;width:fit-content;">
+                👔 Create Manager
+            </button>
+        </form>
+    </div>
+
+    <!-- Users Table -->
+    <div class="extracted-urls-section">
+        <h3 style="font-size: 1rem; margin-bottom: 0.75rem;">👥 All Users</h3>
+        <div style="overflow-x: auto;">
+            <table class="history-table" style="margin:0;">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Name</th>
+                        <th>Username</th>
+                        <th>Email</th>
+                        <th>Role</th>
+                        <th>Plan</th>
+                        <th>Scans</th>
+                        <th>Joined</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in user_stats %}
+                    {% set u = item.user %}
+                    <tr>
+                        <td style="color:var(--text-muted);font-size:0.75rem;">{{ u.id }}</td>
+                        <td><strong>{{ u.full_name }}</strong></td>
+                        <td style="color:var(--text-secondary);">@{{ u.username }}</td>
+                        <td style="font-size:0.8rem;color:var(--text-secondary);">{{ u.email }}</td>
+                        <td>
+                            {% if u.role == 'admin' %}
+                                <span class="badge badge-critical">admin</span>
+                            {% elif u.role == 'manager' %}
+                                <span class="badge badge-high">manager</span>
+                            {% elif u.role == 'institution' %}
+                                <span class="badge" style="background:rgba(139,92,246,0.15);color:#c4b5fd;border:1px solid rgba(139,92,246,0.3);">institution</span>
+                            {% else %}
+                                <span class="badge badge-medium">developer</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if u.subscription_plan == 'enterprise' %}
+                                <span class="badge badge-critical" style="background:rgba(16,185,129,0.15);color:#6ee7b7;border-color:rgba(16,185,129,0.3);">enterprise</span>
+                            {% elif u.subscription_plan == 'pro' %}
+                                <span class="badge badge-high">pro</span>
+                            {% else %}
+                                <span class="badge" style="color:var(--text-muted);">free</span>
+                            {% endif %}
+                        </td>
+                        <td><strong>{{ item.scan_count }}</strong></td>
+                        <td style="font-size:0.75rem;color:var(--text-muted);white-space:nowrap;">{{ u.created_at.strftime('%Y-%m-%d') }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -49,9 +49,28 @@
                 </label>
             </div>
             
+            <div class="input-divider">or</div>
+
+            <div class="mb-4">
+                <label class="form-label">🔗 Batch URL Scan (one URL per line)</label>
+                {{ form.batch_urls(class="form-control", rows="4", placeholder="https://example.com/app.js\nhttps://other.com/main.js\nhttps://third.com/bundle.js", style="font-size:0.82rem;font-family:var(--font-mono, monospace);resize:vertical;") }}
+                <p class="form-text">Scans multiple URLs in one go and combines results</p>
+            </div>
+
             <div style="margin-top: 2rem;">
                 {{ form.submit(class="btn btn-primary btn-lg w-100", id="scanBtn") }}
             </div>
+
+            {% if not current_user.can_scan %}
+            <div class="alert alert-warning" style="margin-top:1rem;text-align:center;font-size:0.85rem;">
+                ⚠️ Your free trial has ended. <a href="{{ url_for('main.subscription') }}">Upgrade your plan</a> to continue scanning.
+            </div>
+            {% elif current_user.subscription_plan == 'free' %}
+            <p style="text-align:center;margin-top:0.75rem;font-size:0.78rem;color:var(--text-muted);">
+                Free trial: {{ current_user.scans_remaining }} scan{{ 's' if current_user.scans_remaining != 1 }} remaining &mdash;
+                <a href="{{ url_for('main.subscription') }}">upgrade for more</a>
+            </p>
+            {% endif %}
         </form>
     </div>
 
