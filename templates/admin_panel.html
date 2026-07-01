@@ -108,7 +108,7 @@
                 <span style="font-weight:700;">{{ count }}</span>
               </div>
               <div style="height:6px;background:var(--bg-secondary);border-radius:3px;overflow:hidden;">
-                <div style="height:100%;width:{{ [count * 20, 100]|min }}%;background:{% if role=='admin' %}var(--accent-red){% elif role=='manager' %}var(--accent-purple){% else %}var(--accent-blue){% endif %};"></div>
+              <div style="height:100%;width:{{ [count * 20, 100]|min }}%;background:{% if role=='admin' %}var(--admin-gold){% elif role=='manager' %}var(--manager-teal){% else %}var(--accent-blue){% endif %};"></div>
               </div>
             </div>
             {% endfor %}
@@ -161,20 +161,29 @@
                 <td style="padding:1rem;">
                   <form method="POST" action="/admin/user/{{ user.id }}/role" style="display:inline;">
                     <select name="role" onchange="this.form.submit()" style="background:var(--bg-secondary);border:1px solid var(--border-color);border-radius:6px;color:var(--text-primary);padding:.5rem .75rem;font-size:.85rem;cursor:pointer;font-weight:500;">
-                      {% for r in ['developer','manager','admin'] %}
+                      {% for r in ['developer','manager','admin','institution'] %}
                       <option value="{{ r }}" {% if user.role==r %}selected{% endif %}>{{ r|capitalize }}</option>
                       {% endfor %}
                     </select>
                   </form>
+                  {% if user.is_admin %}
+                    <div style="margin-top:.5rem;"><span class="role-badge admin">ADMIN</span></div>
+                  {% elif user.is_manager %}
+                    <div style="margin-top:.5rem;"><span class="role-badge manager">MANAGER</span></div>
+                  {% endif %}
                 </td>
                 <td style="padding:1rem;">
-                  <form method="POST" action="/admin/user/{{ user.id }}/plan" style="display:inline;">
-                    <select name="plan" onchange="this.form.submit()" style="background:var(--bg-secondary);border:1px solid var(--border-color);border-radius:6px;color:var(--text-primary);padding:.5rem .75rem;font-size:.85rem;cursor:pointer;font-weight:500;">
-                      {% for p in ['free','pro','enterprise'] %}
-                      <option value="{{ p }}" {% if user.subscription_plan==p %}selected{% endif %}>{{ p|capitalize }}</option>
-                      {% endfor %}
-                    </select>
-                  </form>
+                  {% if user.is_admin %}
+                    <span class="role-badge admin">Admin</span>
+                  {% else %}
+                    <form method="POST" action="/admin/user/{{ user.id }}/plan" style="display:inline;">
+                      <select name="plan" onchange="this.form.submit()" style="background:var(--bg-secondary);border:1px solid var(--border-color);border-radius:6px;color:var(--text-primary);padding:.5rem .75rem;font-size:.85rem;cursor:pointer;font-weight:500;">
+                        {% for p in ['free','pro','enterprise'] %}
+                        <option value="{{ p }}" {% if user.subscription_plan==p %}selected{% endif %}>{{ p|capitalize }}</option>
+                        {% endfor %}
+                      </select>
+                    </form>
+                  {% endif %}
                 </td>
                 <td style="padding:1rem;"><span style="font-weight:600;">{{ user.scans|length }}</span></td>
                 <td style="padding:1rem;font-size:.85rem;color:var(--text-muted);">{{ user.created_at.strftime('%b %d') }}</td>

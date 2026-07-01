@@ -52,7 +52,25 @@ html.light-mode {
   --shadow-glow: 0 0 30px rgba(2, 132, 199, 0.1);
   --gradient-primary: linear-gradient(135deg, #0284c7, #7c3aed);
   --gradient-dark: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
+
+  /* Admin / Manager accent overrides */
+  --admin-gold: #D4AF37;
+  --manager-teal: #0BC5EA;
 }
+
+/* Role badges */
+.role-badge { display:inline-block;padding:.25rem .5rem;border-radius:999px;font-weight:700;font-size:.8rem;color:var(--text-primary); }
+.role-badge.admin { background: linear-gradient(90deg,var(--admin-gold), #c89b2f); color: #1b1b1b; }
+.role-badge.manager { background: linear-gradient(90deg,var(--manager-teal), #07a6d6); color: #052126; }
+.role-badge.developer { background: rgba(59,130,246,0.12); color: var(--accent-blue); }
+
+/* Theme toggle fancy SVG button */
+#themeToggle { width:40px;height:40px;padding:6px;border-radius:999px;border:1px solid var(--border-color);background:transparent;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;transition:all .25s ease; }
+#themeToggle svg { width:24px;height:24px;display:block; }
+#themeToggle:hover { transform:rotate(8deg) scale(1.03); border-color:var(--accent-blue); box-shadow:var(--shadow-glow); }
+#themeToggle.light { background: linear-gradient(135deg, #fff3bf, #ffd580); }
+#themeToggle.dark { background: linear-gradient(135deg, #1f2937, #374151); }
+
 
 /* --- Dark Mode Variables (default) --- */
 html.dark-mode {
