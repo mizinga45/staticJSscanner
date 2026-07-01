@@ -5,17 +5,19 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager
 from flask_bcrypt import Bcrypt
 from markupsafe import Markup, escape
-from models import db, User
+from models import db, User, ScanJob
 from auth.routes import auth_bp, bcrypt as auth_bcrypt
 from web.routes import main_bp
 
 app = Flask(__name__)
 
-# Use a fixed secret key so sessions survive server restarts
-app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'secscan-js-secret-key-2026-group16-udom')
+# Prefer SECRET_KEY from environment; if not set, fall back to a random key for safety
+import os as _os
+app.config['SECRET_KEY'] = _os.environ.get('SECRET_KEY') or _os.urandom(24).hex()
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(os.path.dirname(os.path.abspath(__file__)), 'scanner.db')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['UPLOAD_FOLDER'] = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'uploads')
+app.config['MAX_CONTENT_LENGTH'] = 50 * 1024 * 1024  # 50MB file size limit for DoS protection
 
 
 # Jinja2 filter: highlight dangerous syntax in red
@@ -125,8 +127,53 @@ def pricing():
     return render_template('pricing.html')
 
 
+def cleanup_stale_jobs():
+    """
+    Clean up scan jobs that have been stuck in 'running' state for too long.
+    Prevents job table from growing unbounded and prevents locks.
+    """
+    from datetime import datetime, timedelta
+    
+    try:
+        timeout_minutes = 10
+        timeout_threshold = datetime.now() - timedelta(minutes=timeout_minutes)
+        
+        # Find jobs stuck in 'running' state
+        stale_jobs = ScanJob.query.filter(
+            ScanJob.status == 'running',
+            ScanJob.updated_at < timeout_threshold
+        ).all()
+        
+        if stale_jobs:
+            import sqlite3 as sqlite3_mod
+            import logging as log_mod
+            
+            logger = log_mod.getLogger(__name__)
+            db_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'scanner.db')
+            
+            for job in stale_jobs:
+                try:
+                    # Use raw SQL update for thread-safe operation
+                    conn = sqlite3_mod.connect(db_path, timeout=5.0)
+                    cur = conn.cursor()
+                    cur.execute(
+                        "UPDATE scan_job SET status = ?, message = ?, updated_at = datetime('now') WHERE id = ?",
+                        ('error', f'Timeout - job did not complete within {timeout_minutes} minutes', job.id)
+                    )
+                    conn.commit()
+                    conn.close()
+                    logger.info(f"Cleaned up stale job {job.id} (stuck since {job.updated_at})")
+                except Exception as e:
+                    logger.error(f"Failed to cleanup job {job.id}: {e}")
+    except Exception as e:
+        import logging as log_mod
+        logger = log_mod.getLogger(__name__)
+        logger.error(f"Error in cleanup_stale_jobs: {e}")
+
+
 if __name__ == '__main__':
     with app.app_context():
         db.create_all()
+        cleanup_stale_jobs()  # Clean up any stale jobs on startup
     os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
     app.run(debug=True)

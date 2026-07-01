@@ -7,8 +7,10 @@ import os
 class Parser:
     """Parses JavaScript into an AST using Acorn (Node.js)."""
 
-    def __init__(self):
+    def __init__(self, timeout_seconds=None):
         self.script_path = os.path.join(os.path.dirname(__file__), 'parser_script.js')
+        # Allow configuration via environment variable or constructor
+        self.timeout = int(timeout_seconds or os.environ.get('PARSER_TIMEOUT', '15'))
 
     def parse_to_ast(self, js_code):
         """Run node parser_script.js, feed it js_code, return AST dict."""
@@ -19,7 +21,7 @@ class Parser:
             input=clean_code,
             capture_output=True,
             text=True,
-            timeout=15
+            timeout=self.timeout
         )
         if result.returncode != 0:
             raise SyntaxError(result.stderr.strip())

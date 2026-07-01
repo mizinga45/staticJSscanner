@@ -31,6 +31,52 @@
   --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
+/* --- Light Mode Variables --- */
+html.light-mode {
+  --bg-primary: #f8fafc;
+  --bg-secondary: #f1f5f9;
+  --bg-card: #ffffff;
+  --bg-card-hover: #f8fafc;
+  --accent-blue: #0284c7;
+  --accent-cyan: #0891b2;
+  --accent-purple: #7c3aed;
+  --accent-green: #059669;
+  --accent-red: #dc2626;
+  --accent-orange: #d97706;
+  --text-primary: #1e293b;
+  --text-secondary: #475569;
+  --text-muted: #78716c;
+  --border-color: #e2e8f0;
+  --border-glow: rgba(2, 132, 199, 0.2);
+  --shadow-lg: 0 20px 60px rgba(0, 0, 0, 0.08);
+  --shadow-glow: 0 0 30px rgba(2, 132, 199, 0.1);
+  --gradient-primary: linear-gradient(135deg, #0284c7, #7c3aed);
+  --gradient-dark: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
+}
+
+/* --- Dark Mode Variables (default) --- */
+html.dark-mode {
+  --bg-primary: #0a0e1a;
+  --bg-secondary: #111827;
+  --bg-card: #1a1f35;
+  --bg-card-hover: #1f2544;
+  --accent-blue: #3b82f6;
+  --accent-cyan: #06b6d4;
+  --accent-purple: #8b5cf6;
+  --accent-green: #10b981;
+  --accent-red: #ef4444;
+  --accent-orange: #f59e0b;
+  --text-primary: #f1f5f9;
+  --text-secondary: #94a3b8;
+  --text-muted: #64748b;
+  --border-color: #1e293b;
+  --border-glow: rgba(59, 130, 246, 0.3);
+  --shadow-lg: 0 20px 60px rgba(0, 0, 0, 0.5);
+  --shadow-glow: 0 0 30px rgba(59, 130, 246, 0.15);
+  --gradient-primary: linear-gradient(135deg, #3b82f6, #8b5cf6);
+  --gradient-dark: linear-gradient(180deg, #0a0e1a 0%, #111827 100%);
+}
+
 /* --- Reset & Base --- */
 *, *::before, *::after {
   box-sizing: border-box;
@@ -49,6 +95,7 @@ body {
   min-height: 100vh;
   line-height: 1.6;
   overflow-x: hidden;
+  transition: background-color 0.3s ease, color 0.3s ease;
 }
 
 /* --- Animated Background --- */
@@ -184,6 +231,11 @@ a:hover {
   background: rgba(10, 14, 26, 0.85);
   backdrop-filter: blur(20px);
   border-bottom: 1px solid var(--border-color);
+  transition: background-color 0.3s ease, border-color 0.3s ease;
+}
+
+html.light-mode .navbar {
+  background: rgba(248, 250, 252, 0.85);
 }
 
 .navbar-brand {
@@ -240,6 +292,34 @@ a:hover {
 .nav-link.active {
   color: var(--accent-blue);
   background: rgba(59, 130, 246, 0.1);
+}
+
+#themeToggle {
+  background: none;
+  border: 1px solid var(--border-color);
+  color: var(--text-secondary);
+  font-size: 1.2rem;
+  padding: 0.5rem 0.75rem;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: var(--transition);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  margin-left: 0.5rem;
+}
+
+#themeToggle:hover {
+  background: var(--bg-secondary);
+  color: var(--accent-blue);
+  border-color: var(--accent-blue);
+}
+
+#themeToggle span {
+  transition: transform 0.3s ease;
+  display: inline-block;
 }
 
 /* --- Main Container --- */

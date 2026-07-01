@@ -1,0 +1,190 @@
+{% extends "base.html" %}
+{% block title %}Manager Dashboard{% endblock %}
+{% block content %}
+<div style="display:grid;grid-template-columns:220px 1fr;gap:1.5rem;max-width:1100px;width:100%;align-items:start;">
+
+  <!-- Sidebar -->
+  <div class="card" style="max-width:none;padding:1.25rem;position:sticky;top:90px;">
+    <p style="font-size:.65rem;text-transform:uppercase;letter-spacing:.1em;color:var(--text-muted);margin-bottom:.75rem;">Manager Menu</p>
+    <nav style="display:flex;flex-direction:column;gap:.2rem;">
+      <a onclick="showSection('team')" class="mgr-nav active" id="nav-team">👥 My Team</a>
+      <a onclick="showSection('reports')" class="mgr-nav" id="nav-reports">📋 Reports</a>
+      <a onclick="showSection('analytics')" class="mgr-nav" id="nav-analytics">📊 Analytics</a>
+      <a onclick="showSection('add')" class="mgr-nav" id="nav-add">➕ Add Developer</a>
+    </nav>
+    <div style="margin-top:1.5rem;padding-top:1rem;border-top:1px solid var(--border-color);">
+      <div style="display:flex;align-items:center;gap:.6rem;">
+        <div style="width:30px;height:30px;border-radius:50%;background:linear-gradient(135deg,var(--accent-purple),var(--accent-blue));display:flex;align-items:center;justify-content:center;font-size:.75rem;font-weight:700;">{{ current_user.full_name[0] }}</div>
+        <div>
+          <p style="font-size:.78rem;font-weight:600;">{{ current_user.full_name }}</p>
+          <p style="font-size:.68rem;color:var(--text-muted);">Team Manager</p>
+        </div>
+      </div>
+      <a href="{{ url_for('auth.logout') }}" style="display:block;margin-top:.75rem;font-size:.78rem;color:var(--text-muted);text-decoration:none;">→ Logout</a>
+    </div>
+  </div>
+
+  <!-- Main -->
+  <div>
+
+    <!-- Team Section -->
+    <div id="section-team">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.25rem;flex-wrap:wrap;gap:.75rem;">
+        <h2 style="font-size:1.3rem;">👥 My Team ({{ developers|length }})</h2>
+        <button onclick="showSection('add')" class="btn btn-primary btn-sm">+ Add Developer</button>
+      </div>
+
+      <!-- Summary Row -->
+      <div class="results-summary" style="margin-bottom:1.5rem;">
+        <div class="summary-card total"><div class="count">{{ total_scans }}</div><div class="label">Team Scans</div></div>
+        <div class="summary-card critical"><div class="count">{{ total_critical }}</div><div class="label">Critical</div></div>
+        <div class="summary-card high"><div class="count">{{ total_vulns }}</div><div class="label">Total Vulns</div></div>
+        <div class="summary-card medium"><div class="count">{{ developers|length }}</div><div class="label">Developers</div></div>
+      </div>
+
+      <!-- Developer Cards -->
+      {% if developers %}
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:1rem;">
+        {% for dev in developers %}
+        {% set dev_vulns = dev.scans|sum(attribute='total_vulns') %}
+        {% set dev_crit = dev.scans|sum(attribute='critical_count') %}
+        <div class="card" style="max-width:none;padding:1.25rem;cursor:pointer;" onclick="showSection('reports')">
+          <div style="display:flex;align-items:center;gap:.75rem;margin-bottom:1rem;">
+            <div style="width:40px;height:40px;border-radius:50%;background:linear-gradient(135deg,var(--accent-blue),var(--accent-purple));display:flex;align-items:center;justify-content:center;font-weight:700;flex-shrink:0;">{{ dev.full_name[0] }}</div>
+            <div>
+              <p style="font-weight:600;font-size:.9rem;">{{ dev.full_name }}</p>
+              <p style="font-size:.72rem;color:var(--text-muted);">@{{ dev.username }}</p>
+            </div>
+          </div>
+          <div style="display:flex;justify-content:space-between;font-size:.8rem;color:var(--text-secondary);">
+            <span>{{ dev.scans|length }} scans</span>
+            <span>
+              {% if dev_crit > 0 %}<span style="color:var(--accent-red);font-weight:600;">{{ dev_crit }} critical</span>
+              {% elif dev_vulns > 0 %}<span style="color:var(--accent-orange);">{{ dev_vulns }} issues</span>
+              {% else %}<span style="color:var(--accent-green);">✓ Clean</span>{% endif %}
+            </span>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+      {% else %}
+      <div style="text-align:center;padding:3rem;color:var(--text-muted);">
+        <div style="font-size:3rem;margin-bottom:1rem;">👥</div>
+        <p>No developers yet. <a href="#" onclick="showSection('add')">Add your first developer →</a></p>
+      </div>
+      {% endif %}
+    </div>
+
+    <!-- Reports Section -->
+    <div id="section-reports" style="display:none;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.25rem;flex-wrap:wrap;gap:.75rem;">
+        <h2 style="font-size:1.3rem;">📋 Team Reports</h2>
+        <div style="display:flex;gap:.5rem;">
+          <a href="{{ url_for('main.manager_report_pdf') }}" class="btn btn-outline btn-sm">📥 Org Report</a>
+          <a href="{{ url_for('main.manager_merged_report') }}" class="btn btn-primary btn-sm">📥 Merged PDF</a>
+        </div>
+      </div>
+      <div class="card" style="max-width:none;">
+        {% if scans %}
+        <div style="overflow-x:auto;">
+          <table class="history-table">
+            <thead>
+              <tr><th>Developer</th><th>Source</th><th>Method</th><th>Critical</th><th>High</th><th>Total</th><th>Date</th><th></th></tr>
+            </thead>
+            <tbody>
+              {% for scan in scans %}
+              <tr>
+                <td style="font-weight:500;">{{ scan.user.full_name }}</td>
+                <td style="max-width:180px;word-break:break-all;font-size:.78rem;color:var(--text-muted);">{{ scan.source|truncate(40) }}</td>
+                <td><span class="badge badge-medium" style="font-size:.65rem;">{{ scan.input_method or 'file' }}</span></td>
+                <td>{% if scan.critical_count %}<span class="badge badge-critical">{{ scan.critical_count }}</span>{% else %}<span style="color:var(--text-muted)">0</span>{% endif %}</td>
+                <td>{% if scan.high_count %}<span class="badge badge-high">{{ scan.high_count }}</span>{% else %}<span style="color:var(--text-muted)">0</span>{% endif %}</td>
+                <td><strong>{{ scan.total_vulns }}</strong></td>
+                <td style="font-size:.78rem;color:var(--text-muted);white-space:nowrap;">{{ scan.scanned_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                <td>
+                  <a href="{{ url_for('main.view_scan', scan_id=scan.id) }}" class="btn btn-outline btn-sm">View</a>
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% else %}
+        <p style="text-align:center;color:var(--text-muted);padding:2rem;">No scans from your team yet.</p>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Analytics Section -->
+    <div id="section-analytics" style="display:none;">
+      <h2 style="font-size:1.3rem;margin-bottom:1.25rem;">📊 Team Analytics</h2>
+      {% if top_vulns %}
+      <div class="card" style="max-width:none;margin-bottom:1.25rem;">
+        <h3 style="font-size:.9rem;color:var(--text-secondary);margin-bottom:1rem;">Top Vulnerability Types</h3>
+        {% for vname, count, sev in top_vulns %}
+        <div style="display:flex;align-items:center;gap:1rem;margin-bottom:.75rem;">
+          <span style="width:140px;font-size:.8rem;color:var(--text-secondary);">{{ vname|truncate(20) }}</span>
+          <div style="flex:1;height:8px;background:var(--bg-secondary);border-radius:4px;overflow:hidden;">
+            <div style="height:100%;width:{{ [count * 15, 100]|min }}%;background:{% if sev=='Critical' %}var(--accent-red){% elif sev=='High' %}var(--accent-orange){% else %}var(--accent-blue){% endif %};border-radius:4px;"></div>
+          </div>
+          <span style="font-size:.8rem;font-weight:700;min-width:30px;text-align:right;color:{% if sev=='Critical' %}var(--accent-red){% elif sev=='High' %}var(--accent-orange){% else %}var(--accent-blue){% endif %};">{{ count }}</span>
+        </div>
+        {% endfor %}
+      </div>
+      {% endif %}
+      <div class="results-summary">
+        <div class="summary-card critical"><div class="count">{{ total_critical }}</div><div class="label">Critical</div></div>
+        <div class="summary-card high"><div class="count">{{ total_high }}</div><div class="label">High</div></div>
+        <div class="summary-card medium"><div class="count">{{ total_medium }}</div><div class="label">Medium</div></div>
+        <div class="summary-card low"><div class="count">{{ total_low }}</div><div class="label">Low</div></div>
+      </div>
+    </div>
+
+    <!-- Add Developer Section -->
+    <div id="section-add" style="display:none;">
+      <h2 style="font-size:1.3rem;margin-bottom:1.25rem;">➕ Create Developer Account</h2>
+      <div class="card" style="max-width:480px;">
+        <p style="color:var(--text-secondary);font-size:.875rem;margin-bottom:1.5rem;">This developer will be linked to your team and you can view their scan reports.</p>
+        <form method="POST" action="{{ url_for('main.manager_create_developer') }}">
+          <div class="mb-3">
+            <label class="form-label">Full Name</label>
+            <input type="text" name="full_name" class="form-control" placeholder="Brian Kilawe" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Username</label>
+            <input type="text" name="username" class="form-control" placeholder="briankilawe" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Email</label>
+            <input type="email" name="email" class="form-control" placeholder="brian@company.com" required>
+          </div>
+          <div class="mb-4">
+            <label class="form-label">Temporary Password</label>
+            <input type="password" name="password" class="form-control" placeholder="Min 6 characters" required minlength="6">
+          </div>
+          <button type="submit" class="btn btn-primary w-100">Create Developer Account</button>
+        </form>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<style>
+.mgr-nav{display:flex;align-items:center;gap:.5rem;padding:.5rem .75rem;border-radius:8px;font-size:.83rem;font-weight:500;color:var(--text-secondary);text-decoration:none;transition:.2s;cursor:pointer;}
+.mgr-nav:hover,.mgr-nav.active{background:rgba(139,92,246,.12);color:var(--accent-purple);}
+</style>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function showSection(name) {
+    ['team','reports','analytics','add'].forEach(s => {
+        document.getElementById('section-' + s).style.display = s === name ? 'block' : 'none';
+        document.getElementById('nav-' + s).classList.toggle('active', s === name);
+    });
+}
+const hash = location.hash.replace('#','') || 'team';
+showSection(hash);
+</script>
+{% endblock %}

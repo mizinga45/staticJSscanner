@@ -1,108 +1,250 @@
 {% extends "base.html" %}
 {% block title %}Manager Dashboard{% endblock %}
 {% block content %}
-<div style="display:grid;grid-template-columns:220px 1fr;gap:1.5rem;max-width:1100px;width:100%;align-items:start;">
+<div style="display:grid;grid-template-columns:240px 1fr;gap:2rem;max-width:1400px;width:100%;margin:0 auto;align-items:start;">
 
-  <!-- Sidebar -->
-  <div class="card" style="max-width:none;padding:1.25rem;position:sticky;top:90px;">
-    <p style="font-size:.65rem;text-transform:uppercase;letter-spacing:.1em;color:var(--text-muted);margin-bottom:.75rem;">Manager Menu</p>
-    <nav style="display:flex;flex-direction:column;gap:.2rem;">
-      <a onclick="showSection('team')" class="mgr-nav active" id="nav-team">👥 My Team</a>
-      <a onclick="showSection('reports')" class="mgr-nav" id="nav-reports">📋 Reports</a>
-      <a onclick="showSection('analytics')" class="mgr-nav" id="nav-analytics">📊 Analytics</a>
-      <a onclick="showSection('add')" class="mgr-nav" id="nav-add">➕ Add Developer</a>
-    </nav>
-    <div style="margin-top:1.5rem;padding-top:1rem;border-top:1px solid var(--border-color);">
-      <div style="display:flex;align-items:center;gap:.6rem;">
-        <div style="width:30px;height:30px;border-radius:50%;background:linear-gradient(135deg,var(--accent-purple),var(--accent-blue));display:flex;align-items:center;justify-content:center;font-size:.75rem;font-weight:700;">{{ current_user.full_name[0] }}</div>
+  <!-- Sidebar Navigation -->
+  <div style="position:sticky;top:90px;">
+    <div class="card" style="max-width:none;padding:1.5rem;border-left:4px solid var(--accent-purple);">
+      <div style="display:flex;align-items:center;gap:1rem;margin-bottom:1.5rem;">
+        <div style="width:48px;height:48px;border-radius:50%;background:linear-gradient(135deg,var(--accent-purple),#8b5cf6);display:flex;align-items:center;justify-content:center;font-weight:700;color:white;font-size:1.2rem;">
+          👥
+        </div>
         <div>
-          <p style="font-size:.78rem;font-weight:600;">{{ current_user.full_name }}</p>
-          <p style="font-size:.68rem;color:var(--text-muted);">Team Manager</p>
+          <p style="font-weight:700;font-size:.95rem;">Manager Dashboard</p>
+          <p style="font-size:.75rem;color:var(--text-muted);">Team Control</p>
         </div>
       </div>
-      <a href="{{ url_for('auth.logout') }}" style="display:block;margin-top:.75rem;font-size:.78rem;color:var(--text-muted);text-decoration:none;">→ Logout</a>
+      <div style="border-top:1px solid var(--border-color);padding-top:1rem;">
+        <p style="font-size:.65rem;text-transform:uppercase;letter-spacing:.1em;color:var(--text-muted);margin-bottom:1rem;font-weight:600;">Navigation</p>
+        <nav style="display:flex;flex-direction:column;gap:.5rem;">
+          <a href="#" onclick="showMgrSection('overview')" class="mgr-nav active" id="nav-overview">📊 Overview</a>
+          <a href="#" onclick="showMgrSection('team')" class="mgr-nav" id="nav-team">👥 My Team</a>
+          <a href="#" onclick="showMgrSection('scans')" class="mgr-nav" id="nav-scans">🔍 Scans & Reports</a>
+          <a href="#" onclick="showMgrSection('analytics')" class="mgr-nav" id="nav-analytics">📈 Analytics</a>
+          <a href="#" onclick="showMgrSection('add')" class="mgr-nav" id="nav-add">➕ Add Developer</a>
+        </nav>
+      </div>
+      <div style="margin-top:1.5rem;padding-top:1rem;border-top:1px solid var(--border-color);">
+        <div style="display:flex;align-items:center;gap:.75rem;padding:.75rem;background:rgba(139,92,246,.08);border-radius:8px;">
+          <div style="width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,var(--accent-purple),#7c3aed);display:flex;align-items:center;justify-content:center;font-size:.85rem;font-weight:700;color:white;">{{ current_user.full_name[0] }}</div>
+          <div>
+            <p style="font-size:.8rem;font-weight:600;">{{ current_user.full_name }}</p>
+            <p style="font-size:.7rem;color:var(--text-muted);">Team Manager</p>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 
-  <!-- Main -->
-  <div>
+  <!-- Main Content -->
+  <div style="padding-right:1rem;">
+
+    <!-- Overview Section -->
+    <div id="section-overview">
+      <div style="margin-bottom:2rem;">
+        <h1 style="font-size:1.75rem;font-weight:700;margin-bottom:.5rem;">Team Overview</h1>
+        <p style="color:var(--text-muted);font-size:.95rem;">Monitor your team's security scan activity and vulnerability trends</p>
+      </div>
+
+      <!-- KPI Cards -->
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:1.5rem;margin-bottom:2rem;">
+        <div class="card" style="max-width:none;border-left:4px solid var(--accent-blue);">
+          <div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:1rem;">
+            <div>
+              <p style="font-size:.85rem;color:var(--text-muted);margin-bottom:.5rem;">Team Members</p>
+              <p style="font-size:2rem;font-weight:800;color:var(--accent-blue);">{{ developers|length }}</p>
+            </div>
+            <span style="font-size:1.5rem;">👥</span>
+          </div>
+          <div style="font-size:.75rem;color:var(--text-muted);">Active developers</div>
+        </div>
+
+        <div class="card" style="max-width:none;border-left:4px solid var(--accent-orange);">
+          <div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:1rem;">
+            <div>
+              <p style="font-size:.85rem;color:var(--text-muted);margin-bottom:.5rem;">Total Scans</p>
+              <p style="font-size:2rem;font-weight:800;color:var(--accent-orange);">{{ total_scans }}</p>
+            </div>
+            <span style="font-size:1.5rem;">🔍</span>
+          </div>
+          <div style="font-size:.75rem;color:var(--text-muted);">By your team</div>
+        </div>
+
+        <div class="card" style="max-width:none;border-left:4px solid var(--accent-red);">
+          <div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:1rem;">
+            <div>
+              <p style="font-size:.85rem;color:var(--text-muted);margin-bottom:.5rem;">Critical Issues</p>
+              <p style="font-size:2rem;font-weight:800;color:var(--accent-red);">{{ total_critical }}</p>
+            </div>
+            <span style="font-size:1.5rem;">🔴</span>
+          </div>
+          <div style="font-size:.75rem;color:var(--text-muted);">Requires attention</div>
+        </div>
+
+        <div class="card" style="max-width:none;border-left:4px solid var(--accent-green);">
+          <div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:1rem;">
+            <div>
+              <p style="font-size:.85rem;color:var(--text-muted);margin-bottom:.5rem;">Total Vulnerabilities</p>
+              <p style="font-size:2rem;font-weight:800;color:var(--accent-green);">{{ total_vulns }}</p>
+            </div>
+            <span style="font-size:1.5rem;">⚠️</span>
+          </div>
+          <div style="font-size:.75rem;color:var(--text-muted);">Across all scans</div>
+        </div>
+      </div>
+
+      <!-- Severity Summary -->
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:1.5rem;">
+        <div class="card" style="max-width:none;">
+          <h3 style="font-size:.95rem;font-weight:600;margin-bottom:1.5rem;color:var(--text-primary);">Vulnerability Breakdown</h3>
+          <div style="display:flex;flex-direction:column;gap:1.25rem;">
+            <div>
+              <div style="display:flex;justify-content:space-between;margin-bottom:.5rem;font-size:.85rem;font-weight:600;">
+                <span style="color:var(--accent-red);">Critical</span>
+                <span>{{ total_critical }}</span>
+              </div>
+              <div style="height:8px;background:var(--bg-secondary);border-radius:4px;overflow:hidden;">
+                <div style="height:100%;width:{{ [total_critical * 3, 100]|min }}%;background:var(--accent-red);"></div>
+              </div>
+            </div>
+            <div>
+              <div style="display:flex;justify-content:space-between;margin-bottom:.5rem;font-size:.85rem;font-weight:600;">
+                <span style="color:var(--accent-orange);">High</span>
+                <span>{{ total_high }}</span>
+              </div>
+              <div style="height:8px;background:var(--bg-secondary);border-radius:4px;overflow:hidden;">
+                <div style="height:100%;width:{{ [total_high * 2, 100]|min }}%;background:var(--accent-orange);"></div>
+              </div>
+            </div>
+            <div>
+              <div style="display:flex;justify-content:space-between;margin-bottom:.5rem;font-size:.85rem;font-weight:600;">
+                <span style="color:var(--accent-blue);">Medium</span>
+                <span>{{ total_medium }}</span>
+              </div>
+              <div style="height:8px;background:var(--bg-secondary);border-radius:4px;overflow:hidden;">
+                <div style="height:100%;width:{{ [total_medium, 100]|min }}%;background:var(--accent-blue);"></div>
+              </div>
+            </div>
+            <div>
+              <div style="display:flex;justify-content:space-between;margin-bottom:.5rem;font-size:.85rem;font-weight:600;">
+                <span style="color:var(--accent-green);">Low</span>
+                <span>{{ total_low }}</span>
+              </div>
+              <div style="height:8px;background:var(--bg-secondary);border-radius:4px;overflow:hidden;">
+                <div style="height:100%;width:{{ [total_low / 2, 100]|min }}%;background:var(--accent-green);"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card" style="max-width:none;">
+          <h3 style="font-size:.95rem;font-weight:600;margin-bottom:1.5rem;color:var(--text-primary);">Quick Actions</h3>
+          <div style="display:flex;flex-direction:column;gap:1rem;">
+            <a href="{{ url_for('main.manager_report_pdf') }}" class="btn btn-outline" style="text-align:center;padding:.75rem;">📥 Download Org Report</a>
+            <a href="{{ url_for('main.manager_merged_report') }}" class="btn btn-primary" style="text-align:center;padding:.75rem;">📥 Merged PDF Report</a>
+            <button onclick="showMgrSection('add')" class="btn btn-secondary" style="text-align:center;padding:.75rem;width:100%;border:none;cursor:pointer;">➕ Add New Developer</button>
+          </div>
+        </div>
+      </div>
+    </div>
 
     <!-- Team Section -->
-    <div id="section-team">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.25rem;flex-wrap:wrap;gap:.75rem;">
-        <h2 style="font-size:1.3rem;">👥 My Team ({{ developers|length }})</h2>
-        <button onclick="showSection('add')" class="btn btn-primary btn-sm">+ Add Developer</button>
+    <div id="section-team" style="display:none;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.5rem;flex-wrap:wrap;gap:1rem;">
+        <div>
+          <h1 style="font-size:1.75rem;font-weight:700;margin-bottom:.25rem;">My Team</h1>
+          <p style="color:var(--text-muted);font-size:.95rem;">{{ developers|length }} {% if developers|length == 1 %}developer{% else %}developers{% endif %}</p>
+        </div>
+        <button onclick="showMgrSection('add')" class="btn btn-primary">+ Add Developer</button>
       </div>
 
-      <!-- Summary Row -->
-      <div class="results-summary" style="margin-bottom:1.5rem;">
-        <div class="summary-card total"><div class="count">{{ total_scans }}</div><div class="label">Team Scans</div></div>
-        <div class="summary-card critical"><div class="count">{{ total_critical }}</div><div class="label">Critical</div></div>
-        <div class="summary-card high"><div class="count">{{ total_vulns }}</div><div class="label">Total Vulns</div></div>
-        <div class="summary-card medium"><div class="count">{{ developers|length }}</div><div class="label">Developers</div></div>
-      </div>
-
-      <!-- Developer Cards -->
       {% if developers %}
-      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:1rem;">
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:1.5rem;">
         {% for dev in developers %}
         {% set dev_vulns = dev.scans|sum(attribute='total_vulns') %}
         {% set dev_crit = dev.scans|sum(attribute='critical_count') %}
-        <div class="card" style="max-width:none;padding:1.25rem;cursor:pointer;" onclick="showSection('reports')">
-          <div style="display:flex;align-items:center;gap:.75rem;margin-bottom:1rem;">
-            <div style="width:40px;height:40px;border-radius:50%;background:linear-gradient(135deg,var(--accent-blue),var(--accent-purple));display:flex;align-items:center;justify-content:center;font-weight:700;flex-shrink:0;">{{ dev.full_name[0] }}</div>
-            <div>
-              <p style="font-weight:600;font-size:.9rem;">{{ dev.full_name }}</p>
-              <p style="font-size:.72rem;color:var(--text-muted);">@{{ dev.username }}</p>
+        {% set dev_high = dev.scans|sum(attribute='high_count') %}
+        <div class="card" style="max-width:none;display:flex;flex-direction:column;">
+          <div style="display:flex;align-items:center;gap:1rem;margin-bottom:1.5rem;padding-bottom:1rem;border-bottom:1px solid var(--border-color);">
+            <div style="width:48px;height:48px;border-radius:50%;background:linear-gradient(135deg,var(--accent-blue),var(--accent-purple));display:flex;align-items:center;justify-content:center;font-weight:700;color:white;font-size:1.1rem;">{{ dev.full_name[0] }}</div>
+            <div style="flex:1;">
+              <p style="font-weight:600;font-size:.95rem;">{{ dev.full_name }}</p>
+              <p style="font-size:.8rem;color:var(--text-muted);">@{{ dev.username }}</p>
             </div>
           </div>
-          <div style="display:flex;justify-content:space-between;font-size:.8rem;color:var(--text-secondary);">
-            <span>{{ dev.scans|length }} scans</span>
-            <span>
-              {% if dev_crit > 0 %}<span style="color:var(--accent-red);font-weight:600;">{{ dev_crit }} critical</span>
-              {% elif dev_vulns > 0 %}<span style="color:var(--accent-orange);">{{ dev_vulns }} issues</span>
-              {% else %}<span style="color:var(--accent-green);">✓ Clean</span>{% endif %}
-            </span>
+          
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1.5rem;">
+            <div style="text-align:center;padding:1rem;background:var(--bg-secondary);border-radius:6px;">
+              <p style="font-size:.8rem;color:var(--text-muted);margin-bottom:.25rem;">Scans</p>
+              <p style="font-size:1.75rem;font-weight:800;">{{ dev.scans|length }}</p>
+            </div>
+            <div style="text-align:center;padding:1rem;background:var(--bg-secondary);border-radius:6px;">
+              <p style="font-size:.8rem;color:var(--text-muted);margin-bottom:.25rem;">Issues</p>
+              <p style="font-size:1.75rem;font-weight:800;color:{% if dev_crit > 0 %}var(--accent-red){% elif dev_high > 0 %}var(--accent-orange){% elif dev_vulns > 0 %}var(--accent-blue){% else %}var(--accent-green){% endif %};">{{ dev_vulns }}</p>
+            </div>
           </div>
+
+          <div style="display:flex;gap:.5rem;margin-bottom:1rem;">
+            {% if dev_crit > 0 %}<span style="padding:.35rem .75rem;border-radius:4px;font-size:.75rem;font-weight:600;background:rgba(239,68,68,.15);color:#ef4444;">🔴 {{ dev_crit }} Critical</span>{% endif %}
+            {% if dev_high > 0 %}<span style="padding:.35rem .75rem;border-radius:4px;font-size:.75rem;font-weight:600;background:rgba(249,115,22,.15);color:#f97316;">🟠 {{ dev_high }} High</span>{% endif %}
+            {% if dev_vulns == 0 %}<span style="padding:.35rem .75rem;border-radius:4px;font-size:.75rem;font-weight:600;background:rgba(34,197,94,.15);color:#22c55e;">✓ Clean</span>{% endif %}
+          </div>
+
+          <a href="#" onclick="showMgrSection('scans')" class="btn btn-outline" style="margin-top:auto;text-align:center;padding:.5rem;">View Scans →</a>
         </div>
         {% endfor %}
       </div>
       {% else %}
-      <div style="text-align:center;padding:3rem;color:var(--text-muted);">
+      <div style="text-align:center;padding:3rem;background:var(--bg-secondary);border-radius:8px;border:2px dashed var(--border-color);">
         <div style="font-size:3rem;margin-bottom:1rem;">👥</div>
-        <p>No developers yet. <a href="#" onclick="showSection('add')">Add your first developer →</a></p>
+        <p style="color:var(--text-muted);font-size:1rem;margin-bottom:1.5rem;">No developers yet. Start by adding your first team member.</p>
+        <button onclick="showMgrSection('add')" class="btn btn-primary">+ Add Developer</button>
       </div>
       {% endif %}
     </div>
 
-    <!-- Reports Section -->
-    <div id="section-reports" style="display:none;">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.25rem;flex-wrap:wrap;gap:.75rem;">
-        <h2 style="font-size:1.3rem;">📋 Team Reports</h2>
-        <div style="display:flex;gap:.5rem;">
-          <a href="{{ url_for('main.manager_report_pdf') }}" class="btn btn-outline btn-sm">📥 Org Report</a>
+    <!-- Scans & Reports Section -->
+    <div id="section-scans" style="display:none;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.5rem;flex-wrap:wrap;gap:1rem;">
+        <div>
+          <h1 style="font-size:1.75rem;font-weight:700;margin-bottom:.25rem;">Team Scans</h1>
+          <p style="color:var(--text-muted);font-size:.95rem;">All security scans performed by your team</p>
+        </div>
+        <div style="display:flex;gap:.75rem;">
+          <a href="{{ url_for('main.manager_report_pdf') }}" class="btn btn-outline btn-sm">📄 Org Report</a>
           <a href="{{ url_for('main.manager_merged_report') }}" class="btn btn-primary btn-sm">📥 Merged PDF</a>
         </div>
       </div>
+
       <div class="card" style="max-width:none;">
         {% if scans %}
         <div style="overflow-x:auto;">
-          <table class="history-table">
+          <table class="history-table" style="width:100%;">
             <thead>
-              <tr><th>Developer</th><th>Source</th><th>Method</th><th>Critical</th><th>High</th><th>Total</th><th>Date</th><th></th></tr>
+              <tr style="border-bottom:2px solid var(--border-color);">
+                <th style="text-align:left;padding:1rem;">Developer</th>
+                <th style="text-align:left;padding:1rem;">Source</th>
+                <th style="text-align:center;padding:1rem;">Method</th>
+                <th style="text-align:center;padding:1rem;">🔴</th>
+                <th style="text-align:center;padding:1rem;">🟠</th>
+                <th style="text-align:center;padding:1rem;">Total</th>
+                <th style="text-align:left;padding:1rem;">Date</th>
+                <th style="text-align:center;padding:1rem;"></th>
+              </tr>
             </thead>
             <tbody>
               {% for scan in scans %}
-              <tr>
-                <td style="font-weight:500;">{{ scan.user.full_name }}</td>
-                <td style="max-width:180px;word-break:break-all;font-size:.78rem;color:var(--text-muted);">{{ scan.source|truncate(40) }}</td>
-                <td><span class="badge badge-medium" style="font-size:.65rem;">{{ scan.input_method or 'file' }}</span></td>
-                <td>{% if scan.critical_count %}<span class="badge badge-critical">{{ scan.critical_count }}</span>{% else %}<span style="color:var(--text-muted)">0</span>{% endif %}</td>
-                <td>{% if scan.high_count %}<span class="badge badge-high">{{ scan.high_count }}</span>{% else %}<span style="color:var(--text-muted)">0</span>{% endif %}</td>
-                <td><strong>{{ scan.total_vulns }}</strong></td>
-                <td style="font-size:.78rem;color:var(--text-muted);white-space:nowrap;">{{ scan.scanned_at.strftime('%Y-%m-%d %H:%M') }}</td>
-                <td>
-                  <a href="{{ url_for('main.view_scan', scan_id=scan.id) }}" class="btn btn-outline btn-sm">View</a>
+              <tr style="border-bottom:1px solid var(--border-color);">
+                <td style="padding:1rem;"><strong>{{ scan.user.full_name }}</strong><br><span style="font-size:.8rem;color:var(--text-muted);">@{{ scan.user.username }}</span></td>
+                <td style="padding:1rem;max-width:200px;word-break:break-all;font-size:.85rem;">{{ scan.source|truncate(40) }}</td>
+                <td style="padding:1rem;text-align:center;"><span style="padding:.3rem .6rem;background:var(--bg-secondary);border-radius:4px;font-size:.75rem;font-weight:500;">{{ scan.input_method or 'file' }}</span></td>
+                <td style="padding:1rem;text-align:center;font-weight:700;color:var(--accent-red);">{{ scan.critical_count or '—' }}</td>
+                <td style="padding:1rem;text-align:center;font-weight:700;color:var(--accent-orange);">{{ scan.high_count or '—' }}</td>
+                <td style="padding:1rem;text-align:center;"><strong style="font-size:1.05rem;">{{ scan.total_vulns }}</strong></td>
+                <td style="padding:1rem;font-size:.85rem;color:var(--text-muted);white-space:nowrap;">{{ scan.scanned_at.strftime('%b %d, %H:%M') }}</td>
+                <td style="padding:1rem;text-align:center;">
+                  <a href="{{ url_for('main.view_scan', scan_id=scan.id) }}" class="btn btn-outline btn-sm" style="padding:.4rem .75rem;font-size:.8rem;">View</a>
                 </td>
               </tr>
               {% endfor %}
@@ -110,28 +252,34 @@
           </table>
         </div>
         {% else %}
-        <p style="text-align:center;color:var(--text-muted);padding:2rem;">No scans from your team yet.</p>
+        <p style="text-align:center;color:var(--text-muted);padding:2rem;font-size:.95rem;">No scans from your team yet. Add developers and they can start scanning.</p>
         {% endif %}
       </div>
     </div>
 
     <!-- Analytics Section -->
     <div id="section-analytics" style="display:none;">
-      <h2 style="font-size:1.3rem;margin-bottom:1.25rem;">📊 Team Analytics</h2>
+      <h1 style="font-size:1.75rem;font-weight:700;margin-bottom:1.5rem;">Team Analytics</h1>
+
       {% if top_vulns %}
-      <div class="card" style="max-width:none;margin-bottom:1.25rem;">
-        <h3 style="font-size:.9rem;color:var(--text-secondary);margin-bottom:1rem;">Top Vulnerability Types</h3>
-        {% for vname, count, sev in top_vulns %}
-        <div style="display:flex;align-items:center;gap:1rem;margin-bottom:.75rem;">
-          <span style="width:140px;font-size:.8rem;color:var(--text-secondary);">{{ vname|truncate(20) }}</span>
-          <div style="flex:1;height:8px;background:var(--bg-secondary);border-radius:4px;overflow:hidden;">
-            <div style="height:100%;width:{{ [count * 15, 100]|min }}%;background:{% if sev=='Critical' %}var(--accent-red){% elif sev=='High' %}var(--accent-orange){% else %}var(--accent-blue){% endif %};border-radius:4px;"></div>
+      <div class="card" style="max-width:none;margin-bottom:1.5rem;">
+        <h3 style="font-size:1rem;font-weight:600;margin-bottom:1.5rem;color:var(--text-primary);">Top Vulnerability Types</h3>
+        <div style="display:flex;flex-direction:column;gap:1.5rem;">
+          {% for vname, count, sev in top_vulns|slice(8) %}
+          <div>
+            <div style="display:flex;justify-content:space-between;margin-bottom:.5rem;">
+              <span style="font-size:.9rem;font-weight:500;">{{ vname }}</span>
+              <span style="font-size:.85rem;font-weight:700;color:{% if sev=='Critical' %}var(--accent-red){% elif sev=='High' %}var(--accent-orange){% else %}var(--accent-blue){% endif %};">{{ count }} findings</span>
+            </div>
+            <div style="height:6px;background:var(--bg-secondary);border-radius:3px;overflow:hidden;">
+              <div style="height:100%;width:{{ [count * 10, 100]|min }}%;background:{% if sev=='Critical' %}var(--accent-red){% elif sev=='High' %}var(--accent-orange){% else %}var(--accent-blue){% endif %};"></div>
+            </div>
           </div>
-          <span style="font-size:.8rem;font-weight:700;min-width:30px;text-align:right;color:{% if sev=='Critical' %}var(--accent-red){% elif sev=='High' %}var(--accent-orange){% else %}var(--accent-blue){% endif %};">{{ count }}</span>
+          {% endfor %}
         </div>
-        {% endfor %}
       </div>
       {% endif %}
+
       <div class="results-summary">
         <div class="summary-card critical"><div class="count">{{ total_critical }}</div><div class="label">Critical</div></div>
         <div class="summary-card high"><div class="count">{{ total_high }}</div><div class="label">High</div></div>
@@ -142,27 +290,28 @@
 
     <!-- Add Developer Section -->
     <div id="section-add" style="display:none;">
-      <h2 style="font-size:1.3rem;margin-bottom:1.25rem;">➕ Create Developer Account</h2>
-      <div class="card" style="max-width:480px;">
-        <p style="color:var(--text-secondary);font-size:.875rem;margin-bottom:1.5rem;">This developer will be linked to your team and you can view their scan reports.</p>
-        <form method="POST" action="{{ url_for('main.manager_create_developer') }}">
-          <div class="mb-3">
-            <label class="form-label">Full Name</label>
-            <input type="text" name="full_name" class="form-control" placeholder="Brian Kilawe" required>
+      <h1 style="font-size:1.75rem;font-weight:700;margin-bottom:1.5rem;">Add Developer</h1>
+      <div class="card" style="max-width:550px;">
+        <p style="color:var(--text-secondary);font-size:.95rem;margin-bottom:1.5rem;line-height:1.6;">Create a new developer account that will be linked to your team. They'll be able to perform security scans, and you'll have access to view all their reports.</p>
+        <form method="POST" action="{{ url_for('main.manager_create_developer') }}" style="display:flex;flex-direction:column;gap:1.25rem;">
+          <div>
+            <label class="form-label" style="font-weight:600;margin-bottom:.5rem;display:block;">Full Name</label>
+            <input type="text" name="full_name" class="form-control" placeholder="Brian Kilawe" required style="padding:.75rem;border-radius:6px;">
           </div>
-          <div class="mb-3">
-            <label class="form-label">Username</label>
-            <input type="text" name="username" class="form-control" placeholder="briankilawe" required>
+          <div>
+            <label class="form-label" style="font-weight:600;margin-bottom:.5rem;display:block;">Username</label>
+            <input type="text" name="username" class="form-control" placeholder="briankilawe" required style="padding:.75rem;border-radius:6px;">
           </div>
-          <div class="mb-3">
-            <label class="form-label">Email</label>
-            <input type="email" name="email" class="form-control" placeholder="brian@company.com" required>
+          <div>
+            <label class="form-label" style="font-weight:600;margin-bottom:.5rem;display:block;">Email</label>
+            <input type="email" name="email" class="form-control" placeholder="brian@company.com" required style="padding:.75rem;border-radius:6px;">
           </div>
-          <div class="mb-4">
-            <label class="form-label">Temporary Password</label>
-            <input type="password" name="password" class="form-control" placeholder="Min 6 characters" required minlength="6">
+          <div>
+            <label class="form-label" style="font-weight:600;margin-bottom:.5rem;display:block;">Temporary Password</label>
+            <input type="password" name="password" class="form-control" placeholder="Minimum 6 characters" required minlength="6" style="padding:.75rem;border-radius:6px;">
+            <small style="color:var(--text-muted);font-size:.8rem;margin-top:.5rem;display:block;">They can change this after first login</small>
           </div>
-          <button type="submit" class="btn btn-primary w-100">Create Developer Account</button>
+          <button type="submit" class="btn btn-primary" style="padding:.75rem;font-weight:600;font-size:1rem;margin-top:.5rem;">Create Developer Account</button>
         </form>
       </div>
     </div>
@@ -171,20 +320,48 @@
 </div>
 
 <style>
-.mgr-nav{display:flex;align-items:center;gap:.5rem;padding:.5rem .75rem;border-radius:8px;font-size:.83rem;font-weight:500;color:var(--text-secondary);text-decoration:none;transition:.2s;cursor:pointer;}
-.mgr-nav:hover,.mgr-nav.active{background:rgba(139,92,246,.12);color:var(--accent-purple);}
+.mgr-nav {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+  text-decoration: none;
+  transition: all 0.25s ease;
+  cursor: pointer;
+  border-left: 3px solid transparent;
+}
+.mgr-nav:hover {
+  background: rgba(139, 92, 246, 0.1);
+  color: var(--accent-purple);
+  border-left-color: var(--accent-purple);
+}
+.mgr-nav.active {
+  background: rgba(139, 92, 246, 0.15);
+  color: var(--accent-purple);
+  border-left-color: var(--accent-purple);
+  font-weight: 600;
+}
 </style>
 {% endblock %}
 
 {% block scripts %}
 <script>
-function showSection(name) {
-    ['team','reports','analytics','add'].forEach(s => {
-        document.getElementById('section-' + s).style.display = s === name ? 'block' : 'none';
-        document.getElementById('nav-' + s).classList.toggle('active', s === name);
+function showMgrSection(name) {
+    const sections = ['overview', 'team', 'scans', 'analytics', 'add'];
+    sections.forEach(s => {
+        const el = document.getElementById('section-' + s);
+        const nav = document.getElementById('nav-' + s);
+        if (el) el.style.display = s === name ? 'block' : 'none';
+        if (nav) nav.classList.toggle('active', s === name);
     });
+    window.location.hash = name;
 }
-const hash = location.hash.replace('#','') || 'team';
-showSection(hash);
+// Initialize from hash
+const hash = location.hash.replace('#', '') || 'overview';
+showMgrSection(hash);
 </script>
 {% endblock %}

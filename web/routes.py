@@ -11,21 +11,62 @@ from scanner.code_extractor import CodeExtractor
 from scanner.core_engine import CoreAnalysisEngine
 from scanner.subtechniques import ALL_SUBTECHNIQUES
 from scanner.report_generator import ReportGenerator
-from models import db, ScanResult, User, ManagerDeveloperLink, Institution, Payment, PLANS
+from models import db, ScanResult, User, ManagerDeveloperLink, Institution, Payment, PLANS, ScanJob
 
 main_bp = Blueprint('main', __name__)
 
-_scan_jobs = {}
+
+# Helper to safely update ScanJob rows via raw SQL (circumvents thread/context issues)
+import sqlite3 as sqlite3_mod
+import logging
+
+logger = logging.getLogger(__name__)
+
+def _update_job(job_id, **kwargs):
+    """Update ScanJob row using raw SQL for thread-safe, context-independent updates."""
+    try:
+        db_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'scanner.db')
+        conn = sqlite3_mod.connect(db_path, timeout=5.0)
+        cur = conn.cursor()
+        
+        set_clauses = []
+        values = []
+        for k, v in kwargs.items():
+            set_clauses.append(f"{k} = ?")
+            values.append(v)
+        
+        if not set_clauses:
+            return
+        
+        set_str = ", ".join(set_clauses)
+        query = f"UPDATE scan_job SET {set_str}, updated_at = datetime('now') WHERE id = ?"
+        values.append(job_id)
+        
+        cur.execute(query, values)
+        conn.commit()
+        logger.info(f"Updated job {job_id}: {kwargs}")
+    except Exception as ex:
+        logger.error(f"Failed to update job {job_id}: {ex}")
+    finally:
+        try:
+            conn.close()
+        except:
+            pass
+
 
 
 # ─────────────────────────────────────────────
-# Background scan helper
+# Background scan helper (DB-backed scan jobs)
 # ─────────────────────────────────────────────
 
-def _run_scan_background(app, user_id, source, input_method, js_only=False):
-    """Run scan in background thread. Supports single and batch (input_method='batch') modes."""
+def _run_scan_background(app, user_id, source, input_method, js_only=False, job_id=None):
+    """Run scan in background thread. Updates ScanJob rows rather than in-memory dict."""
     with app.app_context():
         try:
+            job = db.session.get(ScanJob, job_id) if job_id else None
+            if job:
+                _update_job(job.id, status='running', message='started')
+
             input_handler = InputHandler()
             extractor = CodeExtractor()
             engine = CoreAnalysisEngine()
@@ -48,7 +89,8 @@ def _run_scan_background(app, user_id, source, input_method, js_only=False):
                     except Exception:
                         continue
                 if not all_parts_combined:
-                    _scan_jobs[user_id] = {'status': 'error', 'message': 'No JavaScript found in any of the provided URLs.'}
+                    if job:
+                        _update_job(job.id, status='error', message='No JavaScript found in any of the provided URLs.')
                     return
                 vulnerabilities, extracted_urls, testing_report, code_info = engine.scan(all_parts_combined, ', '.join(urls))
                 all_extracted_urls.extend(extracted_urls)
@@ -57,7 +99,8 @@ def _run_scan_background(app, user_id, source, input_method, js_only=False):
             elif os.path.isdir(source):
                 file_paths = input_handler.get_files_from_folder(source, js_only=js_only)
                 if not file_paths:
-                    _scan_jobs[user_id] = {'status': 'error', 'message': 'No supported files found.'}
+                    if job:
+                        _update_job(job.id, status='error', message='No supported files found.')
                     return
                 all_parts = []
                 scanned_files = []
@@ -73,7 +116,8 @@ def _run_scan_background(app, user_id, source, input_method, js_only=False):
                     except Exception:
                         continue
                 if not all_parts:
-                    _scan_jobs[user_id] = {'status': 'error', 'message': 'No JavaScript code found.'}
+                    if job:
+                        _update_job(job.id, status='error', message='No JavaScript code found.')
                     return
                 vulnerabilities, extracted_urls, testing_report, code_info = engine.scan(all_parts, source)
                 all_extracted_urls = extracted_urls + scanned_files
@@ -82,11 +126,13 @@ def _run_scan_background(app, user_id, source, input_method, js_only=False):
             else:
                 input_data = input_handler.accept_input(source)
                 if input_data is None:
-                    _scan_jobs[user_id] = {'status': 'error', 'message': 'Invalid source.'}
+                    if job:
+                        _update_job(job.id, status='error', message='Invalid source.')
                     return
                 parts = extractor.extract_with_origins(input_data['html'], external_js=input_data['external_js'])
                 if not parts:
-                    _scan_jobs[user_id] = {'status': 'error', 'message': 'No JavaScript code found.'}
+                    if job:
+                        _update_job(job.id, status='error', message='No JavaScript code found.')
                     return
                 vulnerabilities, extracted_urls, testing_report, code_info = engine.scan(parts, source)
                 all_extracted_urls = extracted_urls
@@ -122,10 +168,16 @@ def _run_scan_background(app, user_id, source, input_method, js_only=False):
 
             db.session.commit()
 
-            _scan_jobs[user_id] = {'status': 'done', 'scan_id': scan_result.id, 'total': len(vulnerabilities)}
+            if job:
+                # If free user has exhausted trial scans, attach a friendly message prompting subscription
+                msg = ''
+                if user and user.subscription_plan == 'free' and user.trial_scans_used >= TRIAL_SCANS:
+                    msg = f'Trial limit reached ({TRIAL_SCANS} scans). Please subscribe to continue.'
+                _update_job(job.id, status='done', scan_result_id=scan_result.id, message=msg)
 
         except Exception as e:
-            _scan_jobs[user_id] = {'status': 'error', 'message': str(e)}
+            if job:
+                _update_job(job.id, status='error', message=str(e))
 
 
 # ─────────────────────────────────────────────
@@ -149,6 +201,12 @@ def dashboard():
         if not current_user.can_scan:
             flash('Trial ended. Please subscribe to continue scanning.', 'warning')
             return redirect(url_for('main.subscription'))
+
+        # Check file size limit for DoS protection
+        MAX_UPLOAD_SIZE = 50 * 1024 * 1024  # 50MB
+        if request.content_length and request.content_length > MAX_UPLOAD_SIZE:
+            flash(f'File too large. Maximum size: 50MB', 'danger')
+            return render_template('index.html', form=form, recent_scans=recent_scans)
 
         source = None
         input_method = 'file'
@@ -218,11 +276,15 @@ def dashboard():
         js_only_flag = request.form.get('js_only') == 'on'
 
         if source:
-            _scan_jobs[current_user.id] = {'status': 'running'}
+            # Create a ScanJob row to track this background task
+            job = ScanJob(user_id=current_user.id, status='queued', message='queued')
+            db.session.add(job)
+            db.session.commit()
+
             app = current_app._get_current_object()
             t = threading.Thread(
                 target=_run_scan_background,
-                args=(app, current_user.id, source, input_method, js_only_flag)
+                args=(app, current_user.id, source, input_method, js_only_flag, job.id)
             )
             t.daemon = True
             t.start()
@@ -236,10 +298,21 @@ def dashboard():
 @main_bp.route('/scan/status')
 @login_required
 def scan_status():
-    job = _scan_jobs.get(current_user.id)
+    # Return the most recent job for the current user
+    job = ScanJob.query.filter_by(user_id=current_user.id).order_by(ScanJob.created_at.desc()).first()
     if not job:
         return jsonify({'status': 'idle'})
-    return jsonify(job)
+    result = {'status': job.status, 'message': job.message}
+    if job.status == 'done' and job.scan_result_id:
+        result['scan_id'] = job.scan_result_id
+        # Also include total vulnerabilities if available
+        try:
+            sr = ScanResult.query.get(job.scan_result_id)
+            if sr:
+                result['total'] = sr.total_vulns
+        except Exception:
+            pass
+    return jsonify(result)
 
 
 # ─────────────────────────────────────────────
@@ -264,7 +337,6 @@ def view_scan(scan_id):
                 flash('Access denied. Developer not linked to you.', 'danger')
                 return redirect(url_for('main.manager_panel'))
 
-    _scan_jobs.pop(current_user.id, None)
 
     _sev = {'Critical': 0, 'High': 1, 'Medium': 2, 'Low': 3, 'Info': 4}
     vulnerabilities = sorted(scan_result.get_vulnerabilities(), key=lambda v: _sev.get(v.get('severity','Medium'), 2))

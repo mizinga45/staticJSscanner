@@ -55,13 +55,17 @@ class WebFetcher:
     def _extract_script_srcs(self, html_content, base_url):
         """
         Finds all <script src="..."> tags and returns a list of (absolute_url, html_line_number).
+        This is more permissive than before and captures srcs with query params or without .js file extension.
         """
         lines = html_content.split('\n')
         entries = []
         # Find tags line by line to capture line numbers
         for i, line in enumerate(lines, start=1):
-            matches = re.findall(r'<script[^>]+src=["\']([^"\']+\.js)["\']', line, re.IGNORECASE)
+            matches = re.findall(r'<script[^>]+src=["\']([^"\']+)["\']', line, re.IGNORECASE)
             for match in matches:
+                # Skip javascript: pseudo-protocol and data URIs
+                if match.strip().lower().startswith(('javascript:', 'data:')):
+                    continue
                 full_url = urljoin(base_url, match)
                 entries.append((full_url, i))
         return entries

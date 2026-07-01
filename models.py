@@ -159,3 +159,23 @@ class ScanResult(db.Model):
             return json.loads(self.testing_json)
         except Exception:
             return {}
+
+
+class ScanJob(db.Model):
+    """Tracks background scan jobs to avoid relying on in-memory dicts.
+    Status: queued | running | done | error
+    """
+    __table_args__ = (
+        db.Index('ix_scan_job_user_created', 'user_id', 'created_at'),
+    )
+
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    status = db.Column(db.String(20), default='queued')
+    message = db.Column(db.String(1000), default='')
+    scan_result_id = db.Column(db.Integer, db.ForeignKey('scan_result.id'), nullable=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    user = db.relationship('User', backref='scan_jobs')
+    scan_result = db.relationship('ScanResult', backref='job')

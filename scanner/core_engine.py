@@ -9,6 +9,8 @@ from scanner.rules import (
 from scanner.cwe_mapper import CWEMapper
 from scanner.vulnerability import Vulnerability
 from scanner.code_extractor import CodeExtractor
+from scanner.interprocedural import InterproceduralAnalyzer
+from scanner.context_analyzer import ContextAnalyzer
 
 # Severity mapping based on CWE
 SEVERITY_MAP = {
@@ -120,6 +122,7 @@ class CoreAnalysisEngine:
 
             initial_tainted = self.express_tainter.get_initial_tainted_vars(ast)
 
+            # Run each rule (intra-procedural)
             for rule in self.rules:
                 try:
                     found = rule.detect(ast, check_path, lines, initial_tainted=initial_tainted)
@@ -131,6 +134,14 @@ class CoreAnalysisEngine:
                     testing_report[rule.vuln_type]['count'] += len(found)
 
                 for v in found:
+                    # Apply context heuristic: if nearby lines don't show user input, lower confidence
+                    try:
+                        ctx = ContextAnalyzer(lines)
+                        if not ctx.is_user_input_present(v.line_number):
+                            v.confidence_score = max(0, v.confidence_score - 30)
+                    except Exception:
+                        pass
+
                     details = self.cwe_mapper.get_cwe_details(
                         v.type.lower().replace(' ', '_').replace('(', '').replace(')', '')
                     )
@@ -138,13 +149,45 @@ class CoreAnalysisEngine:
                         v.cwe_id = details.get('cwe_id', 'CWE-Unknown')
                     if not v.description or v.description == rule.description:
                         v.description = details.get('description', v.description)
+
+                    # Map severity from CWE and make severity/vuln_level consistent
                     v.severity = SEVERITY_MAP.get(v.cwe_id, 'Medium')
+                    # Ensure vuln_level and confidence_label reflect severity (avoid mismatch)
+                    v.vuln_level = v.severity
+                    v.confidence_label = v.severity
+
                     v.file_path = self._build_display_path(source_id, original_source_label, html_line_ref)
 
                     key = (v.file_path, v.line_number, v.cwe_id)
                     if key not in seen:
                         seen.add(key)
                         all_vulns.append(v)
+
+            # Interprocedural second-pass analysis (propagate taint across functions)
+            try:
+                ipa = InterproceduralAnalyzer(self.rules)
+                extra = ipa.analyze(ast, lines, check_path, initial_tainted or set())
+                for v in extra:
+                    # Reduce confidence slightly for interprocedural guesses
+                    v.confidence_score = max(40, v.confidence_score - 20)
+                    # Map CWE details and severity again
+                    details = self.cwe_mapper.get_cwe_details(
+                        v.type.lower().replace(' ', '_').replace('(', '').replace(')', '')
+                    )
+                    if v.cwe_id == 'CWE-Unknown':
+                        v.cwe_id = details.get('cwe_id', 'CWE-Unknown')
+                    if not v.description:
+                        v.description = details.get('description', v.description)
+                    v.severity = SEVERITY_MAP.get(v.cwe_id, 'Medium')
+                    v.vuln_level = v.severity
+                    v.confidence_label = v.severity
+                    v.file_path = self._build_display_path(source_id, original_source_label, html_line_ref)
+                    key = (v.file_path, v.line_number, v.cwe_id)
+                    if key not in seen:
+                        seen.add(key)
+                        all_vulns.append(v)
+            except Exception:
+                pass
 
         filtered = [v for v in all_vulns if v.type == 'Obfuscation Warning' or v.confidence_score >= 50]
         return filtered, extracted_urls, testing_report, code_info
