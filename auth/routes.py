@@ -62,6 +62,8 @@ def login():
                 return redirect(url_for('main.admin_panel'))
             if user.is_manager:
                 return redirect(url_for('main.manager_panel'))
+            if user.is_institution:
+                return redirect(url_for('main.institution_dashboard'))
             return redirect(url_for('main.dashboard'))
         else:
             flash('Invalid credentials.', 'danger')

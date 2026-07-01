@@ -374,6 +374,7 @@ def admin_panel():
     total_vulns = db.session.query(db.func.sum(ScanResult.total_vulns)).scalar() or 0
     revenue = db.session.query(db.func.sum(Payment.amount_tzs))\
         .filter(Payment.status == 'confirmed').scalar() or 0
+    active_subs = User.query.filter(User.subscription_plan != 'free').count()
 
     users = User.query.order_by(User.created_at.desc()).all()
     user_stats = []
@@ -384,12 +385,16 @@ def admin_panel():
             'scan_count': scan_count,
         })
 
+    all_payments = Payment.query.order_by(Payment.created_at.desc()).all()
+
     return render_template('admin_panel.html',
                            total_users=total_users,
                            total_scans=total_scans,
                            total_vulns=total_vulns,
                            revenue=revenue,
-                           user_stats=user_stats)
+                           active_subs=active_subs,
+                           user_stats=user_stats,
+                           all_payments=all_payments)
 
 
 @main_bp.route('/admin/create-manager', methods=['POST'])
@@ -672,13 +677,104 @@ def manager_report_pdf():
 
 
 # ─────────────────────────────────────────────
+# Institution Dashboard
+# ─────────────────────────────────────────────
+
+@main_bp.route('/institution')
+@login_required
+def institution_dashboard():
+    if not current_user.is_institution:
+        flash('Access denied.', 'danger')
+        return redirect(url_for('main.dashboard'))
+
+    devs = User.query.filter_by(
+        institution_id=current_user.institution_id,
+        role='developer'
+    ).all()
+
+    all_scans = [s for d in devs for s in d.scans]
+    total_scans = len(all_scans)
+    total_vulns = sum(s.total_vulns for s in all_scans)
+    total_critical = sum(s.critical_count for s in all_scans)
+
+    # Top vuln types
+    vuln_counts = {}
+    for scan in all_scans:
+        for v in scan.get_vulnerabilities():
+            vtype = v.get('type', 'Unknown')
+            sev = v.get('severity', 'Medium')
+            if vtype not in vuln_counts:
+                vuln_counts[vtype] = {'count': 0, 'severity': sev}
+            vuln_counts[vtype]['count'] += 1
+    top_vulns = sorted(
+        [(k, v['count'], v['severity']) for k, v in vuln_counts.items()],
+        key=lambda x: x[1], reverse=True
+    )[:10]
+
+    # Institution name
+    inst = current_user.institution
+    institution_name = inst.name if inst else current_user.full_name
+
+    return render_template('institution_dashboard.html',
+                           devs=devs,
+                           institution_name=institution_name,
+                           total_developers=len(devs),
+                           total_scans=total_scans,
+                           total_vulns=total_vulns,
+                           total_critical=total_critical,
+                           top_vulns=top_vulns)
+
+
+@main_bp.route('/institution/add-developer', methods=['POST'])
+@login_required
+def institution_add_developer():
+    if not current_user.is_institution:
+        flash('Access denied.', 'danger')
+        return redirect(url_for('main.dashboard'))
+
+    from auth.routes import bcrypt as auth_bcrypt
+
+    full_name = request.form.get('full_name', '').strip()
+    username  = request.form.get('username', '').strip()
+    email     = request.form.get('email', '').strip()
+    password  = request.form.get('password', '').strip()
+
+    if not all([full_name, username, email, password]):
+        flash('All fields are required.', 'danger')
+        return redirect(url_for('main.institution_dashboard'))
+
+    if User.query.filter_by(username=username).first():
+        flash(f'Username "{username}" already taken.', 'danger')
+        return redirect(url_for('main.institution_dashboard'))
+    if User.query.filter_by(email=email).first():
+        flash(f'Email "{email}" already registered.', 'danger')
+        return redirect(url_for('main.institution_dashboard'))
+
+    hashed = auth_bcrypt.generate_password_hash(password).decode('utf-8')
+    dev = User(
+        full_name=full_name,
+        username=username,
+        email=email,
+        role='developer',
+        password_hash=hashed,
+        institution_id=current_user.institution_id,
+        subscription_plan='pro',
+    )
+    db.session.add(dev)
+    db.session.commit()
+    flash(f'✓ Developer {full_name} (@{username}) created.', 'success')
+    return redirect(url_for('main.institution_dashboard'))
+
+
+# ─────────────────────────────────────────────
 # Subscription / Payment
 # ─────────────────────────────────────────────
 
 @main_bp.route('/subscription')
 @login_required
 def subscription():
-    return render_template('subscription.html', plans=PLANS, user=current_user)
+    payments = current_user.payments if hasattr(current_user, 'payments') else []
+    return render_template('subscription.html', plans=PLANS, user=current_user, payments=payments)
 
 
 @main_bp.route('/subscription/pay/<plan>', methods=['POST'])
@@ -693,22 +789,24 @@ def pay_subscription(plan):
         return redirect(url_for('main.subscription'))
 
     plan_info = PLANS[plan]
-    reference = secrets.token_hex(8).upper()
+    # Accept user-supplied reference from M-Pesa modal, or generate one
+    user_reference = request.form.get('reference', '').strip()
+    if not user_reference:
+        user_reference = secrets.token_hex(8).upper()
 
     payment = Payment(
         user_id=current_user.id,
         plan=plan,
         amount_tzs=plan_info['price_tzs'],
-        reference=reference,
+        reference=user_reference,
         status='pending',
     )
     db.session.add(payment)
     db.session.commit()
 
     flash(
-        f'Payment request created (Ref: {reference}). '
-        f'Send TZS {plan_info["price_tzs"]:,} via M-Pesa to 0712345678 '
-        f'with reference {reference}. Your plan will be activated once confirmed.',
+        f'Payment request submitted (Ref: {user_reference}). '
+        f'Your plan will be activated once the payment is confirmed.',
         'success'
     )
     return redirect(url_for('main.subscription'))

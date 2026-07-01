@@ -114,6 +114,11 @@ def landing():
     return render_template('landing.html')
 
 
+@app.route('/pricing')
+def pricing():
+    return render_template('pricing.html')
+
+
 if __name__ == '__main__':
     with app.app_context():
         db.create_all()
