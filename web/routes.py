@@ -921,12 +921,18 @@ def admin_delete_user(user_id):
     if user.is_admin:
         flash('Cannot delete admin account.', 'danger')
         return redirect(url_for('main.admin_panel') + '#users')
-    # Delete linked scans
-    ScanResult.query.filter_by(user_id=user.id).delete()
+    # Delete linked manager/developer links first
     ManagerDeveloperLink.query.filter(
         (ManagerDeveloperLink.manager_id == user.id) |
         (ManagerDeveloperLink.developer_id == user.id)
     ).delete()
+
+    # Delete scan jobs owned by this user to avoid FK NOT NULL issues
+    ScanJob.query.filter_by(user_id=user.id).delete()
+
+    # Delete linked scans (after jobs removed)
+    ScanResult.query.filter_by(user_id=user.id).delete()
+
     db.session.delete(user)
     db.session.commit()
     flash(f'User @{user.username} deleted.', 'success')
